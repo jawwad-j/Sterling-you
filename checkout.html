@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | Sterling You</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap');
+        body { font-family: 'Montserrat', sans-serif; }
+        /* Modal Animation */
+        .modal-enter { animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes modalPop { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen pb-20">
+
+    <div class="bg-white py-4 shadow-sm mb-6">
+        <div class="max-w-6xl mx-auto flex justify-center">
+            <a href="index.html">
+                <img src="web-logo2.png" alt="Sterling You" class="h-12 object-contain">
+            </a>
+        </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4 md:px-6">
+        <div class="flex justify-between items-center border-b pb-2 mb-6">
+            <h1 class="text-2xl font-bold text-[#322C2B]">Checkout</h1>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-7 space-y-6">
+                
+                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400">Delivery Addresses</h3>
+                        <a href="account.html?tab=addresses&from=checkout" class="text-[10px] font-bold text-[#B36A5E] uppercase hover:underline">+ Manage</a>
+                    </div>
+                    <div id="address-container" class="space-y-5">
+                        <p class="text-sm italic text-gray-400">Loading addresses...</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                    
+                    <div class="mb-5">
+                        <p class="block text-[10px] font-bold uppercase text-gray-400 mb-3">Who will receive the order?</p>
+                        <div class="flex gap-4">
+                            <label class="flex-1 flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-[#B36A5E] transition">
+                                <input type="radio" name="recv_type" value="Me" checked onchange="toggleReceiver(this.value)" class="accent-[#B36A5E]">
+                                <span class="text-sm font-bold text-[#322C2B]">Me</span>
+                            </label>
+                            <label class="flex-1 flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-[#B36A5E] transition">
+                                <input type="radio" name="recv_type" value="Other" onchange="toggleReceiver(this.value)" class="accent-[#B36A5E]">
+                                <span class="text-sm font-bold text-[#322C2B]">Someone Else</span>
+                            </label>
+                        </div>
+                        <div id="recv-details" class="hidden mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Relation <span class="text-red-500">*</span></label>
+                                <input type="text" id="recv-relation" class="w-full bg-transparent border-b border-gray-300 py-1 text-sm outline-none focus:border-[#B36A5E]" placeholder="e.g. Brother">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Name <span class="text-red-500">*</span></label>
+                                <input type="text" id="recv-name" class="w-full bg-transparent border-b border-gray-300 py-1 text-sm outline-none focus:border-[#B36A5E]">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Contact <span class="text-red-500">*</span></label>
+                                <input type="tel" id="recv-phone" class="w-full bg-transparent border-b border-gray-300 py-1 text-sm outline-none focus:border-[#B36A5E]">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-gray-400 mb-2">Delivery Instructions</label>
+                        <textarea id="del-instruction" class="w-full border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-[#B36A5E] bg-gray-50 h-16 resize-none" placeholder="e.g. Leave at reception..."></textarea>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Payment Method</h3>
+                    <div class="p-3 border rounded-lg bg-gray-50 flex items-center gap-3">
+                        <input type="radio" checked class="accent-[#B36A5E]">
+                        <span class="text-sm font-bold text-[#322C2B]">Cash on Delivery (COD)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5">
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 sticky top-6">
+                    
+                    <div class="mb-4 text-center">
+                        <a href="category.html" class="text-[10px] font-bold uppercase tracking-widest text-[#B36A5E] border border-[#B36A5E] px-4 py-2 rounded hover:bg-[#B36A5E] hover:text-white transition inline-block w-full">
+                            + Add More Products
+                        </a>
+                    </div>
+
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4 border-b pb-2">Order Summary</h3>
+                    
+                    <div id="cart-items" class="space-y-3 mb-4">
+                    </div>
+                    
+                    <div id="total-discount-container" class="mb-4 hidden"></div>
+                    
+                    <div class="border-t pt-4 space-y-2">
+                        <div class="flex justify-between text-sm text-gray-500"><span>Subtotal</span><span id="subtotal">৳0</span></div>
+                        <div id="discount-row" class="flex justify-between text-sm text-green-600 font-bold hidden"><span>Discount</span><span id="discount-amount">-৳0</span></div>
+                        <div class="flex justify-between text-sm text-gray-500">
+                            <span>Shipping</span>
+                            <span id="shipping-display" data-value="0">৳0</span>
+                        </div>
+                        <div class="flex justify-between text-lg font-bold text-[#322C2B] pt-2 border-t mt-2"><span>Total</span><span id="final-total">৳0</span></div>
+                    </div>
+
+                    <div class="mt-6 mb-4">
+                        <label class="flex items-start gap-3 cursor-pointer group">
+                            <input type="checkbox" id="agree-terms" class="accent-[#B36A5E] w-4 h-4 mt-0.5">
+                            <span class="text-xs text-gray-500 group-hover:text-[#322C2B] transition">
+                                I agree to the <a href="#" class="underline text-[#B36A5E]">Terms & Conditions</a> and <a href="#" class="underline text-[#B36A5E]">Return Policy</a>.
+                            </span>
+                        </label>
+                    </div>
+
+                    <button onclick="placeOrder()" id="place-order-btn" class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        Confirm Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="success-modal" class="fixed inset-0 bg-black/50 z-[200] hidden flex justify-center items-center backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm mx-4 modal-enter">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <h2 class="text-xl font-bold text-[#322C2B] mb-2">Your order is placed!</h2>
+            <p class="text-sm text-gray-500 mb-6 font-medium">Thank you.</p>
+            <button onclick="window.location.href='index.html'" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition tracking-widest">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <script src="cart.js"></script>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let userAddresses = [];
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const userDoc = await db.collection("users").doc(user.uid).get();
+                userAddresses = userDoc.data().addresses || [];
+                renderAddressSelection();
+                updateShippingAndTotals(); 
+            } else {
+                window.location.href = "account.html?msg=login_required";
+            }
+        });
+
+        // --- EXTRAS: TOGGLE RECEIVER ---
+        window.toggleReceiver = (val) => {
+            const details = document.getElementById('recv-details');
+            if (val === 'Other') {
+                details.classList.remove('hidden');
+            } else {
+                details.classList.add('hidden');
+            }
+        }
+
+        window.getCheckoutExtras = () => {
+             const recvType = document.querySelector('input[name="recv_type"]:checked').value;
+             let receiverData = { type: 'Self' };
+             
+             if(recvType === 'Other') {
+                 receiverData = {
+                     type: 'Other',
+                     relation: document.getElementById('recv-relation').value,
+                     name: document.getElementById('recv-name').value,
+                     phone: document.getElementById('recv-phone').value
+                 };
+             }
+             
+             return {
+                 instruction: document.getElementById('del-instruction').value,
+                 receiverData: receiverData
+             };
+        }
+
+        // --- UPDATED: TIER-BASED DYNAMIC SHIPPING CALCULATOR ---
+        window.updateShippingAndTotals = async function() {
+            const shippingSelect = document.getElementById('shipping_address');
+            let selectedDistrict = 'Dhaka'; 
+            
+            if (shippingSelect && shippingSelect.value) {
+                // FIX: Added String() to ensure finding address succeeds
+                const selectedAddr = userAddresses.find(a => String(a.id) === String(shippingSelect.value));
+                if (selectedAddr) selectedDistrict = selectedAddr.district || selectedAddr.city;
+            }
+            
+            document.getElementById('shipping-display').innerText = `...`;
+
+            let chargeableWeight = 0;
+            let requiresShipping = false;
+            
+            for (const item of cart) {
+                let isFree = item.isFreeDelivery === true;
+                let itemWeight = Number(item.weight) || 1;
+
+                try {
+                    // FIX: Wrapped item.id in String()
+                    const pDoc = await db.collection("products").doc(String(item.id)).get();
+                    if (pDoc.exists) {
+                        const pData = pDoc.data();
+                        isFree = pData.isFreeDelivery === true;
+                        itemWeight = Number(pData.weightKg) || Number(pData.weight) || 1;
+                    }
+                } catch (e) {
+                    console.error("Error fetching live product for shipping:", e);
+                }
+
+                if (!isFree) {
+                    requiresShipping = true;
+                    chargeableWeight += (itemWeight * (Number(item.quantity) || 1));
+                }
+            }
+
+            let customerShippingFee = 0;
+
+            if (requiresShipping) {
+                try {
+                    const rulesDoc = await db.collection("customerShippingRules").doc("standard_rates").get();
+                    if (rulesDoc.exists) {
+                        const rules = rulesDoc.data();
+                        const isInsideDhaka = selectedDistrict.toLowerCase().includes('dhaka');
+                        
+                        const prefix = isInsideDhaka ? 'in_' : 'out_';
+                        
+                        const fee_05 = Number(rules[prefix + '05']) || 0;
+                        const fee_10 = Number(rules[prefix + '10']) || 0;
+                        const fee_20 = Number(rules[prefix + '20']) || 0;
+                        const fee_extra = Number(rules[prefix + 'extra']) || 0;
+                        
+                        if (chargeableWeight <= 0.5) {
+                            customerShippingFee = fee_05;
+                        } else if (chargeableWeight <= 1.0) {
+                            customerShippingFee = fee_10;
+                        } else if (chargeableWeight <= 2.0) {
+                            customerShippingFee = fee_20;
+                        } else {
+                            customerShippingFee = fee_20 + (Math.ceil(chargeableWeight - 2) * fee_extra);
+                        }
+
+                    } else {
+                        customerShippingFee = 100;
+                    }
+                } catch (error) {
+                    console.error("Error fetching shipping rules:", error);
+                    customerShippingFee = 100;
+                }
+            }
+
+            renderCartSummary(customerShippingFee);
+        }
+        
+function renderAddressSelection() {
+            const container = document.getElementById('address-container');
+            if (!userAddresses || userAddresses.length === 0) {
+                container.innerHTML = `<p class="text-sm text-red-400">No addresses saved. <a href="account.html?tab=addresses&from=checkout" class="underline">Add one now.</a></p>`;
+                return;
+            }
+
+            const shippingAddrs = userAddresses.filter(a => a.tag === 'Shipping Address');
+            const billingAddrs = userAddresses.filter(a => a.tag === 'Billing Address');
+
+            let html = '';
+
+            html += `<div class="space-y-2">
+                        <label class="block text-[10px] font-bold uppercase text-[#322C2B] tracking-widest">Shipping Address <span class="text-red-500">*</span></label>`;
+            if (shippingAddrs.length > 0) {
+                // The 'truncate' class handles the "..." when closed
+                html += `<select id="shipping_address" onchange="updateShippingAndTotals()" class="w-full border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-[#B36A5E] bg-white text-[#322C2B] truncate">`;
+                shippingAddrs.forEach(a => {
+                    const isSelected = a.isDefault ? 'selected' : '';
+                    const displayTxt = a.fullDisplay || a.detail || "";
+                    // We pass the full text here so it expands completely when clicked
+                    html += `<option value="${a.id}" ${isSelected}>${displayTxt}</option>`;
+                });
+                html += `</select>`;
+            } else {
+                html += `<p class="text-xs text-red-400">No shipping address found. Please add one in Manage.</p>`;
+            }
+            html += `</div>`;
+
+            html += `<div class="space-y-2 pt-2 border-t border-gray-50">
+                        <label class="block text-[10px] font-bold uppercase text-[#322C2B] tracking-widest">Billing Address <span class="text-red-500">*</span></label>`;
+            if (billingAddrs.length > 0) {
+                // The 'truncate' class handles the "..." when closed
+                html += `<select id="billing_address" class="w-full border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-[#B36A5E] bg-white text-[#322C2B] truncate">`;
+                billingAddrs.forEach(a => {
+                    const isSelected = a.isDefault ? 'selected' : '';
+                    const displayTxt = a.fullDisplay || a.detail || "";
+                    // We pass the full text here so it expands completely when clicked
+                    html += `<option value="${a.id}" ${isSelected}>${displayTxt}</option>`;
+                });
+                html += `</select>`;
+            } else {
+                html += `<p class="text-xs text-red-400">No billing address found. Please add one in Manage.</p>`;
+            }
+            html += `</div>`;
+
+            container.innerHTML = html;
+        }
+
+        function renderCartSummary(shippingFee = 0) {
+            const container = document.getElementById('cart-items');
+            const discountContainer = document.getElementById('total-discount-container');
+            let subtotal = 0, discount = 0;
+
+            if(cart.length === 0) {
+                 container.innerHTML = '<p class="text-center text-gray-400 text-sm italic">Your cart is empty.</p>';
+                 document.getElementById('place-order-btn').disabled = true;
+                 if(discountContainer) discountContainer.classList.add('hidden');
+                 return;
+            }
+
+            container.innerHTML = cart.map(item => {
+                const itemTotal = item.price * (item.quantity || 1);
+                const originalTotal = (item.originalPrice || item.price) * (item.quantity || 1);
+                subtotal += itemTotal;
+                
+                const itemDiscountAmount = originalTotal - itemTotal;
+                discount += itemDiscountAmount;
+
+                let priceDisplayHtml = `<span class="font-bold text-[#322C2B]">৳${itemTotal.toLocaleString()}</span>`;
+                
+                if (itemDiscountAmount > 0) {
+                    priceDisplayHtml = `
+                        <div class="text-right flex flex-col items-end">
+                            <span class="text-[10px] text-gray-400 line-through leading-none mb-1">৳${originalTotal.toLocaleString()}</span>
+                            <span class="font-bold text-[#322C2B] leading-none">৳${itemTotal.toLocaleString()}</span>
+                            <span class="text-[9px] text-green-600 font-bold mt-1">Save ৳${itemDiscountAmount.toLocaleString()}</span>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="flex justify-between items-center text-xs border-b border-gray-50 py-3 first:pt-0 last:border-0">
+                        <div class="flex items-center gap-3 pr-2">
+                             <div class="w-10 h-10 bg-gray-100 rounded bg-cover bg-center flex-shrink-0" style="background-image:url('${item.image}')"></div>
+                             <span class="text-gray-600 font-medium leading-tight">${item.name} <span class="text-gray-400 ml-1">x${item.quantity}</span></span>
+                        </div>
+                        ${priceDisplayHtml}
+                    </div>
+                `;
+            }).join('');
+            
+            // Render Total Discount outside the list
+            if (discountContainer) {
+                if (discount > 0) {
+                    discountContainer.innerHTML = `
+                        <div class="flex justify-between items-center text-[10px] py-2 bg-green-50/50 rounded px-2 border border-green-100">
+                            <span class="text-green-700 font-bold uppercase tracking-wider">Total Discount Received</span>
+                            <span class="text-green-700 font-bold">-৳${discount.toLocaleString()}</span>
+                        </div>
+                    `;
+                    discountContainer.classList.remove('hidden');
+                } else {
+                    discountContainer.classList.add('hidden');
+                    discountContainer.innerHTML = '';
+                }
+            }
+            
+            document.getElementById('subtotal').innerText = `৳${subtotal.toLocaleString()}`;
+            
+            // Hide the old confusing discount row
+            const oldDiscountRow = document.getElementById('discount-row');
+            if (oldDiscountRow) oldDiscountRow.classList.add('hidden');
+
+            const finalTotal = subtotal + shippingFee;
+            document.getElementById('shipping-display').innerText = `৳${shippingFee.toLocaleString()}`;
+            document.getElementById('shipping-display').dataset.value = shippingFee;
+            
+            document.getElementById('final-total').innerText = `৳${finalTotal.toLocaleString()}`;
+            document.getElementById('final-total').dataset.value = finalTotal;
+        }
+
+        async function placeOrder() {
+            if (!document.getElementById('agree-terms').checked) {
+                alert("Please agree to the Terms & Conditions to proceed.");
+                return;
+            }
+
+            const shippingSelect = document.getElementById('shipping_address');
+            const billingSelect = document.getElementById('billing_address');
+
+            if (!shippingSelect || !shippingSelect.value) return alert("Please select a shipping address.");
+            if (!billingSelect || !billingSelect.value) return alert("Please select a billing address.");
+
+            const recvType = document.querySelector('input[name="recv_type"]:checked').value;
+            if (recvType === 'Other') {
+                const rel = document.getElementById('recv-relation').value.trim();
+                const name = document.getElementById('recv-name').value.trim();
+                const phone = document.getElementById('recv-phone').value.trim();
+                if (!rel || !name || !phone) {
+                    alert("Please fill in the Relation, Name, and Contact for the receiver.");
+                    document.getElementById('recv-details').classList.add('border-red-200', 'bg-red-50');
+                    return;
+                }
+            }
+            
+            const btn = document.getElementById('place-order-btn');
+            btn.disabled = true;
+            btn.innerText = "Verifying Stock...";
+
+            try {
+                let cartUpdated = false;
+                let errorMessages = [];
+                let validCart = [];
+
+                for (const item of cart) {
+                    // FIX: Wrapped item.id in String()
+                    const productDoc = await db.collection("products").doc(String(item.id)).get();
+                    
+                    if (!productDoc.exists) {
+                        errorMessages.push(`Removed "${item.name}" (Item no longer exists).`);
+                        cartUpdated = true;
+                        continue; 
+                    }
+                    
+                    const pData = productDoc.data();
+                    const currentStock = pData.stock || 0;
+                    const reqQty = item.quantity || 1;
+
+                    if (currentStock <= 0) {
+                        errorMessages.push(`Removed "${item.name}" (Out of Stock).`);
+                        cartUpdated = true;
+                        continue; 
+                    }
+
+                    if (currentStock < reqQty) {
+                        errorMessages.push(`Adjusted "${item.name}" quantity to ${currentStock}.`);
+                        item.quantity = currentStock; 
+                        cartUpdated = true;
+                        validCart.push(item);
+                    } else {
+                        item.sku = pData.sku || "N/A"; 
+                        validCart.push(item);
+                    }
+                }
+
+                if (cartUpdated) {
+                    localStorage.setItem('cart', JSON.stringify(validCart));
+                    alert("Cart Updated:\n" + errorMessages.join("\n"));
+                    window.location.reload();
+                    return;
+                }
+
+                btn.innerText = "Processing...";
+
+                const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
+                if (userDoc.data().isBlocked) throw new Error("Your account is suspended.");
+
+                // FIX: Wrapped ID in String() for finding address securely
+                const selectedShippingAddr = userAddresses.find(a => String(a.id) === String(shippingSelect.value));
+                const selectedBillingAddr = userAddresses.find(a => String(a.id) === String(billingSelect.value));
+
+                const total = parseInt(document.getElementById('final-total').dataset.value || 0);
+                const shippingFeeCharged = parseInt(document.getElementById('shipping-display').dataset.value || 0);
+                
+                const platformCodCharge = total * 0.01; 
+
+                const extras = window.getCheckoutExtras(); 
+                const batch = db.batch();
+
+                const newOrderRef = db.collection("orders").doc();
+                
+                const orderData = {
+                    orderId: "ORD-" + Math.floor(100000 + Math.random() * 900000),
+                    userId: auth.currentUser.uid,
+                    userName: userDoc.data().fullName,
+                    status: "Pending",
+                    totalAmount: total,
+                    customerShippingFee: shippingFeeCharged,
+                    platformCodCharge: platformCodCharge, 
+                    orderDate: new Date().toISOString(),
+                    shippingAddress: { 
+                        tag: selectedShippingAddr.tag || '',
+                        detail: selectedShippingAddr.detail || '',
+                        fullDisplay: selectedShippingAddr.fullDisplay || '',
+                        house: selectedShippingAddr.house || '',
+                        floor: selectedShippingAddr.floor || '',
+                        block: selectedShippingAddr.block || '',
+                        road: selectedShippingAddr.road || '',
+                        thana: selectedShippingAddr.thana || '',
+                        district: selectedShippingAddr.district || '',
+                        city: selectedShippingAddr.city || selectedShippingAddr.district || '',
+                        division: selectedShippingAddr.division || ''
+                    },
+                    billingAddress: {
+                        tag: selectedBillingAddr.tag || '',
+                        detail: selectedBillingAddr.detail || '',
+                        fullDisplay: selectedBillingAddr.fullDisplay || '',
+                        house: selectedBillingAddr.house || '',
+                        floor: selectedBillingAddr.floor || '',
+                        block: selectedBillingAddr.block || '',
+                        road: selectedBillingAddr.road || '',
+                        thana: selectedBillingAddr.thana || '',
+                        district: selectedBillingAddr.district || '',
+                        city: selectedBillingAddr.city || selectedBillingAddr.district || '',
+                        division: selectedBillingAddr.division || ''
+                    },
+                    deliveryInstructions: extras.instruction,
+                    receiverInfo: extras.receiverData,
+                    items: validCart.map(i => ({ 
+                        id: i.id, 
+                        sku: i.sku || "N/A", 
+                        name: i.name, 
+                        price: i.price, 
+                        originalPrice: i.originalPrice || i.price, 
+                        quantity: i.quantity || 1, 
+                        image: i.image 
+                    }))
+                };
+                
+                batch.set(newOrderRef, orderData);
+
+                validCart.forEach(item => {
+                    // FIX: Wrapped item.id in String()
+                    const productRef = db.collection("products").doc(String(item.id));
+                    batch.update(productRef, { stock: firebase.firestore.FieldValue.increment(-(item.quantity || 1)) });
+                });
+
+                const userRef = db.collection("users").doc(auth.currentUser.uid);
+                batch.update(userRef, { totalSpend: firebase.firestore.FieldValue.increment(total), lastOrderDate: new Date().toISOString() });
+
+                await batch.commit();
+
+                localStorage.removeItem('cart');
+                document.getElementById('success-modal').classList.remove('hidden');
+                btn.innerText = "Order Placed";
+                btn.classList.remove('bg-[#322C2B]');
+                btn.classList.add('bg-green-600');
+
+            } catch (err) {
+                console.error("Order Error:", err);
+                alert(err.message);
+                btn.disabled = false;
+                btn.innerText = "Confirm Order";
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account | Sterling You</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Montserrat', sans-serif; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .active-tab { background-color: #322C2B; color: white; }
+        .inactive-tab { background-color: white; color: #4B5563; }
+        .inactive-tab:hover { background-color: #F9FAFB; color: #B36A5E; }
+        .animate-bounce-in { animation: bounceIn 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
+        @keyframes bounceIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        /* Floating Label Style - Supports selects */
+        .floating-input:placeholder-shown + label, .floating-select:invalid + label { opacity: 0; transform: translateY(-10px); }
+        .floating-input:not(:placeholder-shown) + label, .floating-select:valid + label { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+    <header id="main-header" class="hidden bg-white border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+             <a href="index.html" class="flex items-center gap-2 group">
+                <img src="web-logo2.png" alt="Sterling" class="h-12 object-contain group-hover:opacity-80 transition">
+                </a>
+            <nav class="hidden md:flex gap-6 text-[11px] font-bold uppercase tracking-widest text-gray-600">
+                <a href="index.html" class="hover:text-[#B36A5E]">Home</a>
+                <a href="category.html" class="hover:text-[#B36A5E]">Shop</a>
+                <a href="javascript:void(0)" onclick="window.toggleCart ? toggleCart() : window.location.href='cart.html'" class="hover:text-[#B36A5E] flex items-center gap-1">
+                    Cart <span id="cart-count-badge" class="ml-1 bg-[#B36A5E] text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full">0</span>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <div id="auth-section" class="flex-grow flex items-center justify-center py-10 px-6"> 
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 w-full max-w-md">
+            
+            <div class="flex justify-center mb-6"> 
+                <img src="web-logo2.png" alt="Sterling You" class="h-24 object-contain">
+            </div>
+
+            <h2 id="auth-title" class="text-2xl font-bold text-[#322C2B] mb-2 text-center">Login</h2>
+            <p id="auth-subtitle" class="text-center text-xs text-gray-400 mb-6">Welcome back to Sterling</p>
+            
+            <form id="auth-form" class="space-y-4">
+                <div id="reg-fields" class="hidden">
+                    <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest">Full Name</label>
+                    <input type="text" id="user-name" class="w-full border-b py-2 outline-none focus:border-[#B36A5E] mb-2">
+                </div>
+                
+                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest">Phone Number (Email)</label>
+                <input type="tel" id="user-phone" required class="w-full border-b py-2 outline-none focus:border-[#B36A5E] mb-2">
+
+                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest">Password</label>
+                <input type="password" id="user-pass" required class="w-full border-b py-2 outline-none focus:border-[#B36A5E] mb-4">
+                
+                <p id="auth-error" class="hidden text-red-500 text-xs font-bold text-center"></p>
+
+                <button type="submit" id="auth-btn" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg">Login</button>
+                
+                <div class="mt-4 border-t pt-4">
+                    <button type="button" onclick="signInWithGoogle()" id="google-btn" class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 py-3 rounded-xl font-bold text-xs hover:bg-gray-50 transition relative">
+                        <img id="google-icon" src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" width="18" alt="Google Logo">
+                        <span id="google-text">Sign in with Google</span>
+                    </button>
+                </div>
+            </form>
+            
+            <p class="mt-6 text-center text-xs text-gray-500">
+                <span id="auth-toggle-text">New to Sterling?</span> 
+                <button onclick="toggleAuth()" class="text-[#B36A5E] font-bold ml-1 hover:underline">Create Account</button>
+            </p>
+        </div>
+    </div>
+
+    <div id="dashboard-section" class="hidden max-w-7xl mx-auto py-10 px-6 w-full flex-grow">
+        
+        <div class="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
+            <div>
+                <h1 class="text-2xl font-serif font-bold text-[#322C2B]">My Account</h1>
+                <p class="text-xs text-gray-500 mt-1">Welcome back, <span id="display-name" class="font-bold text-[#B36A5E]">User</span></p>
+            </div>
+            <div class="flex gap-2">
+                <a href="checkout.html" id="continue-checkout-btn" class="hidden text-[10px] font-bold uppercase tracking-widest text-white bg-[#B36A5E] px-4 py-2 rounded shadow-md hover:bg-[#8B4F46] transition">Continue to Checkout</a>
+                <button onclick="logout()" class="text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-600 border border-red-200 px-4 py-2 rounded hover:bg-red-50 transition">Log Out</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div class="md:col-span-1">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
+                    <nav class="flex flex-col text-[11px] font-bold uppercase tracking-widest">
+                        <button onclick="switchTab('profile')" id="btn-profile" class="active-tab text-left px-6 py-4 border-b border-gray-50 transition">Account Information</button>
+                        <button onclick="switchTab('orders')" id="btn-orders" class="inactive-tab text-left px-6 py-4 border-b border-gray-50 transition">My Orders</button>
+                        <button onclick="switchTab('addresses')" id="btn-addresses" class="inactive-tab text-left px-6 py-4 border-b border-gray-50 transition">Manage Addresses</button>
+                        <button onclick="switchTab('payments')" id="btn-payments" class="inactive-tab text-left px-6 py-4 border-b border-gray-50 transition">Payment Methods</button>
+                        <button onclick="switchTab('contact')" id="btn-contact" class="inactive-tab text-left px-6 py-4 transition">Contact Us</button>
+                    </nav>
+                </div>
+            </div>
+
+            <div class="md:col-span-3">
+                
+                <div id="tab-profile" class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-[#322C2B] mb-4 border-b pb-2">Personal Details</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Full Name</label>
+                                <div class="flex items-center justify-between border-b py-2"><span id="profile-name" class="text-sm font-medium">...</span><button onclick="editField('name')" class="text-[10px] text-[#B36A5E] font-bold uppercase hover:underline">Change</button></div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Date of Birth</label>
+                                <div class="flex items-center gap-2 border-b py-2">
+                                    <select id="dob-day" class="text-sm bg-transparent outline-none"><option value="">DD</option></select>
+                                    <select id="dob-month" class="text-sm bg-transparent outline-none"><option value="">MM</option></select>
+                                    <select id="dob-year" class="text-sm bg-transparent outline-none"><option value="">YYYY</option></select>
+                                    <button onclick="saveDOB()" class="ml-auto text-[10px] text-[#B36A5E] font-bold uppercase hover:underline">Save</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Gender</label>
+                                <div class="flex items-center justify-between border-b py-2">
+                                    <select id="profile-gender" class="text-sm bg-transparent outline-none w-full" onchange="saveGender(this.value)">
+                                        <option value="">Select Gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-[#322C2B] mb-4 border-b pb-2">Security</h3>
+                        <div class="space-y-4">
+                            <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Phone</label><div class="flex justify-between border-b py-2"><span id="profile-phone" class="text-sm">...</span><button onclick="editField('phone')" class="text-[#B36A5E] text-[10px] font-bold uppercase">Change</button></div></div>
+                             <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Email</label><div class="flex justify-between border-b py-2"><span id="profile-email" class="text-sm">...</span><button class="text-gray-300 text-[10px] font-bold uppercase cursor-not-allowed">Locked</button></div></div>
+                             <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Password</label><div class="flex justify-between border-b py-2"><span class="text-sm">••••••</span><button onclick="resetPassword()" class="text-[#B36A5E] text-[10px] font-bold uppercase">Reset</button></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-orders" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 text-[10px] font-bold uppercase text-gray-500 border-b">
+                                <tr><th class="p-4">ID</th><th>Date</th><th>Total</th><th>Status</th><th>Action</th></tr>
+                            </thead>
+                            <tbody id="order-history-list" class="text-xs"></tbody>
+                        </table>
+                        <div id="no-orders-msg" class="hidden p-10 text-center text-gray-400 italic">No orders found.</div>
+                    </div>
+                </div>
+
+                <div id="tab-addresses" class="hidden space-y-10">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold uppercase tracking-widest">Saved Addresses</h3>
+                        <button onclick="openAddressModal()" class="bg-[#322C2B] text-white px-4 py-2 rounded text-[10px] font-bold uppercase hover:bg-[#B36A5E] transition">+ Add New</button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b pb-1">Billing Addresses</p>
+                        <div id="billing-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b pb-1">Shipping Addresses</p>
+                        <div id="shipping-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </div>
+                </div>
+                
+                <div id="tab-payments" class="hidden space-y-6">
+                    <div class="flex justify-between items-center"><h3 class="text-sm font-bold uppercase tracking-widest text-[#322C2B]">Payment Methods</h3><button onclick="openCardModal()" class="text-[#B36A5E] text-[10px] font-bold uppercase hover:underline">+ Add Card</button></div>
+                    <div id="payment-list" class="space-y-3"></div>
+                    <div id="no-payment-msg" class="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-8 text-center hidden"><p class="text-xs text-gray-400">No saved cards.</p></div>
+                </div>
+
+                <div id="tab-contact" class="hidden bg-white p-6 rounded-xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-[#322C2B] mb-4">Send us a message</h3>
+                        <form id="contact-us-form" class="space-y-4">
+                            <select id="contact-order-id" class="w-full border-b py-2 text-sm outline-none bg-white"><option value="">Select Order (Optional)</option></select>
+                            <input type="text" id="contact-subject" placeholder="Subject" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E]" required>
+                            <textarea id="contact-message" placeholder="Message..." rows="4" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] resize-none" required></textarea>
+                            <button type="submit" class="bg-[#B36A5E] text-white w-full py-3 rounded text-[10px] font-bold uppercase shadow-lg">Send Message</button>
+                        </form>
+                    </div>
+                    <div class="space-y-6 md:pl-8 md:border-l border-gray-100">
+                        <div><p class="text-[10px] font-bold uppercase text-gray-400">Call</p><p class="text-sm font-medium mt-1">+880 1800 000 775</p></div>
+                        <div><p class="text-[10px] font-bold uppercase text-gray-400">Email</p><p class="text-sm font-medium mt-1">support@sterlingyou.com</p></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <footer id="main-footer" class="hidden bg-[#322C2B] text-white py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <p class="text-[10px] uppercase tracking-widest text-gray-400">© 2026 Sterling You. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <div id="cart-overlay" onclick="toggleCart()" class="fixed inset-0 bg-black/60 hidden z-[9999] backdrop-blur-sm"></div>
+    <div id="cart-drawer" class="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-[10000] transform translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h2 class="text-sm font-bold uppercase tracking-widest text-[#322C2B]">Your Bag</h2>
+            <button onclick="toggleCart()" class="text-gray-400 hover:text-red-500"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <div id="sidebar-cart-list" class="flex-1 overflow-y-auto p-6"></div>
+        <div class="p-6 border-t bg-gray-50">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-xs text-gray-500 font-bold uppercase">Total</span>
+                <span id="sidebar-total" class="text-xl font-bold text-[#322C2B]">৳0</span>
+            </div>
+            <a href="checkout.html" class="block w-full bg-[#322C2B] text-white text-center py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition">Checkout</a>
+        </div>
+    </div>
+
+    <div id="addressModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[200] p-4 backdrop-blur-sm flex">
+        <div class="bg-white w-full max-w-lg rounded-2xl p-8 max-h-[90vh] overflow-y-auto">
+            <h2 class="text-xl font-bold mb-6" id="addr-modal-title">Address Details</h2>
+            <form id="addressForm" class="space-y-5">
+                <input type="hidden" id="addr-edit-index" value="-1">
+                
+                <div class="mb-4">
+                    <select id="addr-type" class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#B36A5E]" required>
+                        <option value="" disabled selected>Select Address Type *</option>
+                        <option value="billing">Only Billing Address</option>
+                        <option value="shipping">Only Shipping Address</option>
+                        <option value="both">Shipping and Billing Address</option>
+                    </select>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col-reverse">
+                            <select id="addr-division" onchange="updateDistricts()" class="floating-select w-full border-b py-2 text-sm outline-none bg-transparent focus:border-[#B36A5E] transition-colors" required>
+                                <option value="" disabled selected hidden>Division</option>
+                            </select>
+                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Division</label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <select id="addr-district" onchange="updateThanas()" class="floating-select w-full border-b py-2 text-sm outline-none bg-transparent focus:border-[#B36A5E] transition-colors" required>
+                                <option value="" disabled selected hidden>District</option>
+                            </select>
+                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">District</label>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col-reverse col-span-2" id="thana-container">
+                            <select id="addr-thana" onchange="updateZones()" class="floating-select w-full border-b py-2 text-sm outline-none bg-transparent focus:border-[#B36A5E] transition-colors" required>
+                                <option value="" disabled selected hidden>Area / Thana</option>
+                            </select>
+                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Area / Thana</label>
+                        </div>
+                        <div class="flex flex-col-reverse hidden" id="zone-container">
+                            <select id="addr-zone" class="floating-select w-full border-b py-2 text-sm outline-none bg-transparent focus:border-[#B36A5E] transition-colors">
+                                <option value="" disabled selected hidden>Sub-Area / Zone</option>
+                            </select>
+                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Sub-Area / Zone</label>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col-reverse">
+                            <input type="text" id="addr-house" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="House No/Name" required>
+                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">House No/Name</label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" id="addr-floor" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Floor / Flat">
+                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Floor / Flat</label>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col-reverse">
+                            <input type="text" id="addr-road" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Road No/Name" required>
+                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Road No/Name</label>
+                        </div>
+                        <div class="flex flex-col-reverse">
+                            <input type="text" id="addr-block" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Block / Sector">
+                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Block / Sector</label>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col-reverse">
+                        <input type="text" id="addr-detailed" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Detailed Address (e.g., Flat 4B, Amin Court)" required>
+                        <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Detailed Address</label>
+                    </div>
+                    
+                    <div class="flex flex-col-reverse">
+                        <input type="text" id="addr-details" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Additional directions (Optional)">
+                        <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Additional directions</label>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 pt-4">
+                    <button type="button" onclick="closeAddressModal()" class="flex-1 text-xs font-bold uppercase text-gray-400 hover:text-gray-600">Cancel</button>
+                    <button type="submit" id="addr-submit-btn" class="flex-1 bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px] shadow-md hover:bg-[#B36A5E] transition">Save Address</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="cardModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[200] p-4 backdrop-blur-sm flex">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-8">
+            <h2 class="text-xl font-bold mb-4">Add Card</h2>
+            <form id="cardForm" class="space-y-4">
+                <input type="text" id="card-num" placeholder="Card Number" class="w-full border-b py-2 text-sm outline-none" required maxlength="19">
+                <div class="flex gap-4">
+                    <input type="text" id="card-expiry" placeholder="MM/YY" class="w-full border-b py-2 text-sm outline-none" required maxlength="5">
+                    <input type="text" id="card-cvc" placeholder="CVC" class="w-full border-b py-2 text-sm outline-none" required maxlength="3">
+                </div>
+                <div class="flex gap-4 pt-4"><button type="button" onclick="closeCardModal()" class="flex-1 text-xs font-bold uppercase text-gray-400">Cancel</button><button type="submit" class="flex-1 bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px]">Save Card</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="successModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[300] p-4 backdrop-blur-sm flex">
+        <div class="bg-white p-8 rounded-2xl text-center max-w-sm w-full animate-bounce-in">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">✨</div>
+            <h3 class="text-xl font-bold mb-2">Message Sent!</h3>
+            <p class="text-sm text-gray-500 mb-6">Thank you for your query. We will get back to you soon.</p>
+            <button onclick="document.getElementById('successModal').classList.add('hidden')" class="bg-[#322C2B] text-white px-6 py-2 rounded-lg font-bold uppercase text-xs">Close</button>
+        </div>
+    </div>
+
+    <div id="viewOrderModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[200] p-4 backdrop-blur-sm flex">
+        <div class="bg-white w-full max-w-2xl rounded-2xl p-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h2 class="text-xl font-bold font-serif text-[#322C2B]">Order Details</h2>
+                <button onclick="closeOrderModal()" class="text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
+            </div>
+            <div id="order-modal-content" class="space-y-4">
+                </div>
+        </div>
+    </div>
+    
+    <script src="cart.js"></script> 
+    
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        let isLogin = true; 
+        let currentUserData = null;
+        let globalOrders = []; 
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tab = urlParams.get('tab');
+            const from = urlParams.get('from');
+
+            if(tab === 'addresses') {
+                setTimeout(() => switchTab('addresses'), 100);
+            }
+            if(from === 'checkout') {
+                document.getElementById('continue-checkout-btn').classList.remove('hidden');
+            }
+        });
+
+        // AUTH
+        function toggleAuth() {
+            isLogin = !isLogin;
+            document.getElementById('auth-title').innerText = isLogin ? "Login" : "Create Account";
+            document.getElementById('auth-subtitle').innerText = isLogin ? "Welcome back to Sterling" : "Join us for exclusive access";
+            document.getElementById('reg-fields').style.display = isLogin ? 'none' : 'block';
+            document.getElementById('auth-toggle-text').innerText = isLogin ? "New to Sterling?" : "Already have an account?";
+            document.getElementById('auth-btn').innerText = isLogin ? "Login" : "Create Account";
+            document.getElementById('auth-error').classList.add('hidden');
+        }
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('dashboard-section').classList.remove('hidden');
+                document.getElementById('main-header').classList.remove('hidden');
+                document.getElementById('main-footer').classList.remove('hidden');
+                loadDashboard(user.uid);
+            } else {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('dashboard-section').classList.add('hidden');
+                document.getElementById('main-header').classList.add('hidden');
+                document.getElementById('main-footer').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('auth-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const phone = document.getElementById('user-phone').value;
+            const pass = document.getElementById('user-pass').value;
+            const name = document.getElementById('user-name').value;
+            const email = phone.includes('@') ? phone : phone + "@sterling.com"; 
+            const errorMsg = document.getElementById('auth-error');
+            errorMsg.classList.add('hidden');
+
+            try {
+                if (!isLogin) {
+                    const lookup = await db.collection("phone_lookups").doc(phone).get();
+                    if (lookup.exists) throw new Error("Account already exists. Please Login.");
+                    const userCred = await auth.createUserWithEmailAndPassword(email, pass);
+                    await db.collection("users").doc(userCred.user.uid).set({ fullName: name, phone: phone, email: email, crmTags: "Good", isBlocked: false, addresses: [], paymentMethods: [], totalSpend: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    if(!phone.includes('@')) await db.collection("phone_lookups").doc(phone).set({ uid: userCred.user.uid });
+                } else {
+                    await auth.signInWithEmailAndPassword(email, pass);
+                }
+            } catch (err) { 
+                errorMsg.innerText = err.message; errorMsg.classList.remove('hidden');
+            }
+        };
+
+        // DASHBOARD
+        async function loadDashboard(uid) {
+            const doc = await db.collection("users").doc(uid).get();
+            if(doc.exists) {
+                currentUserData = doc.data();
+                document.getElementById('display-name').innerText = currentUserData.fullName;
+                document.getElementById('profile-name').innerText = currentUserData.fullName;
+                document.getElementById('profile-phone').innerText = currentUserData.phone;
+                document.getElementById('profile-email').innerText = currentUserData.email;
+                document.getElementById('profile-gender').value = currentUserData.gender || "";
+
+                if(currentUserData.dob) {
+                    const parts = currentUserData.dob.split('-'); 
+                    document.getElementById('dob-year').value = parts[0]; document.getElementById('dob-month').value = parts[1]; document.getElementById('dob-day').value = parts[2];
+                }
+
+                loadUserOrders(uid);
+                renderAddresses();
+                renderPayments();
+                populateOrderDropdown(uid);
+            }
+        }
+        
+        function switchTab(t){ 
+            ['profile','orders','addresses','payments','contact'].forEach(x=>{document.getElementById('tab-'+x).classList.add('hidden'); document.getElementById('btn-'+x).className="inactive-tab text-left px-6 py-4 border-b border-gray-50 transition"});
+            document.getElementById('tab-'+t).classList.remove('hidden');
+            document.getElementById('btn-'+t).className="active-tab text-left px-6 py-4 border-b border-gray-50 transition";
+        }
+
+        async function saveGender(val) { await db.collection("users").doc(auth.currentUser.uid).update({ gender: val }); }
+        
+        const days = document.getElementById('dob-day'), months = document.getElementById('dob-month'), years = document.getElementById('dob-year');
+        for(let i=1;i<=31;i++) days.add(new Option(i<10?'0'+i:i, i<10?'0'+i:i));
+        for(let i=1;i<=12;i++) months.add(new Option(i<10?'0'+i:i, i<10?'0'+i:i));
+        for(let i=new Date().getFullYear();i>=1950;i--) years.add(new Option(i,i));
+        async function saveDOB() {
+            const dob = `${years.value}-${months.value}-${days.value}`;
+            await db.collection("users").doc(auth.currentUser.uid).update({ dob: dob });
+            alert("Date of Birth Saved");
+        }
+
+        // --- PAYMENTS ---
+        function renderPayments() {
+            const list = document.getElementById('payment-list');
+            const msg = document.getElementById('no-payment-msg');
+            const methods = currentUserData.paymentMethods || [];
+            if(methods.length === 0) { list.innerHTML = ''; msg.classList.remove('hidden'); return; }
+            msg.classList.add('hidden');
+            list.innerHTML = methods.map((c, i) => `
+                <div class="flex justify-between items-center p-4 bg-white border border-gray-100 rounded-xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-6 bg-gray-200 rounded"></div>
+                        <div><p class="text-xs font-bold">•••• •••• •••• ${c.last4}</p><p class="text-[10px] text-gray-400">Expires ${c.expiry}</p></div>
+                    </div>
+                    <button onclick="deleteCard(${i})" class="text-red-400 text-[10px] font-bold uppercase hover:text-red-600">Delete</button>
+                </div>
+            `).join('');
+        }
+        window.openCardModal = () => document.getElementById('cardModal').classList.remove('hidden');
+        window.closeCardModal = () => document.getElementById('cardModal').classList.add('hidden');
+        document.getElementById('cardForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const num = document.getElementById('card-num').value;
+            const newCard = { last4: num.slice(-4), expiry: document.getElementById('card-expiry').value };
+            await db.collection("users").doc(auth.currentUser.uid).update({ paymentMethods: firebase.firestore.FieldValue.arrayUnion(newCard) });
+            closeCardModal(); loadDashboard(auth.currentUser.uid);
+        };
+        async function deleteCard(i) {
+            if(confirm("Delete this card?")) {
+                const updated = currentUserData.paymentMethods.filter((_, idx) => idx !== i);
+                await db.collection("users").doc(auth.currentUser.uid).update({ paymentMethods: updated });
+                loadDashboard(auth.currentUser.uid);
+            }
+        }
+
+        // --- LOCATIONS & ADDRESSES ---
+        const locationData = {
+            "Dhaka": {
+                "Dhaka": {
+                    "Adabor": ["Adabor", "Baitul Aman Housing", "Mohammadia Housing", "Shyamoli Housing"],
+                    "Badda": ["North Badda", "Middle Badda", "South Badda", "Merul Badda", "East Badda", "Aftabnagar", "Banasree", "Shahjadpur", "Satarkul", "Adarshanagar", "Tekpara", "Rupnagar", "Sonakatra"],
+                    "Bangshal": ["Bangshal", "Alu Bazar", "Siddique Bazar", "Lalbagh Chourasta"],
+                    "Bhashantek": ["Bhashantek", "Dewanpara", "Vasantek Cantonment"],
+                    "Bimanbandar": ["Airport Area", "Hajj Camp", "Kawnia"],
+                    "Cantonment": ["Baridhara DOHS", "Cantonment Area", "Kurmitola", "Manikdi", "Matikata"],
+                    "Chak Bazar": ["Chalk Bazar", "Urdu Road", "Water Works Road"],
+                    "Dakshinkhan": ["Dakshinkhan", "Askona", "Azampur", "Chalaband", "Faidabad", "Gawair", "Kanchkura", "Mollartek"],
+                    "Darus Salam": ["Darus Salam", "Kallyanpur", "Gabtoli"],
+                    "Demra": ["Demra", "Amulia", "Bamoil", "Kholamora", "Matuail", "Mridha Bari", "Sarabalia"],
+                    "Dhanmondi": ["Dhanmondi 1-9", "Dhanmondi 10-15", "Dhanmondi 27", "Jigatola", "Shankar", "Sukrabad"],
+                    "Gendaria": ["Gendaria", "Dinnath Sen Road", "Sadhana Oushadhalaya", "Narinda"],
+                    "Gulshan": ["Gulshan 1", "Gulshan 2", "Niketan", "Baridhara Diplomatic Zone"],
+                    "Hatirjheel": ["Hatirjheel", "Mahanagar Project", "Modhubagh", "Ulon"],
+                    "Hazaribagh": ["Hazaribagh", "Enayetganj", "Gajmahal", "Shikdar Real Estate"],
+                    "Jatrabari": ["Jatrabari", "Dholairpar", "Danialpara", "Kutubkhali", "Rayerbagh", "Shanir Akhra"],
+                    "Kadamtali": ["Kadamtali", "Jurain", "Muradpur", "Shyampur", "Donia"],
+                    "Kafrul": ["Kafrul", "Ibrahimpur", "Kachukhet", "Senpara Parbata"],
+                    "Kalabagan": ["Kalabagan", "Bashiruddin Road", "Green Road", "Kathalbagan"],
+                    "Kamrangirchar": ["Kamrangirchar", "Ashrafabad", "Kholamora", "Nawabganj"],
+                    "Khilgaon": ["Khilgaon", "Gorane", "Nandipara", "Sipahibagh", "Taltola"],
+                    "Khilkhet": ["Khilkhet", "Dumni", "Kuril", "Lake City Concord", "Nikunja 1", "Nikunja 2", "Pink City"],
+                    "Kotwali": ["Kotwali", "Babubazar", "Nawabpur", "Patuatuli", "Sadarghat"],
+                    "Lalbagh": ["Lalbagh", "Azimpur", "Dhakeshwari", "Pilkhana"],
+                    "Mirpur": ["Mirpur 1", "Mirpur 2", "Mirpur 10", "Mirpur 11", "Mirpur 12", "Mirpur 14", "Kazipara", "Shewrapara", "Monipur", "Pirerbagh"],
+                    "Mohammadpur": ["Mohammadpur", "Asad Gate", "Babar Road", "Bosila", "Lalmatia", "PC Culture Housing", "Tajmahal Road", "Town Hall"],
+                    "Motijheel": ["Motijheel", "Arambagh", "Dilkusha", "Fakirapool", "Kamalapur", "Toyenbee Circular Road"],
+                    "New Market": ["New Market", "Azimpur", "Elephant Road", "Science Lab"],
+                    "Pallabi": ["Pallabi", "Eastern Housing", "Mirpur 12", "Rupnagar"],
+                    "Paltan": ["Purana Paltan", "Naya Paltan", "Bijoy Nagar", "Kakrail"],
+                    "Ramna": ["Ramna", "Baily Road", "Eskaton", "Moghbazar", "Shantinagar", "Siddheswari"],
+                    "Rampura": ["Rampura", "Banasree", "TV Center", "Ulon", "Wapda Road"],
+                    "Sabujbagh": ["Sabujbagh", "Basabo", "Madartek", "Mugdapara"],
+                    "Shah Ali": ["Shah Ali Bagh", "Bissho Road", "Gudaraghat"],
+                    "Shahbag": ["Shahbag", "Dhaka University Area", "High Court", "Paribagh"],
+                    "Sher-e-Bangla Nagar": ["Sher-e-Bangla Nagar", "Agargaon", "Taltola"],
+                    "Shyampur": ["Shyampur", "Dholaipar", "Igloo Ice Cream Factory Area"],
+                    "Sutrapur": ["Sutrapur", "Faridabad", "Laxmibazar", "Rishikesh Das Road"],
+                    "Tejgaon": ["Tejgaon", "Farmgate", "Karwan Bazar", "Nakhalpara", "Tejturibazar"],
+                    "Tejgaon Ind. Area": ["Tejgaon Industrial Area", "Begunbari", "Kunipara", "Love Road", "Nabisco"],
+                    "Turag": ["Turag", "Baunia", "Diabari", "Kamarpara"],
+                    "Uttara East": ["Sector 1", "Sector 2", "Sector 3", "Sector 4", "Sector 6", "Sector 8"],
+                    "Uttara West": ["Sector 5", "Sector 7", "Sector 9", "Sector 10", "Sector 11", "Sector 12", "Sector 13", "Sector 14"],
+                    "Uttarkhan": ["Uttarkhan", "Atipara", "Chamurkhan", "Kachkura", "Maziara", "Uzampur"],
+                    "Vatara": ["Vatara", "Bashundhara R/A", "Beraid", "Kuril", "Nurer Chala", "Solmaid"],
+                    "Wari": ["Wari", "Baldha Garden", "Gopibagh", "Joy Kali Temple Road", "Rankin Street", "Tikhatuli"],
+                    "Dhamrai": ["Dhamrai"],
+                    "Dohar": ["Dohar"],
+                    "Keraniganj": ["Keraniganj", "Aganagar", "Ati Bazar", "Chunakhali", "Jinjira", "Kalindi", "Ruhitpur", "Taranagar"],
+                    "Nawabganj": ["Nawabganj"],
+                    "Savar": ["Savar", "Aminbazar", "Ashulia", "Bank Town", "Bipail", "Hemayetpur", "Jahangirnagar University", "Nabinagar"]
+                },
+                "Faridpur": ["Alfadanga", "Bhanga", "Boalmari", "Charbhadrasan", "Faridpur Sadar", "Madhukhali", "Nagarkanda", "Sadarpur", "Saltha"],
+                "Gazipur": {
+                    "Gazipur Sadar": ["Board Bazar", "Chandana Chowrasta", "Gazipur City", "Joydebpur", "Kashimpur", "Konabari", "Salna", "Shibbari"],
+                    "Tongi": ["Tongi Bazar", "Aushpara", "Cherag Ali", "Ershad Nagar", "Hossain Market", "Morkun", "Station Road"],
+                    "Kaliakair": ["Kaliakair", "Chandra", "Mouchak", "Shafipur"],
+                    "Kaliganj": ["Kaliganj"],
+                    "Kapasia": ["Kapasia"],
+                    "Sreepur": ["Sreepur", "Bhaluka", "Maona"]
+                },
+                "Gopalganj": ["Gopalganj Sadar", "Kashiani", "Kotalipara", "Muksudpur", "Tungipara"],
+                "Kishoreganj": ["Austagram", "Bajitpur", "Bhairab", "Hossainpur", "Itna", "Karimganj", "Katiadi", "Kishoreganj Sadar", "Kuliarchar", "Mithamain", "Nikli", "Pakundia", "Tarail"],
+                "Madaripur": ["Kalkini", "Madaripur Sadar", "Rajoir", "Shibchar"],
+                "Manikganj": ["Daulatpur", "Ghior", "Harirampur", "Manikganj Sadar", "Saturia", "Shivalaya", "Singair"],
+                "Munshiganj": ["Gazaria", "Lohajang", "Munshiganj Sadar", "Sirajdikhan", "Sreenagar", "Tongibari"],
+                "Narayanganj": {
+                    "Narayanganj Sadar": ["Chashara", "Deobhog", "Golgachia", "Mandalpara", "Nitaiganj", "Tanbazar"],
+                    "Fatullah": ["Fatullah", "Bhuigar", "Enayetnagar", "Pagla", "Panchabati", "Shibu Market"],
+                    "Siddhirganj": ["Siddhirganj", "Adamjee", "Baghpara", "Kanchpur", "Mouchak", "Signboard", "Sanarpar"],
+                    "Araihazar": ["Araihazar"],
+                    "Bandar": ["Bandar", "Madanpur", "Nabiganj"],
+                    "Rupganj": ["Rupganj", "Bhulta", "Kanchan", "Murapara", "Tarabo"],
+                    "Sonargaon": ["Sonargaon", "Kanchpur", "Mograpara"]
+                },
+                "Narsingdi": ["Belabo", "Monohardi", "Narsingdi Sadar", "Palash", "Raipura", "Shibpur"],
+                "Rajbari": ["Baliakandi", "Goalandaghat", "Kalukhali", "Pangsha", "Rajbari Sadar"],
+                "Shariatpur": ["Bhedarganj", "Damudya", "Gosairhat", "Naria", "Shariatpur Sadar", "Zajira"],
+                "Tangail": ["Basail", "Bhuapur", "Delduar", "Dhanbari", "Ghatail", "Gopalpur", "Kalihati", "Madhupur", "Mirzapur", "Nagarpur", "Sakhipur", "Tangail Sadar"]
+            },
+            "Chattogram": {
+                "Bandarban": ["Alikadam", "Bandarban Sadar", "Lama", "Naikhongchhari", "Rowangchhari", "Ruma", "Thanchi"],
+                "Brahmanbaria": ["Akhaura", "Ashuganj", "Bancharampur", "Bijoynagar", "Brahmanbaria Sadar", "Kasba", "Nabinagar", "Nasirnagar", "Sarail"],
+                "Chandpur": ["Chandpur Sadar", "Faridganj", "Haimchar", "Haziganj", "Kachua", "Matlab Dakshin", "Matlab Uttar", "Shahrasti"],
+                "Chattogram": {
+                    "Anwara": ["Anwara"],
+                    "Banshkhali": ["Banshkhali"],
+                    "Boalkhali": ["Boalkhali"],
+                    "Chandanaish": ["Chandanaish"],
+                    "Fatikchhari": ["Fatikchhari"],
+                    "Hathazari": ["Hathazari", "Aman Bazar", "Fatehabad"],
+                    "Karnaphuli": ["Karnaphuli"],
+                    "Lohagara": ["Lohagara"],
+                    "Mirsharai": ["Mirsharai"],
+                    "Patiya": ["Patiya"],
+                    "Rangunia": ["Rangunia"],
+                    "Raozan": ["Raozan"],
+                    "Sandwip": ["Sandwip"],
+                    "Satkania": ["Satkania"],
+                    "Sitakunda": ["Sitakunda", "Bhatiari", "Faujdarhat"],
+                    "Akbar Shah": ["Akbar Shah", "Firoz Shah Colony", "Biswa Colony"],
+                    "Bakalia": ["Bakalia", "Chaktai", "Kalamia Bazar", "Rahattar Pool"],
+                    "Bandar": ["Bandar", "Gosaildanga", "Nimtala"],
+                    "Bayazid": ["Bayazid Bostami", "Oxygen", "Sher Shah Colony"],
+                    "Chandgaon": ["Chandgaon", "Bahaddarhat", "Kalurghat", "Mohra"],
+                    "Chawkbazar": ["Chawkbazar", "Jamal Khan", "Kapasgola", "Katalganj"],
+                    "Double Mooring": ["Double Mooring", "Agrabad", "Choumuhani", "Dewanhat", "Munsurabad"],
+                    "EPZ": ["EPZ", "Cement Crossing", "Free Port"],
+                    "Halishahar": ["Halishahar", "Boroipara", "Naya Bazar", "Shantibag"],
+                    "Khulshi": ["Khulshi", "GEC", "Jhautala", "Lalkhan Bazar", "Nasirabad", "Zakir Hossain Road"],
+                    "Kotwali": ["Kotwali", "Anderkilla", "Khatunganj", "New Market", "Reazuddin Bazar", "Station Road"],
+                    "Pahartali": ["Pahartali", "AK Khan", "Alangkar", "Colonel Hat"],
+                    "Panchlaish": ["Panchlaish", "2 No Gate", "Muradpur", "Sholashahar"],
+                    "Patenga": ["Patenga", "Kathgar", "Potenga Sea Beach Area", "Steel Mill"],
+                    "Sadarghat": ["Sadarghat", "Majhirghat"]
+                },
+                "Cox's Bazar": ["Chakaria", "Cox's Bazar Sadar", "Kutubdia", "Maheshkhali", "Pekua", "Ramu", "Teknaf", "Ukhia"],
+                "Cumilla": ["Barura", "Brahmanpara", "Burichang", "Chandina", "Chauddagram", "Cumilla Sadar", "Daudkandi", "Debidwar", "Homna", "Laksam", "Lalmai", "Manoharganj", "Meghna", "Muradnagar", "Nangalkot", "Titas"],
+                "Feni": ["Chhagalnaiya", "Daganbhuiyan", "Feni Sadar", "Fulgazi", "Parshuram", "Sonagazi"],
+                "Khagrachhari": ["Dighinala", "Khagrachhari Sadar", "Lakshmichhari", "Mahalchhari", "Manikchhari", "Matiranga", "Panchhari", "Ramgarh"],
+                "Lakshmipur": ["Kamalnagar", "Lakshmipur Sadar", "Raipur", "Ramganj", "Ramgati"],
+                "Noakhali": ["Begumganj", "Chatkhil", "Companiganj", "Hatiya", "Kabirhat", "Noakhali Sadar", "Senbagh", "Sonaimuri", "Subarnachar"],
+                "Rangamati": ["Baghaichhari", "Barkal", "Belaichhari", "Juraichhari", "Kaptai", "Kawkhali", "Langadu", "Naniarchar", "Rajasthali", "Rangamati Sadar"]
+            },
+            "Sylhet": {
+                "Habiganj": ["Ajmiriganj", "Bahubal", "Baniachong", "Chunarughat", "Habiganj Sadar", "Lakhai", "Madhabpur", "Nabiganj"],
+                "Moulvibazar": ["Barlekha", "Juri", "Kamalganj", "Kulaura", "Moulvibazar Sadar", "Rajnagar", "Sreemangal"],
+                "Sunamganj": ["Bishwamvarpur", "Chhatak", "Dakshin Sunamganj", "Derai", "Dharmapasha", "Dowarabazar", "Jagannathpur", "Jamalganj", "Sullah", "Sunamganj Sadar", "Tahirpur"],
+                "Sylhet": {
+                    "Balaganj": ["Balaganj"],
+                    "Beanibazar": ["Beanibazar"],
+                    "Bishwanath": ["Bishwanath"],
+                    "Companiganj": ["Companiganj"],
+                    "Dakshin Surma": ["Dakshin Surma", "Chandipool", "Humayun Rashid Chottor", "Kadamtali", "Khadim Nagar"],
+                    "Fenchuganj": ["Fenchuganj"],
+                    "Golapganj": ["Golapganj"],
+                    "Gowainghat": ["Gowainghat"],
+                    "Jaintiapur": ["Jaintiapur"],
+                    "Kanaighat": ["Kanaighat"],
+                    "Osmani Nagar": ["Osmani Nagar"],
+                    "Sylhet Sadar": ["Sylhet Sadar", "Akhalia", "Amberkhana", "Bandar Bazar", "Chouhatta", "Dargah Mahalla", "Lamabazar", "Mirboxtola", "Pathantula", "Shibganj", "Subidbazar", "Tilagarh", "Uposhohor", "Zindabazar"],
+                    "Zakiganj": ["Zakiganj"]
+                }
+            },
+            "Khulna": {
+                "Bagerhat": ["Bagerhat Sadar", "Chitalmari", "Fakirhat", "Kachua", "Mollahat", "Mongla", "Morrelganj", "Rampal", "Sarankhola"],
+                "Chuadanga": ["Alamdanga", "Chuadanga Sadar", "Damurhuda", "Jibannagar"],
+                "Jashore": ["Abhaynagar", "Bagherpara", "Chaugachha", "Jashore Sadar", "Jhikargachha", "Keshabpur", "Manirampur", "Sharsha"],
+                "Jhenaidah": ["Harinakunda", "Jhenaidah Sadar", "Kaliganj", "Kotchandpur", "Maheshpur", "Shailkupa"],
+                "Khulna": ["Batiaghata", "Dacope", "Dumuria", "Dighalia", "Koyra", "Paikgacha", "Phultala", "Rupsa", "Terokhada", "Khulna Sadar", "Sonadanga"],
+                "Kushtia": ["Bheramara", "Daulatpur", "Khoksa", "Kumarkhali", "Kushtia Sadar", "Mirpur"],
+                "Magura": ["Magura Sadar", "Mohammadpur", "Shalikha", "Sreepur"],
+                "Meherpur": ["Gangni", "Meherpur Sadar", "Mujibnagar"],
+                "Narail": ["Kalia", "Lohagara", "Narail Sadar"],
+                "Satkhira": ["Assasuni", "Debhata", "Kalaroa", "Kaliganj", "Satkhira Sadar", "Shyamnagar", "Tala"]
+            },
+            "Barishal": {
+                "Barguna": ["Amtali", "Bamna", "Barguna Sadar", "Betagi", "Patharghata", "Taltali"],
+                "Barishal": ["Agailjhara", "Babuganj", "Bakerganj", "Banaripara", "Barishal Sadar", "Gournadi", "Hizla", "Mehendiganj", "Muladi", "Wazirpur"],
+                "Bhola": ["Bhola Sadar", "Burhanuddin", "Char Fasson", "Daulatkhan", "Lalmohan", "Manpura", "Tazumuddin"],
+                "Jhalokati": ["Jhalokati Sadar", "Kathalia", "Nalchity", "Rajapur"],
+                "Patuakhali": ["Bauphal", "Dashmina", "Dumki", "Galachipa", "Kalapara", "Mirzaganj", "Patuakhali Sadar", "Rangabali"],
+                "Pirojpur": ["Bhandaria", "Kawkhali", "Mathbaria", "Nazirpur", "Nesarabad", "Pirojpur Sadar", "Zianagar"]
+            },
+            "Rangpur": {
+                "Dinajpur": ["Birampur", "Birganj", "Biral", "Bochaganj", "Chirirbandar", "Dinajpur Sadar", "Fulbari", "Ghoraghat", "Hakimpur", "Kaharole", "Khansama", "Nawabganj", "Parbatipur"],
+                "Gaibandha": ["Fulchhari", "Gaibandha Sadar", "Gobindaganj", "Palashbari", "Sadullapur", "Saghata", "Sundarganj"],
+                "Kurigram": ["Bhurungamari", "Char Rajibpur", "Chilmari", "Kurigram Sadar", "Nageshwari", "Phulbari", "Rajarhat", "Raomari", "Ulipur"],
+                "Lalmonirhat": ["Aditmari", "Hatibandha", "Kaliganj", "Lalmonirhat Sadar", "Patgram"],
+                "Nilphamari": ["Dimla", "Domar", "Jaldhaka", "Kishoreganj", "Nilphamari Sadar", "Saidpur"],
+                "Panchagarh": ["Atwari", "Boda", "Debiganj", "Panchagarh Sadar", "Tetulia"],
+                "Rangpur": ["Badarganj", "Gangachara", "Kaunia", "Mithapukur", "Pirgachha", "Pirganj", "Rangpur Sadar", "Taraganj"],
+                "Thakurgaon": ["Baliadangi", "Haripur", "Pirganj", "Ranisankail", "Thakurgaon Sadar"]
+            },
+            "Mymensingh": {
+                "Jamalpur": ["Bakshiganj", "Dewanganj", "Islampur", "Jamalpur Sadar", "Madarganj", "Melandaha", "Sarishabari"],
+                "Mymensingh": ["Bhaluka", "Dhobaura", "Fulbaria", "Gaffargaon", "Gauripur", "Haluaghat", "Ishwarganj", "Muktagacha", "Mymensingh Sadar", "Nandail", "Phulpur", "Trishal"],
+                "Netrokona": ["Atpara", "Barhatta", "Durgapur", "Khaliajuri", "Kalmakanda", "Kendua", "Madan", "Mohanganj", "Netrokona Sadar", "Purbadhala"],
+                "Sherpur": ["Jhenaigati", "Nakla", "Nalitabari", "Sherpur Sadar", "Sreebardi"]
+            },
+            "Rajshahi": {
+                "Bogura": ["Adamdighi", "Bogura Sadar", "Dhunat", "Dhupchanchia", "Gabtali", "Kahaloo", "Nandigram", "Sariakandi", "Shajahanpur", "Sherpur", "Shibganj", "Sonatola"],
+                "Joypurhat": ["Akkelpur", "Joypurhat Sadar", "Kalai", "Khetlal", "Panchbibi"],
+                "Naogaon": ["Atrai", "Badalgachhi", "Dhamoirhat", "Manda", "Mohadevpur", "Naogaon Sadar", "Niamatpur", "Patnitala", "Porsha", "Raninagar", "Sapahar"],
+                "Natore": ["Bagatipara", "Baraigram", "Gurudaspur", "Lalpur", "Naldanga", "Natore Sadar", "Singra"],
+                "Chapainawabganj": ["Bholahat", "Gomastapur", "Nachole", "Nawabganj Sadar", "Shibganj"],
+                "Pabna": ["Atgharia", "Bera", "Bhangura", "Chatmohar", "Faridpur", "Ishwardi", "Pabna Sadar", "Santhia", "Sujanagar"],
+                "Rajshahi": ["Bagha", "Bagmara", "Boalia", "Charghat", "Durgapur", "Godagari", "Mohanpur", "Paba", "Puthia", "Rajpara", "Shah Makhdum", "Tanore"],
+                "Sirajganj": ["Belkuchi", "Chauhali", "Kamarkhanda", "Kazipur", "Raiganj", "Shahjadpur", "Sirajganj Sadar", "Tarash", "Ullahpara"]
+            }
+        };
+
+        const divSel = document.getElementById('addr-division');
+        const distSel = document.getElementById('addr-district');
+        const thanaSel = document.getElementById('addr-thana');
+        const zoneSel = document.getElementById('addr-zone');
+        const thanaContainer = document.getElementById('thana-container');
+        const zoneContainer = document.getElementById('zone-container');
+
+        if (divSel) Object.keys(locationData).sort().forEach(d => divSel.add(new Option(d,d)));
+
+        // POPULATE DROPDOWNS
+        window.updateDistricts = () => {
+            if (!distSel || !thanaSel) return;
+            distSel.innerHTML = '<option value="" disabled selected hidden>District</option>'; 
+            thanaSel.innerHTML = '<option value="" disabled selected hidden>Area / Thana</option>';
+            if (zoneSel) zoneSel.innerHTML = '<option value="" disabled selected hidden>Sub-Area / Zone</option>';
+            
+            if (zoneContainer) {
+                zoneContainer.classList.add('hidden');
+                thanaContainer.classList.add('col-span-2');
+                zoneSel.required = false;
+            }
+
+            const d = divSel.value;
+            if(d && locationData[d]) Object.keys(locationData[d]).sort().forEach(k => distSel.add(new Option(k,k)));
+        };
+
+        window.updateThanas = () => {
+            if (!thanaSel) return;
+            thanaSel.innerHTML = '<option value="" disabled selected hidden>Area / Thana</option>';
+            if (zoneSel) zoneSel.innerHTML = '<option value="" disabled selected hidden>Sub-Area / Zone</option>';
+            
+            if (zoneContainer) {
+                zoneContainer.classList.add('hidden');
+                thanaContainer.classList.add('col-span-2');
+                zoneSel.required = false;
+            }
+
+            const d = divSel.value, k = distSel.value;
+            if(d && k && locationData[d][k]) {
+                if (Array.isArray(locationData[d][k])) {
+                    // Rural / Non-Metro Data Structure
+                    locationData[d][k].sort().forEach(t => thanaSel.add(new Option(t,t)));
+                } else {
+                    // Metro Data Structure
+                    Object.keys(locationData[d][k]).sort().forEach(t => thanaSel.add(new Option(t,t)));
+                }
+            }
+        };
+
+        window.updateZones = () => {
+            if (!zoneSel || !thanaSel) return;
+            zoneSel.innerHTML = '<option value="" disabled selected hidden>Sub-Area / Zone</option>';
+            
+            const d = divSel.value, k = distSel.value, t = thanaSel.value;
+            if(d && k && t && locationData[d][k] && !Array.isArray(locationData[d][k])) {
+                const zones = locationData[d][k][t];
+                if (zones && zones.length > 1) { // Only show if real zones exist
+                    zoneContainer.classList.remove('hidden');
+                    thanaContainer.classList.remove('col-span-2');
+                    zoneSel.required = true;
+                    zones.sort().forEach(z => zoneSel.add(new Option(z,z)));
+                } else {
+                    zoneContainer.classList.add('hidden');
+                    thanaContainer.classList.add('col-span-2');
+                    zoneSel.required = false;
+                }
+            } else {
+                zoneContainer.classList.add('hidden');
+                thanaContainer.classList.add('col-span-2');
+                zoneSel.required = false;
+            }
+        };
+
+        window.openAddressModal = () => {
+            document.getElementById('addressModal').classList.remove('hidden');
+            document.getElementById('addressForm').reset();
+            document.getElementById('addr-edit-index').value = "-1";
+            
+            const title = document.getElementById('addr-modal-title');
+            if(title) title.innerText = "New Address";
+            
+            const btn = document.getElementById('addr-submit-btn');
+            if(btn) btn.innerText = "Save Address";
+            
+            // Reset dropdowns
+            document.getElementById('addr-type').value = "";
+            if (zoneContainer) {
+                zoneContainer.classList.add('hidden');
+                thanaContainer.classList.add('col-span-2');
+            }
+        };
+
+        window.closeAddressModal = () => document.getElementById('addressModal').classList.add('hidden');
+
+        window.editAddress = (index) => {
+            const addr = currentUserData.addresses[index];
+            if (!addr) return;
+            
+            openAddressModal();
+            const title = document.getElementById('addr-modal-title');
+            if(title) title.innerText = "Edit Address";
+            const btn = document.getElementById('addr-submit-btn');
+            if(btn) btn.innerText = "Update Address";
+            
+            document.getElementById('addr-edit-index').value = index;
+            
+            // Set dropdown value dynamically based on tag
+            const typeSel = document.getElementById('addr-type');
+            if (addr.tag === 'Billing Address') { typeSel.value = 'billing'; }
+            else if (addr.tag === 'Shipping Address') { typeSel.value = 'shipping'; }
+
+            if(document.getElementById('addr-division')) document.getElementById('addr-division').value = addr.division;
+            updateDistricts();
+            
+            if(document.getElementById('addr-district')) document.getElementById('addr-district').value = addr.district;
+            updateThanas();
+            
+            if(document.getElementById('addr-thana')) document.getElementById('addr-thana').value = addr.thana;
+            updateZones();
+            
+            // Hydrate the new Zone variable safely
+            if(document.getElementById('addr-zone') && addr.subArea) {
+                 document.getElementById('addr-zone').value = addr.subArea;
+            }
+            
+            // Extract details safely
+            if(document.getElementById('addr-house')) document.getElementById('addr-house').value = addr.house || '';
+            if(document.getElementById('addr-floor')) document.getElementById('addr-floor').value = addr.floor || '';
+            if(document.getElementById('addr-road')) document.getElementById('addr-road').value = addr.road || '';
+            if(document.getElementById('addr-block')) document.getElementById('addr-block').value = addr.block || '';
+            if(document.getElementById('addr-detailed')) document.getElementById('addr-detailed').value = addr.detailed || '';
+            
+            const detailField = document.getElementById('addr-details');
+            if(detailField) detailField.value = addr.detail || '';
+        };
+
+        // Custom Delivery Zone Logic Based on Selected Location
+        const getDeliveryZone = (district, area) => {
+            if (district === 'Gazipur' || district === 'Narayanganj' || area === 'Keraniganj' || area === 'Savar') {
+                return 'Dhaka Suburb';
+            }
+            if (district === 'Dhaka') {
+                return 'Inside Dhaka';
+            }
+            return 'Outside Dhaka';
+        };
+
+        document.getElementById('addressForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const idx = parseInt(document.getElementById('addr-edit-index').value);
+            let updatedList = currentUserData.addresses ? [...currentUserData.addresses] : [];
+            
+            const addrType = document.getElementById('addr-type').value;
+            if (!addrType) {
+                alert("Please select an Address Type.");
+                return;
+            }
+
+            // Gather values safely
+            const div = document.getElementById('addr-division').value;
+            const dist = document.getElementById('addr-district').value;
+            const thana = document.getElementById('addr-thana').value;
+            const subArea = document.getElementById('addr-zone') && !zoneContainer.classList.contains('hidden') ? document.getElementById('addr-zone').value : '';
+            
+            const house = document.getElementById('addr-house') ? document.getElementById('addr-house').value.trim() : '';
+            const floor = document.getElementById('addr-floor') ? document.getElementById('addr-floor').value.trim() : '';
+            const road = document.getElementById('addr-road') ? document.getElementById('addr-road').value.trim() : '';
+            const block = document.getElementById('addr-block') ? document.getElementById('addr-block').value.trim() : '';
+            const detailed = document.getElementById('addr-detailed') ? document.getElementById('addr-detailed').value.trim() : '';
+            const extra = document.getElementById('addr-details') ? document.getElementById('addr-details').value.trim() : '';
+
+            // Apply Delivery Zone Logic
+            const deliveryZone = getDeliveryZone(dist, thana);
+
+            // Super robust Full Display combination including the new Zone Area
+            const parts = [];
+            if(detailed) parts.push(detailed);
+            if(house) parts.push(`House: ${house}`);
+            if(floor) parts.push(`Floor/Flat: ${floor}`);
+            if(road) parts.push(`Road: ${road}`);
+            if(block) parts.push(`Block/Sector: ${block}`);
+            if(subArea) parts.push(subArea);
+            if(thana) parts.push(thana);
+            if(dist) parts.push(dist);
+            if(extra) parts.push(`(Directions: ${extra})`);
+            
+            const fullDisplay = parts.join(', ');
+
+            // Create Base Address Object
+            const baseAddr = {
+                id: idx > -1 ? updatedList[idx].id : Date.now().toString(),
+                division: div, district: dist, thana: thana, subArea: subArea, zone: deliveryZone, 
+                tag: addrType === 'shipping' ? 'Shipping Address' : 'Billing Address', 
+                house: house, floor: floor, road: road, block: block, detailed: detailed, detail: extra,
+                fullDisplay: fullDisplay
+            };
+
+            // Remove old entry if editing
+            if (idx > -1) {
+                updatedList.splice(idx, 1);
+            }
+
+            const resetDefaults = (list, tag) => {
+                return list.map(a => { if(a.tag === tag) a.isDefault = false; return a; });
+            };
+
+            if (addrType === 'shipping' || addrType === 'both') {
+                updatedList = resetDefaults(updatedList, 'Shipping Address');
+                updatedList.push({ ...baseAddr, id: Date.now().toString() + 'S', tag: 'Shipping Address', isDefault: true });
+            } 
+            if (addrType === 'billing' || addrType === 'both') {
+                updatedList = resetDefaults(updatedList, 'Billing Address');
+                updatedList.push({ ...baseAddr, id: Date.now().toString() + 'B', tag: 'Billing Address', isDefault: true });
+            }
+
+            await db.collection("users").doc(auth.currentUser.uid).update({ addresses: updatedList });
+            closeAddressModal();
+            loadDashboard(auth.currentUser.uid);
+        };
+
+        // --- SAFE RENDERING FOR ADDRESSES ---
+        function renderAddresses() {
+            const addrs = currentUserData.addresses || [];
+            
+            const createCard = (a, i) => `
+                <div class="bg-white p-5 rounded-xl border ${a.isDefault || (i===0 && !a.isDefault && a.tag !== 'Shipping Address') ? 'border-[#B36A5E] ring-1 ring-[#B36A5E]' : 'border-gray-100'} group relative transition hover:shadow-md">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[9px] font-bold bg-gray-100 px-2 py-1 rounded uppercase">${a.tag}</span>
+                        ${a.isDefault || (i===0 && !a.isDefault && a.tag !== 'Shipping Address') ? '<span class="text-[9px] font-bold text-[#B36A5E] uppercase">Default</span>' : ''}
+                    </div>
+                    <p class="text-sm font-bold text-[#322C2B] leading-relaxed">${a.fullDisplay || a.detail}</p>
+                    ${a.zone ? `<p class="mt-2 text-[10px] font-bold tracking-widest uppercase text-gray-500">Zone: <span class="text-[#B36A5E]">${a.zone}</span></p>` : ''}
+                    <div class="mt-4 pt-3 border-t flex gap-3 opacity-0 group-hover:opacity-100 transition">
+                        ${a.tag === 'Billing Address' || a.tag === 'Shipping Address' ? `<button onclick="setDefault(${i})" class="text-[10px] font-bold uppercase text-green-600 hover:underline">Default</button>` : ''}
+                        <button onclick="editAddress(${i})" class="text-[10px] font-bold uppercase text-blue-500 hover:underline">Edit</button>
+                        <button onclick="deleteAddress(${i})" class="text-[10px] font-bold uppercase text-red-400 hover:underline">Delete</button>
+                    </div>
+                </div>`;
+
+            const bGrid = document.getElementById('billing-grid');
+            const sGrid = document.getElementById('shipping-grid');
+
+            if (bGrid && sGrid) {
+                bGrid.innerHTML = addrs.filter(a => a.tag === 'Billing Address').map(a => createCard(a, addrs.indexOf(a))).join('');
+                sGrid.innerHTML = addrs.filter(a => a.tag === 'Shipping Address').map(a => createCard(a, addrs.indexOf(a))).join('');
+            } 
+        }
+
+        window.setDefault = async (index) => {
+            if(!currentUserData.addresses || !currentUserData.addresses[index]) return;
+            const type = currentUserData.addresses[index].tag;
+            const updated = currentUserData.addresses.map((a, i) => {
+                if (a.tag === type) { a.isDefault = (i === index); }
+                return a;
+            });
+            await db.collection("users").doc(auth.currentUser.uid).update({ addresses: updated });
+            loadDashboard(auth.currentUser.uid);
+        };
+        
+        async function deleteAddress(i) {
+            if(confirm("Delete this address?")) {
+                const updated = currentUserData.addresses.filter((_, idx) => idx !== i);
+                await db.collection("users").doc(auth.currentUser.uid).update({ addresses: updated });
+                loadDashboard(auth.currentUser.uid);
+            }
+        }
+
+        // --- CONTACT US & ORDERS ---
+        async function populateOrderDropdown(uid) {
+            const snap = await db.collection("orders").where("userId", "==", uid).orderBy("orderDate", "desc").get();
+            const sel = document.getElementById('contact-order-id');
+            sel.innerHTML = '<option value="">Select Order (Optional)</option>';
+            snap.forEach(doc => sel.add(new Option(`#${doc.data().orderId} - ${doc.data().status}`, doc.data().orderId)));
+        }
+        
+        document.getElementById('contact-us-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button'); btn.disabled = true; btn.innerText = "Sending...";
+            await db.collection("customer_queries").add({
+                userId: auth.currentUser.uid, userName: currentUserData.fullName, userPhone: currentUserData.phone,
+                orderId: document.getElementById('contact-order-id').value || null,
+                subject: document.getElementById('contact-subject').value,
+                message: document.getElementById('contact-message').value,
+                status: "Pending", date: new Date().toISOString()
+            });
+            document.getElementById('successModal').classList.remove('hidden');
+            e.target.reset(); btn.disabled = false; btn.innerText = "Send Message";
+        };
+
+        // --- LOAD USER ORDERS AND VIEW MODAL ---
+        async function loadUserOrders(uid) {
+            const list = document.getElementById('order-history-list');
+            const snap = await db.collection("orders").where("userId", "==", uid).get();
+            
+            if(snap.empty) { 
+                document.getElementById('no-orders-msg').classList.remove('hidden'); 
+                list.innerHTML = '';
+                return; 
+            }
+            
+            document.getElementById('no-orders-msg').classList.add('hidden');
+            
+            globalOrders = snap.docs.map(d => d.data());
+            globalOrders.sort((a,b) => new Date(b.orderDate) - new Date(a.orderDate));
+
+            // View Order Action Column Added
+            list.innerHTML = globalOrders.map(o => `
+                <tr class="border-b last:border-0 hover:bg-gray-50">
+                    <td class="p-4 font-mono font-bold text-[#B36A5E]">${o.orderId}</td>
+                    <td class="text-gray-500">${new Date(o.orderDate).toLocaleDateString()}</td>
+                    <td class="font-bold">৳${(o.totalAmount || 0).toLocaleString()}</td>
+                    <td><span class="px-2 py-1 rounded-full text-[9px] font-black uppercase bg-gray-100 text-gray-600">${o.status}</span></td>
+                    <td>
+                        <button onclick="viewOrder('${o.orderId}')" class="text-[10px] font-bold uppercase text-[#B36A5E] hover:underline transition bg-gray-100 px-3 py-1 rounded">View Order</button>
+                    </td>
+                </tr>`).join('');
+        }
+        
+        // Modal Trigger Logic
+        window.viewOrder = (orderId) => {
+            const order = globalOrders.find(o => o.orderId === orderId);
+            if(!order) return;
+            
+            let itemsHtml = (order.items || []).map(i => `
+                <div class="flex justify-between items-center py-3 border-b border-gray-100 last:border-0 text-sm">
+                    <div class="flex items-center gap-4">
+                        <img src="${i.image || 'https://via.placeholder.com/60'}" class="w-14 h-14 object-cover rounded-lg border">
+                        <div>
+                            <p class="font-bold text-[#322C2B]">${i.name}</p>
+                            <p class="text-[10px] text-gray-500 font-bold uppercase">Qty: ${i.quantity}</p>
+                        </div>
+                    </div>
+                    <p class="font-bold text-[#B36A5E]">৳${(i.price * i.quantity).toLocaleString()}</p>
+                </div>
+            `).join('');
+
+            document.getElementById('order-modal-content').innerHTML = `
+                <div class="flex justify-between items-start mb-6 bg-gray-50 p-4 rounded-xl">
+                    <div>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Order ID</p>
+                        <p class="font-mono font-bold text-lg text-[#322C2B]">${order.orderId}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Date Placed</p>
+                        <p class="font-bold text-sm text-[#322C2B]">${new Date(order.orderDate).toLocaleDateString()}</p>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <p class="text-[10px] font-bold uppercase text-gray-400 mb-2 tracking-widest">Order Items</p>
+                    <div class="border border-gray-100 rounded-xl p-4">
+                        ${itemsHtml}
+                        <div class="flex justify-between items-center pt-4 mt-2 border-t border-gray-200">
+                            <span class="font-bold uppercase text-xs tracking-widest">Total Amount</span>
+                            <span class="font-bold text-xl text-[#322C2B]">৳${(order.totalAmount || 0).toLocaleString()}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6 text-sm bg-gray-50 p-4 rounded-xl">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase text-gray-400 mb-2 tracking-widest">Current Status</p>
+                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-[#B36A5E] text-white">${order.status}</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold uppercase text-gray-400 mb-2 tracking-widest">Shipping Address</p>
+                        <p class="text-xs font-medium text-gray-600 leading-relaxed">${order.shippingAddress ? (order.shippingAddress.fullDisplay || order.shippingAddress.detail) : 'N/A'}</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('viewOrderModal').classList.remove('hidden');
+        };
+
+        window.closeOrderModal = () => {
+            document.getElementById('viewOrderModal').classList.add('hidden');
+        };
+        
+        // Actions
+        function editField(field) {
+            const val = prompt(`Enter new ${field}:`);
+            if(val) {
+                db.collection("users").doc(auth.currentUser.uid).update({ [field]: val }).then(() => loadDashboard(auth.currentUser.uid));
+            }
+        }
+        function resetPassword() {
+            auth.sendPasswordResetEmail(auth.currentUser.email).then(()=>alert("Password reset email sent to " + auth.currentUser.email)).catch(e=>alert(e.message));
+        }
+
+        window.logout=()=>auth.signOut();
+        window.signInWithGoogle=async()=>{ try{await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());}catch(e){console.log(e);} }
+    </script>
+</body>
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details | Sterling You</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Montserrat', sans-serif; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .zoom-container { overflow: hidden; cursor: crosshair; position: relative; }
+        #main-img { transition: transform 0.3s ease-out; transform-origin: center center; width: 100%; height: 100%; object-fit: cover; }
+        .animate-fadeIn { animation: fadeIn 0.8s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .group:hover .add-to-cart-container { transform: translateY(0); }
+        .add-to-cart-container { transform: translateY(100%); transition: transform 0.3s ease-out; }
+        #cart-drawer { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000 !important; }
+        #cart-overlay { z-index: 999 !important; }
+        #top-bar { transition: height 0.3s ease, padding 0.3s ease, opacity 0.3s ease; }
+    </style>
+</head>
+<body class="bg-white flex flex-col min-h-screen">
+
+    <header id="main-header" class="w-full bg-white border-b border-gray-100 sticky top-0 z-50 transition-all duration-300">
+        <div id="top-bar" class="bg-[#322C2B] text-white py-2 overflow-hidden">
+            <div class="max-w-7xl mx-auto px-6 md:px-10">
+                <p class="text-[11px] tracking-[0.2em] uppercase font-light text-left">Free Shipping on orders over ৳5,000</p>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-6 md:px-10">
+            <div class="flex justify-between items-center h-20">
+                <a href="index.html" class="block hover:opacity-90 transition group">
+                    <img src="web-logo2.png" alt="Sterling Enterprise" class="h-12 md:h-16 object-contain group-hover:scale-105 transition duration-300" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <span class="hidden font-serif text-2xl md:text-3xl font-bold text-[#322C2B] italic">Sterling.</span>
+                </a>
+
+                <nav class="hidden md:block flex-grow px-8">
+                    <ul id="dynamic-nav" class="flex justify-center items-center space-x-8 text-[12px] tracking-[0.1em] text-[#322C2B] uppercase"></ul>
+                </nav>
+
+                <div class="flex items-center space-x-6 text-[#322C2B]">
+                    <div class="relative flex items-center">
+                        <input type="text" id="nav-search-input" placeholder="Search..." autocomplete="off"
+                               oninput="handleLiveSearch(this.value)"
+                               class="w-0 focus:w-32 md:focus:w-48 transition-all duration-300 outline-none border-b border-gray-300 text-[10px] uppercase tracking-widest px-2 py-1 bg-transparent">
+                        <button onclick="toggleSearch()" class="hover:text-[#B36A5E] transition">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                        </button>
+                        <div id="search-results-dropdown" class="absolute top-full right-0 mt-2 w-64 md:w-80 bg-white shadow-2xl rounded-xl overflow-hidden hidden z-[200] border border-gray-100">
+                            <div id="live-search-items" class="max-h-96 overflow-y-auto custom-scrollbar"></div>
+                            <div id="live-search-footer" class="p-3 bg-gray-50 border-t text-center">
+                                <button onclick="handleSearch()" class="text-[9px] font-bold uppercase tracking-widest text-[#B36A5E] hover:underline">View All Results</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleCart()" class="relative p-2 flex items-center justify-center hover:text-[#B36A5E] transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                        </svg>
+                        <span id="cart-count-badge" class="absolute top-0 right-0 bg-[#B36A5E] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border-2 border-white min-w-[18px] text-center">0</span>
+                    </button>
+
+                    <div class="relative group">
+                        <button id="nav-user-btn" onclick="toggleUserDropdown()" class="flex items-center justify-center p-2 text-[#322C2B] transition-colors focus:outline-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                            </svg>
+                        </button>
+                        <div id="user-dropdown" class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 hidden z-[500] overflow-hidden">
+                            <div class="p-4 border-b bg-gray-50"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Account</p><div id="dropdown-header-content" class="text-xs font-bold text-[#322C2B] mt-1"></div></div>
+                            <div id="auth-links" class="hidden py-2"><a href="account.html" class="block px-4 py-2 text-[11px] font-bold text-gray-600 hover:bg-gray-50">View Profile & Orders</a><a href="account.html#payments" class="block px-4 py-2 text-[11px] font-bold text-gray-600 hover:bg-gray-50">Payment Methods</a><button onclick="window.logout()" class="w-full text-left px-4 py-2 text-[11px] font-bold text-red-400 hover:bg-red-50">Sign Out</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-12 flex-grow w-full">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mb-20 items-start">
+            <div class="space-y-4">
+                <div class="relative">
+                    <div class="zoom-container aspect-square rounded-lg border border-gray-100 bg-gray-50 shadow-sm" id="img-wrapper"><img id="main-img" src="" class="w-full h-full object-cover"></div>
+                    <div id="main-image-tags" class="absolute top-4 left-4 flex flex-col gap-2 z-10"></div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="aspect-square bg-gray-50 rounded-lg border border-gray-100 overflow-hidden cursor-pointer hover:border-[#B36A5E] transition group"><img id="thumb-1" src="" class="w-full h-full object-cover group-hover:opacity-100 transition" onclick="switchMainImg(this.src)"></div>
+                    <div class="aspect-square bg-gray-50 rounded-lg border border-gray-100 overflow-hidden cursor-pointer hover:border-[#B36A5E] transition group"><img id="thumb-2" src="" class="w-full h-full object-cover group-hover:opacity-100 transition" onclick="switchMainImg(this.src)"></div>
+                    <div class="aspect-square bg-gray-50 rounded-lg border border-gray-100 overflow-hidden cursor-pointer hover:border-[#B36A5E] transition group"><img id="thumb-3" src="" class="w-full h-full object-cover group-hover:opacity-100 transition" onclick="switchMainImg(this.src)"></div>
+                </div>
+            </div>
+
+            <div class="flex flex-col space-y-6">
+                <div>
+                    <p id="p-category" class="text-[10px] font-bold text-[#B36A5E] uppercase tracking-widest mb-2"></p>
+                    <h1 id="p-name" class="text-3xl font-serif font-bold text-[#322C2B]">Loading Product...</h1>
+                    <p id="p-sku" class="text-[10px] text-gray-400 font-mono mt-1"></p>
+                </div>
+                <div class="flex items-baseline gap-4">
+                    <span id="p-price" class="text-2xl font-bold text-[#322C2B]"></span>
+                    <span id="p-old-price" class="text-lg text-gray-400 line-through hidden"></span>
+                    </div>
+                
+                <div id="stock-alert" class="hidden items-center gap-2 text-red-600 font-bold text-[11px] uppercase tracking-widest mt-2">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+                    </span>
+                    Only <span id="stock-count">0</span> left in stock - order soon!
+                </div>
+                
+                <p id="p-short-desc" class="text-sm text-gray-600 leading-relaxed italic border-l-2 border-[#B36A5E] pl-4"></p>
+                <div id="p-instructions" class="bg-gray-50 p-5 rounded-xl space-y-2 text-[11px] font-medium text-gray-600 border border-gray-100"></div>
+
+                <div id="add-to-cart-wrapper">
+                    <button class="w-full md:w-64 bg-gray-300 text-white py-4 rounded-full font-bold uppercase tracking-widest cursor-not-allowed text-[11px]">Loading...</button>
+                </div>
+
+                <div class="pt-8 space-y-8 border-t border-gray-100">
+                    <div class="space-y-3"><h3 class="text-xs font-bold uppercase tracking-widest text-gray-400">Detailed Description</h3><div id="p-long-desc" class="text-[13px] text-gray-600 leading-loose"></div></div>
+                    <div class="space-y-3"><h3 class="text-xs font-bold uppercase tracking-widest text-gray-400">Policy</h3><p class="text-[11px] text-gray-500 italic">Please read our <a href="#" class="underline text-[#B36A5E]">Terms & Conditions</a>.</p></div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-24 border-t border-gray-100 pt-12">
+            <h2 class="text-xl font-serif italic text-center mb-10 text-[#322C2B]">You May Also Like</h2>
+            <div id="related-grid" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+        </div>
+    </main>
+
+    <footer class="bg-[#322C2B] text-white pt-12 pb-8 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-6 md:px-10">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+                <div class="space-y-4">
+                    <img src="web-logo2.png" alt="Sterling You" class="h-16 w-auto brightness-0 invert" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <h4 class="hidden text-xl font-serif italic">Sterling.</h4>
+                    <p class="text-[11px] text-gray-400 leading-relaxed tracking-wide">Elevate your everyday with curated luxury. Join our world for exclusive previews.</p>
+                    <form class="flex flex-col space-y-2 pt-2">
+                        <input type="email" placeholder="YOUR EMAIL" class="bg-transparent border-b border-gray-600 py-2 text-[11px] tracking-widest focus:border-[#B36A5E] outline-none transition-colors uppercase text-white">
+                        <button type="submit" class="text-left text-[10px] font-bold tracking-[0.2em] uppercase hover:text-[#B36A5E] transition">Subscribe →</button>
+                    </form>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="text-[11px] font-bold tracking-[0.3em] uppercase text-gray-500">Support</h4>
+                    <ul id="dynamic-support" class="text-[12px] text-gray-300 space-y-2"><li>Loading...</li></ul>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="text-[11px] font-bold tracking-[0.3em] uppercase text-gray-500">Shop</h4>
+                    <ul id="footer-shop-list" class="text-[12px] text-gray-300 space-y-2"></ul>
+                </div>
+                <div class="space-y-6 md:text-right">
+                    <h4 class="text-[11px] font-bold tracking-[0.3em] uppercase text-gray-500 mb-3">Follow Us</h4>
+                    <div id="dynamic-socials" class="flex items-center gap-5 md:justify-end"></div>
+                    <div>
+                        <h4 class="text-[11px] font-bold tracking-[0.3em] uppercase text-gray-500 mb-2">Contact</h4>
+                        <p id="footer-phone" class="text-[13px] font-medium">+880 1800 000 775</p>
+                        <p id="footer-email" class="text-[11px] text-gray-400 lowercase italic"></p>
+                        <p id="footer-address" class="text-[11px] text-gray-400">Dhaka, Bangladesh</p>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 pt-6 flex justify-between items-center"><p class="text-[9px] uppercase text-gray-500">© 2026 Sterling You.</p></div>
+        </div>
+    </footer>
+
+    <div id="cart-overlay" class="fixed inset-0 bg-black/50 z-[100] hidden backdrop-blur-sm transition-opacity" onclick="toggleCart()"></div>
+    <div id="cart-drawer" class="fixed top-0 right-0 h-full w-80 md:w-96 bg-white z-[110] shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+        <div class="p-6 border-b flex justify-between items-center bg-gray-50"><h2 class="text-sm font-bold uppercase tracking-widest text-[#322C2B]">Your Bag</h2><button onclick="toggleCart()" class="text-gray-400 hover:text-black text-2xl">&times;</button></div>
+        <div id="sidebar-cart-list" class="flex-1 overflow-y-auto p-6"></div>
+        <div class="p-6 border-t bg-white">
+            <div class="flex justify-between font-bold text-[#322C2B] text-sm mb-4"><span>Subtotal</span><span id="sidebar-total">৳0</span></div>
+            <button onclick="window.location.href='checkout.html'" class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg tracking-widest">Checkout Now</button>
+        </div>
+    </div>
+
+    <script src="cart.js"></script>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
+
+        // --- AUTH & UI ---
+        window.toggleSearch = () => document.getElementById('nav-search-input').focus();
+        window.toggleUserDropdown = () => document.getElementById('user-dropdown').classList.toggle('hidden');
+        window.addEventListener('scroll', () => { const t = document.getElementById('top-bar'); if(window.scrollY > 50) { t.style.height='0px'; t.style.padding='0px'; t.style.opacity='0'; } else { t.style.height='auto'; t.style.padding='8px 0'; t.style.opacity='1'; } });
+        document.addEventListener('click', (e) => { const c = document.querySelector('.relative.flex.items-center'); const d = document.getElementById('search-results-dropdown'); if (c && !c.contains(e.target) && d) d.classList.add('hidden'); });
+        auth.onAuthStateChanged(async(u)=>{
+            const icon=document.getElementById('nav-user-btn'), head=document.getElementById('dropdown-header-content'), links=document.getElementById('auth-links');
+            if(u){ if(icon)icon.classList.add('text-[#B36A5E]'); if(links)links.classList.remove('hidden'); const d=await db.collection("users").doc(u.uid).get(); if(head)head.innerHTML = `Hi, ${d.exists?d.data().fullName:'User'}`; } 
+            else { if(icon)icon.classList.remove('text-[#B36A5E]'); if(links)links.classList.add('hidden'); if(head)head.innerHTML = `<a href="account.html" class="text-[#B36A5E] font-bold">Sign In / Register</a>`; }
+        });
+        window.logout = () => auth.signOut().then(()=>location.reload());
+
+        // --- PRODUCT DATA ---
+// --- PRODUCT DATA ---
+        function switchMainImg(src) { if(src && !src.includes('undefined')) document.getElementById('main-img').src = src; }
+        
+        async function loadProductData() {
+            if (!productId) return;
+            const doc = await db.collection("products").doc(productId).get();
+            if (!doc.exists) { document.getElementById('p-name').innerText = "Product Not Found"; return; }
+            const p = doc.data(); 
+            const pr = Number(p.price), old = Number(p.originalPrice||0);
+            const stock = (p.stock !== undefined && p.stock !== null && p.stock !== "") ? Number(p.stock) : 999; 
+            
+            document.getElementById('p-name').innerText = p.name;
+            document.getElementById('p-category').innerText = p.category;
+            
+            const priceEl = document.getElementById('p-price');
+            priceEl.innerText = `৳${pr.toLocaleString()}`;
+            if (stock <= 0) {
+                 priceEl.innerHTML += ` <span class="text-red-500 text-sm font-bold uppercase ml-2">(Out of Stock)</span>`;
+            }
+
+            document.getElementById('p-short-desc').innerText = p.shortDesc || "";
+            document.getElementById('p-long-desc').innerHTML = p.longDesc || "";
+            
+            if(old > pr) { 
+                const op = document.getElementById('p-old-price'); op.innerText = `৳${old.toLocaleString()}`; op.classList.remove('hidden'); 
+                const perc = Math.round(((old-pr)/old)*100);
+                document.getElementById('main-image-tags').innerHTML = `<span class="bg-[#B36A5E] text-white px-3 py-1 text-[10px] font-bold uppercase shadow-md tracking-widest whitespace-nowrap">SALE ${perc}% OFF</span>`;
+            }
+            
+            const alertBox = document.getElementById('stock-alert');
+            if(stock > 0 && stock <= 5) {
+                alertBox.classList.remove('hidden');
+                alertBox.classList.add('flex');
+                document.getElementById('stock-count').innerText = stock;
+            }
+
+            // FIX: Explicitly handle ID as clean string for the cart helper
+            const productObj = {
+                id: String(doc.id).trim(),
+                name: p.name,
+                price: pr,
+                originalPrice: old,
+                image: p.image,
+                stock: stock
+            };
+            document.getElementById('add-to-cart-wrapper').innerHTML = window.renderActionButtons(productObj);
+
+            document.getElementById('main-img').src = p.image;
+            document.getElementById('thumb-1').src = p.image;
+            document.getElementById('thumb-2').src = p.image2 || p.image;
+            document.getElementById('thumb-3').src = p.image3 || p.image;
+
+            const inst = p.instructions ? p.instructions.split('\n') : [];
+            document.getElementById('p-instructions').innerHTML = inst.map(i => `<p class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-[#B36A5E] rounded-full"></span>${i}</p>`).join('');
+            
+            const c = document.getElementById('img-wrapper'), i = document.getElementById('main-img');
+            c.onmousemove = (e) => { const r = c.getBoundingClientRect(); i.style.transformOrigin = `${e.clientX - r.left}px ${e.clientY - r.top}px`; i.style.transform = "scale(2)"; };
+            c.onmouseleave = () => { i.style.transform = "scale(1)"; };
+
+            loadRelatedProducts(p.category, p.subcategory);
+        }
+
+        async function loadRelatedProducts(cat, sub) {
+            const grid = document.getElementById('related-grid');
+            if (!grid) return;
+
+            let snap = await db.collection("products")
+                .where("subcategory", "==", sub)
+                .where("isVisible", "==", true)
+                .limit(6)
+                .get();
+
+            if (snap.docs.length < 2) {
+                snap = await db.collection("products")
+                    .where("category", "==", cat)
+                    .where("isVisible", "==", true)
+                    .limit(6)
+                    .get();
+            }
+
+            grid.innerHTML = snap.docs.filter(d => d.id !== productId).slice(0, 4).map(doc => {
+                const d = doc.data(), pr = Number(d.price), old = Number(d.originalPrice || 0), hasD = old > pr;
+                const perc = hasD ? Math.round(((old - pr) / old) * 100) : 0;
+                
+                // Stock Logic
+                const relStock = (d.stock !== undefined && d.stock !== null && d.stock !== "") ? Number(d.stock) : 999;
+                const isLowStock = relStock > 0 && relStock <= 5;
+                const isOutOfStock = relStock <= 0;
+                
+                // FIX: Explicitly handle related product ID
+                const relId = String(doc.id).trim();
+
+                const pStr = JSON.stringify({
+                    id: relId,
+                    name: d.name.replace(/'/g, "\\'").replace(/"/g, '&quot;'),
+                    price: pr,
+                    originalPrice: old,
+                    image: d.image,
+                    stock: relStock
+                }).replace(/"/g, '&quot;');
+
+                return `<a href="product.html?id=${relId}" class="product-card group block animate-fadeIn relative">
+                    <div class="relative overflow-hidden rounded-lg mb-3 aspect-[3/4] bg-gray-50">
+                        <img src="${d.image}" class="w-full h-full object-cover group-hover:scale-105 transition duration-700">
+                        <div class="absolute top-2 left-2 flex flex-col gap-1.5 z-10">
+                            ${d.isNew ? '<span class="bg-white text-[10px] font-bold px-2 py-1 uppercase tracking-widest shadow-sm">New</span>' : ''}
+                            ${hasD ? `<span class="bg-[#B36A5E] text-white px-2 py-1 text-[10px] font-bold uppercase tracking-widest shadow-sm whitespace-nowrap">SALE ${perc}% OFF</span>` : ''}
+                            ${isLowStock ? `<span class="bg-red-600 text-white text-[9px] font-bold px-2 py-1 uppercase tracking-widest shadow-sm animate-pulse">Low Stock</span>` : ''}
+                            ${isOutOfStock ? `<span class="bg-gray-800 text-white text-[9px] font-bold px-2 py-1 uppercase tracking-widest shadow-sm">Out of Stock</span>` : ''}
+                        </div>
+                        <div class="add-to-cart-container absolute bottom-0 left-0 w-full z-20">
+                             ${isOutOfStock ? 
+                                `<button class="w-full bg-gray-400 text-white py-3 text-[10px] font-bold tracking-widest uppercase cursor-not-allowed">Out of Stock</button>` : 
+                                `<button onclick="event.preventDefault(); addToCart(${pStr})" 
+                                    class="w-full bg-[#322C2B]/95 text-white py-3 text-[10px] font-bold tracking-widest uppercase hover:bg-[#B36A5E] transition-colors">Add To Cart</button>`
+                             }
+                        </div>
+                    </div>
+                    <h4 class="text-[10px] font-bold uppercase tracking-widest text-[#322C2B] group-hover:text-[#B36A5E] transition-colors line-clamp-1">${d.name}</h4>
+                    <div class="flex items-center gap-2 mt-1">
+                        <p class="text-[11px] text-[#B36A5E] font-bold">৳${pr.toLocaleString()}</p>
+                        ${hasD ? `<p class="text-[10px] text-gray-400 line-through">৳${old.toLocaleString()}</p>` : ''}
+                    </div>
+                </a>`;
+            }).join('');
+        }
+        
+        window.onload = () => { loadProductData(); loadFooterData(); };
+        
+        // Search
+        let searchTimeout;
+        window.handleLiveSearch = (q) => {
+            const drop = document.getElementById('search-results-dropdown');
+            const cont = document.getElementById('live-search-items');
+            clearTimeout(searchTimeout);
+            if(q.trim().length<2) { drop.classList.add('hidden'); return; }
+            searchTimeout = setTimeout(async()=>{
+                const snap = await db.collection("products").where("isVisible","==",true).get();
+                const res = snap.docs.map(d=>({id:d.id,...d.data()})).filter(p=>p.name.toLowerCase().includes(q.toLowerCase()) || p.category.toLowerCase().includes(q.toLowerCase())).slice(0,5);
+                drop.classList.remove('hidden');
+                
+                if(res.length) {
+                    const items = res.map(p=>`<a href="product.html?id=${p.id}" class="flex items-center gap-4 p-3 hover:bg-gray-50 border-b border-gray-50"><img src="${p.image}" class="w-10 h-10 rounded"><div class="flex-1"><p class="text-[10px] font-bold uppercase">${p.name}</p><p class="text-[11px] font-bold text-[#B36A5E]">৳${p.price}</p></div></a>`).join('');
+                    cont.innerHTML = items;
+                } else {
+                    cont.innerHTML = '<p class="p-4 text-xs text-center text-gray-400">No results</p>';
+                }
+            }, 300);
+        };
+        window.handleSearch = () => { const q=document.getElementById('nav-search-input').value; if(q)window.location.href=`category.html?search=${encodeURIComponent(q)}`; };
+    </script>
+</body>
+</html>

@@ -1,0 +1,2676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sterling Enterprise | ERP & CRM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; font-size: 13px; color: #1A1A1A; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        .sidebar-item.active { background: #B36A5E; color: white; border-radius: 12px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .loader { border: 2px solid #f3f3f3; border-radius: 50%; border-top: 2px solid #B36A5E; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+
+<script>
+    // --- SAFE SWITCHTAB ---
+    window.switchTab = function(tabId) {
+        document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.sidebar-item').forEach(function(b) { b.classList.remove('active'); });
+        
+        var target = document.getElementById(tabId);
+        if (target) target.classList.add('active');
+        
+        document.querySelectorAll('.sidebar-item').forEach(function(btn) {
+            if(btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(tabId)) {
+                btn.classList.add('active');
+            }
+        });
+
+        try {
+            if (tabId === 'orders' && typeof window.loadOrders === 'function') { window.loadOrders(); window.loadInvoiceSettings(); }
+            if (tabId === 'inventory' && typeof window.loadInventory === 'function') window.loadInventory();
+            if (tabId === 'crm' && typeof window.loadCRMUsers === 'function') window.loadCRMUsers();
+            if (tabId === 'dashboard' && typeof window.initCharts === 'function') setTimeout(window.initCharts, 50);
+            if (tabId === 'queries' && typeof window.loadQueries === 'function') window.loadQueries();
+            
+            if (tabId === 'support' && typeof window.loadSupportLinksAdmin === 'function') { window.loadSupportLinksAdmin(); window.loadInvoiceSettings(); }
+            if (tabId === 'contact-settings') { 
+                if(typeof window.loadContactInfoAdmin === 'function') window.loadContactInfoAdmin(); 
+                if(typeof window.loadSocialLinksAdmin === 'function') window.loadSocialLinksAdmin();
+            }
+            if (tabId === 'logistics-settings' && typeof window.loadLogisticsSettings === 'function') window.loadLogisticsSettings();
+        } catch (e) { console.error("Feature not ready yet:", e); }
+    };
+</script>
+
+</head>
+
+<body class="bg-[#F3F4F6] flex min-h-screen">
+
+    <aside class="w-64 bg-[#1F2937] text-gray-300 flex flex-col sticky top-0 h-screen z-50">
+        <div class="p-6 border-b border-gray-700">
+            <h1 class="text-white font-bold text-xl tracking-tighter">STERLING <span class="text-[#B36A5E]">ERP</span></h1>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="switchTab('dashboard')" class="sidebar-item active w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📊 Dashboard</button>
+            <button onclick="switchTab('orders')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📦 Order Pipeline</button>
+            <button onclick="switchTab('crm')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">👥 Customer CRM</button>
+            <button onclick="switchTab('inventory')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🛠 Inventory</button>
+            <button onclick="switchTab('logistics-settings')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🚚 Logistics Rules</button>
+            <button onclick="switchTab('support')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📜 Policy Manager</button>
+            <button onclick="switchTab('queries')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">💬 Customer Queries</button>
+            <button onclick="switchTab('contact-settings')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📱 Social & Contact</button>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto h-screen">
+        <div class="bg-white p-4 rounded-2xl shadow-sm mb-8 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-4 bg-gray-50 p-2 rounded-xl border border-gray-200 px-4">
+                <span class="text-[10px] font-bold uppercase text-gray-400">System Ready</span>
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            </div>
+            <div id="low-stock-warning" class="hidden bg-red-100 text-red-600 px-4 py-2 rounded-full font-bold text-[10px] flex items-center gap-2">
+                <span class="w-2 h-2 bg-red-600 rounded-full animate-ping"></span> LOW STOCK ALERT
+            </div>
+        </div>
+
+        <section id="dashboard" class="tab-content active">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-blue-500">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase">Total Revenue</p>
+                    <h2 id="kpi-revenue" class="text-2xl font-bold mt-1">৳450,200</h2>
+                </div>
+                 <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-green-500">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase">Gross Profit</p>
+                    <h2 id="kpi-gross" class="text-2xl font-bold mt-1 text-green-600">৳125,500</h2>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-[#B36A5E]">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase">Net Profit</p>
+                    <h2 id="kpi-net" class="text-2xl font-bold mt-1 text-[#B36A5E]">৳82,100</h2>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-orange-400">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase">Courier Transit</p>
+                    <h2 id="kpi-transit" class="text-2xl font-bold mt-1 text-orange-500">৳12,400</h2>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-red-400">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase">Return Loss</p>
+                    <h2 id="kpi-loss" class="text-2xl font-bold mt-1 text-red-500">৳4,500</h2>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-gray-800 cursor-pointer hover:bg-gray-50 transition" onclick="openDamagedListModal()">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase flex justify-between items-center">Damaged Loss <span class="text-blue-500 underline text-[9px] hover:text-blue-700">Open List</span></p>
+                    <h2 id="kpi-damaged" class="text-2xl font-bold mt-1 text-gray-800">৳0</h2>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-3xl shadow-sm h-80 relative">
+                    <h3 class="font-bold text-gray-400 text-xs uppercase mb-2">Financial Composition</h3>
+                    <div class="h-64 w-full"><canvas id="chart-profit"></canvas></div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl shadow-sm h-80 relative">
+                    <h3 class="font-bold text-gray-400 text-xs uppercase mb-2">Logistics Performance</h3>
+                    <div class="h-64 w-full flex justify-center"><canvas id="chart-logistics"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="orders" class="tab-content">
+            <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                <h2 class="text-xl font-bold">Order Pipeline</h2>
+                <div class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+                    <input type="date" id="order-date-from" onchange="renderOrdersTable()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-gray-50" title="Date From">
+                    <span class="text-xs text-gray-400 font-bold uppercase">To</span>
+                    <input type="date" id="order-date-to" onchange="renderOrdersTable()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-gray-50" title="Date To">
+                    <div class="w-px h-6 bg-gray-200 mx-1"></div>
+                    <input type="text" id="order-search" onkeyup="renderOrdersTable()" placeholder="Search Order ID or Phone..." class="border p-2 rounded-lg w-64 focus:outline-none focus:border-[#B36A5E] text-xs">
+                </div>
+            </div>
+            
+<div class="grid grid-cols-1 gap-8">
+                <div>
+                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">🔴 Stage 1: Verification <span id="count-pending" class="bg-red-500 text-white text-[10px] px-2 py-1 rounded-full">0</span></h3>
+                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-red-50 relative">
+                        <div class="max-h-[960px] overflow-y-auto w-full">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-red-50 text-[10px] font-bold uppercase text-red-400 sticky top-0 z-10 shadow-sm">
+                                    <tr>
+                                        <th class="p-4 cursor-pointer hover:text-red-700 transition" onclick="sortOrders('Pending', 'orderId')">Order ID ↕</th>
+                                        <th class="cursor-pointer hover:text-red-700 transition" onclick="sortOrders('Pending', 'orderDate')">Date ↕</th>
+                                        <th>Customer</th>
+                                        <th>Contact</th>
+                                        <th>Amount</th>
+                                        <th class="cursor-pointer hover:text-red-700 transition" onclick="sortOrders('Pending', 'status')">Status ↕</th>
+                                        <th>Verify</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pipeline-pending">
+                                    <tr><td colspan="7" class="p-6 text-center text-gray-400">Loading orders...<\/td><\/tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">🟠 Stage 2: Logistics <span id="count-processing" class="bg-orange-500 text-white text-[10px] px-2 py-1 rounded-full">0</span></h3>
+                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-orange-50 relative">
+                        <div class="max-h-[960px] overflow-y-auto w-full">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-orange-50 text-[10px] font-bold uppercase text-orange-400 sticky top-0 z-10 shadow-sm">
+                                    <tr>
+                                        <th class="p-4 cursor-pointer hover:text-orange-700 transition" onclick="sortOrders('Processing', 'orderId')">Order ID ↕</th>
+                                        <th class="cursor-pointer hover:text-orange-700 transition" onclick="sortOrders('Processing', 'orderDate')">Order Date ↕</th>
+                                        <th>Last Update</th>
+                                        <th>Customer</th>
+                                        <th>Contact</th>
+                                        <th class="cursor-pointer hover:text-orange-700 transition" onclick="sortOrders('Processing', 'status')">Status ↕</th>
+                                        <th>Update Step</th>
+                                        <th>Invoice</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pipeline-processing"><tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">🟢 Stage 3: History</h3>
+                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 relative">
+                        <div class="max-h-[960px] overflow-y-auto w-full">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-gray-50 text-[10px] font-bold uppercase text-gray-400 sticky top-0 z-10 shadow-sm">
+                                    <tr>
+                                        <th class="p-4 cursor-pointer hover:text-gray-700 transition" onclick="sortOrders('History', 'orderId')">Order ID ↕</th>
+                                        <th class="cursor-pointer hover:text-gray-700 transition" onclick="sortOrders('History', 'orderDate')">Placed Date ↕</th>
+                                        <th>End Date</th>
+                                        <th>Customer</th>
+                                        <th>Contact</th>
+                                        <th class="cursor-pointer hover:text-gray-700 transition" onclick="sortOrders('History', 'status')">Status ↕</th>
+                                        <th>Action</th>
+                                        <th>Invoice</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pipeline-history"><tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="crm" class="tab-content">
+            <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                <h2 class="text-xl font-bold">Customer Intelligence</h2>
+                <div class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+                    <input type="date" id="crm-date-from" onchange="renderCRMTable()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-gray-50" title="Order Date From">
+                    <span class="text-xs text-gray-400 font-bold uppercase">To</span>
+                    <input type="date" id="crm-date-to" onchange="renderCRMTable()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-gray-50" title="Order Date To">
+                    <div class="w-px h-6 bg-gray-200 mx-1"></div>
+                    <input type="text" id="crm-search" onkeyup="renderCRMTable()" placeholder="Search phone or name..." class="border p-2 rounded-lg w-48 focus:outline-none focus:border-[#B36A5E] text-xs">
+                    <button onclick="exportCRMExcel()" class="bg-[#10B981] text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-green-600 transition shadow-sm">Export CSV</button>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400">
+                        <tr>
+                            <th class="p-4">Customer Profile</th>
+                            <th>Phone Number</th>
+                            <th class="cursor-pointer hover:text-black transition group" onclick="sortCRM('lastOrderDate')">Last Order <span class="opacity-50 group-hover:opacity-100">↕</span></th>
+                            <th class="cursor-pointer hover:text-black transition group" onclick="sortCRM('totalSpend')">Total Spend <span class="opacity-50 group-hover:opacity-100">↕</span></th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="crm-table"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="inventory" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-[#322C2B]">Cloud Inventory</h2>
+                <div class="flex gap-3 items-center">
+                    <input type="text" id="inventory-search" onkeyup="filterInventory()" placeholder="Search product name..." class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-white w-48 shadow-sm">
+                    <button onclick="openCategoryModal()" class="bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-gray-50 transition">Manage Categories</button>
+                    <button onclick="openAddModal()" class="bg-[#322C2B] text-white px-6 py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-lg">+ Add New Product</button>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400">
+                        <tr>
+                            <th class="p-4 cursor-pointer hover:text-[#B36A5E] transition group" onclick="sortInventory('name')">Product <span class="opacity-50 group-hover:opacity-100">↕</span></th>
+                            <th>SKU</th>
+                            <th class="cursor-pointer hover:text-[#B36A5E] transition group" onclick="sortInventory('category')">Category <span class="opacity-50 group-hover:opacity-100">↕</span></th>
+                            <th>Price</th>
+                            <th class="cursor-pointer hover:text-[#B36A5E] transition group" onclick="sortInventory('stock')">Stock <span class="opacity-50 group-hover:opacity-100">↕</span></th>
+                            <th>Requests</th> <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="logistics-settings" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-[#322C2B]">Logistics & Shipping Rules</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-fit">
+                    <h3 class="text-xs font-bold uppercase mb-2 text-[#B36A5E] tracking-widest">Customer Checkout Fees</h3>
+                    <p class="text-xs text-gray-500 mb-6">What the customer is charged for shipping on the checkout page.</p>
+                    
+                    <form id="customerRatesForm" class="space-y-4">
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                            <h4 class="text-[10px] font-bold uppercase text-gray-700 mb-2">Inside Dhaka</h4>
+                            <div class="grid grid-cols-4 gap-2">
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">0-0.5 Kg (৳)<input type="number" id="cust_in_05" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">0.5-1 Kg (৳)<input type="number" id="cust_in_10" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">1-2 Kg (৳)<input type="number" id="cust_in_20" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">> 2Kg / KG (৳)<input type="number" id="cust_in_extra" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                            <h4 class="text-[10px] font-bold uppercase text-gray-700 mb-2">Outside Dhaka</h4>
+                            <div class="grid grid-cols-4 gap-2">
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">0-0.5 Kg (৳)<input type="number" id="cust_out_05" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">0.5-1 Kg (৳)<input type="number" id="cust_out_10" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">1-2 Kg (৳)<input type="number" id="cust_out_20" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">> 2Kg / KG (৳)<input type="number" id="cust_out_extra" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                            <h4 class="text-[10px] font-bold uppercase text-gray-700 mb-2">Suburbs</h4>
+                            <div class="grid grid-cols-4 gap-2">
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">0-0.5 Kg (৳)<input type="number" id="cust_sub_05" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">0.5-1 Kg (৳)<input type="number" id="cust_sub_10" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">1-2 Kg (৳)<input type="number" id="cust_sub_20" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">> 2Kg / KG (৳)<input type="number" id="cust_sub_extra" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                            </div>
+                        </div>
+                        <button type="submit" id="btn-save-cust-rates" class="w-full mt-4 bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-md">Save Customer Rates</button>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col max-h-[85vh]">
+                    <h3 class="text-xs font-bold uppercase mb-2 text-[#B36A5E] tracking-widest">Partner Cost Tiers</h3>
+                    <p class="text-xs text-gray-500 mb-4">What you actually pay the courier. Used for internal Net Profit tracking.</p>
+
+                    <form id="partnerRateForm" class="space-y-3 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200 shrink-0">
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="block text-[10px] font-bold uppercase text-gray-500">Partner
+                                <select id="log_part_name" class="w-full mt-1 border border-gray-300 p-2 rounded-lg outline-none focus:border-[#B36A5E] bg-white"><option value="Pathao">Pathao</option><option value="Steadfast">Steadfast</option><option value="RedX">RedX</option></select>
+                            </label>
+                            <label class="block text-[10px] font-bold uppercase text-gray-500">Destination Zone
+                                <select id="log_part_dest" class="w-full mt-1 border border-gray-300 p-2 rounded-lg outline-none focus:border-[#B36A5E] bg-white"><option value="Inside Dhaka">Inside Dhaka</option><option value="Suburbs">Suburbs</option><option value="Outside Dhaka">Outside Dhaka</option></select>
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-5 gap-2">
+                            <label class="block text-[9px] font-bold uppercase text-gray-500">0-0.5kg (৳)<input type="number" id="log_part_05" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                            <label class="block text-[9px] font-bold uppercase text-gray-500">0.5-1kg (৳)<input type="number" id="log_part_10" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                            <label class="block text-[9px] font-bold uppercase text-gray-500">1-2kg (৳)<input type="number" id="log_part_20" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                            <label class="block text-[9px] font-bold uppercase text-gray-500">> 2kg/KG (৳)<input type="number" id="log_part_extra" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                            <label class="block text-[9px] font-bold uppercase text-gray-500">COD (%)<input type="number" step="0.01" id="log_part_cod" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                        </div>
+                        <button type="submit" class="w-full bg-[#10B981] text-white py-2.5 mt-2 rounded-lg font-bold uppercase text-[9px] hover:bg-green-600 transition shadow">+ Add / Update Partner Rate</button>
+                    </form>
+
+                    <div class="flex-1 overflow-y-auto border border-gray-200 rounded-lg">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-gray-100 text-[9px] font-bold uppercase text-gray-500 sticky top-0">
+                                <tr><th class="p-3">Partner & Zone</th><th>0.5k / 1k / 2k / Ex</th><th>COD</th><th>Action</th></tr>
+                            </thead>
+                            <tbody id="partner-rates-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="queries" class="tab-content">
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-xl border border-gray-100 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold">P</div>
+                    <div><p class="text-[10px] uppercase text-gray-400 font-bold">Total Pending</p><h2 id="query-stat-pending" class="text-xl font-bold">0</h2></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">S</div>
+                    <div><p class="text-[10px] uppercase text-gray-400 font-bold">Total Solved</p><h2 id="query-stat-solved" class="text-xl font-bold">0</h2></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+                <table class="w-full text-left"><thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400"><tr><th class="p-4">Date</th><th>Customer</th><th>Subject</th><th>Status</th></tr></thead><tbody id="queries-table-body" class="text-xs"></tbody></table>
+            </div>
+        </section>
+        
+        <section id="support" class="tab-content">
+             <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-[#322C2B]">Footer & Policy Manager</h2></div>
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                     <h3 class="text-xs font-bold uppercase mb-4 text-gray-400 tracking-widest">Add Link</h3>
+                     <form id="supportLinkForm" class="space-y-4">
+                         <input type="text" id="sup_title" class="w-full mt-1 border-b p-2 outline-none" required placeholder="Title">
+                         <input type="text" id="sup_url" class="w-full mt-1 border-b p-2 outline-none" required placeholder="URL">
+                         <button type="submit" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px]">Add Link</button>
+                     </form>
+                 </div>
+                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><h3 class="text-xs font-bold uppercase mb-4 text-gray-400 tracking-widest">Active Links</h3><div id="support-link-list" class="space-y-2"></div></div>
+                 
+                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 md:col-span-2">
+                    <h3 class="text-xs font-bold uppercase mb-4 text-[#B36A5E] tracking-widest">Invoice Terms & Policy (Appears on Invoice Footer)</h3>
+                    <textarea id="invoice_terms_input" class="w-full border rounded-lg p-3 text-xs h-24 outline-none focus:border-[#B36A5E] bg-gray-50" placeholder="Enter terms and conditions, return policy, etc..."></textarea>
+                    <button onclick="saveInvoiceTerms()" class="mt-4 bg-[#322C2B] text-white py-3 px-8 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition">Save Invoice Terms</button>
+                </div>
+             </div>
+        </section>
+
+        <section id="contact-settings" class="tab-content">
+             <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-[#322C2B]">Social Media & Contact</h2></div>
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><h3 class="text-xs font-bold uppercase mb-4 text-[#B36A5E] tracking-widest">Contact Info</h3><form id="contactInfoForm" class="space-y-4"><input type="text" id="con_phone" class="w-full mt-1 border-b p-2 outline-none" placeholder="Phone"><input type="email" id="con_email" class="w-full mt-1 border-b p-2 outline-none" placeholder="Email"><input type="text" id="con_address" class="w-full mt-1 border-b p-2 outline-none" placeholder="Address"><button type="submit" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px]">Update</button></form></div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><h3 class="text-xs font-bold uppercase mb-4 text-[#B36A5E] tracking-widest">Social Media</h3><form id="socialLinkForm" class="space-y-4"><div class="flex gap-2"><select id="soc_platform" class="border p-2 rounded-lg text-xs outline-none"><option value="Instagram">Instagram</option><option value="Facebook">Facebook</option><option value="WhatsApp">WhatsApp</option></select><input type="text" id="soc_url" placeholder="URL..." class="flex-1 border p-2 rounded-lg text-xs outline-none"></div><button type="submit" class="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold uppercase text-[10px]">Save</button></form><div id="social-link-list" class="mt-6 space-y-2"></div></div>
+             </div>
+        </section>
+    </main>
+
+    <div id="productModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[200] backdrop-blur-sm p-4">
+        <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div class="p-6 border-b flex justify-between items-center bg-gray-50 sticky top-0 z-10"><h2 class="text-xl font-serif font-bold text-[#322C2B]">Product Manager</h2><button onclick="closeProductModal()" class="text-gray-400 hover:text-black text-2xl">&times;</button></div>
+            <div class="p-8">
+                <form id="productForm" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-5">
+                        <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500">Product Name <input type="text" id="p_name" required class="w-full mt-1 border-b border-gray-300 py-2 outline-none focus:border-[#B36A5E] text-base"></label>
+                        <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500 flex justify-between items-end"><span>SKU Number</span> <span class="text-[9px] text-gray-400 font-normal normal-case">(Auto-Generates)</span></label>
+                        <input type="text" id="p_sku" required class="w-full border-b border-gray-300 py-2 outline-none focus:border-[#B36A5E] font-mono text-[#B36A5E] font-bold">
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500">Price (৳) <input type="number" id="p_price" required class="w-full mt-1 border-b border-gray-300 py-2 outline-none focus:border-[#B36A5E]"></label>
+                            <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500">Original Price <input type="number" id="p_originalPrice" class="w-full mt-1 border-b border-gray-300 py-2 outline-none focus:border-[#B36A5E]"></label>
+                            <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500" title="Cost to Purchase">Purchase (৳) <input type="number" id="p_purchasePrice" class="w-full mt-1 border-b border-gray-300 py-2 outline-none focus:border-[#B36A5E]"></label>
+                            <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500" title="Supplier Shipping Per Unit">Sup. Ship (৳) <input type="number" id="p_supplierShipping" class="w-full mt-1 border-b border-gray-300 py-2 outline-none focus:border-[#B36A5E]"></label>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500">Category <select id="p_category" class="w-full mt-1 border-b border-gray-300 py-2 outline-none focus:border-[#B36A5E] bg-white"><option value="">Select...</option></select></label>
+                            <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500">Sub-Category <select id="p_subcategory" onchange="autoGenerateSKU()" class="w-full mt-1 border-b border-gray-300 py-2 outline-none focus:border-[#B36A5E] bg-white"><option value="">Select...</option></select></label>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500">Stock Quantity <input type="number" id="p_stock" required class="w-full mt-1 border-b border-gray-300 py-2 outline-none focus:border-[#B36A5E]"></label>
+                            <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500">Weight (KG) <input type="number" step="0.01" id="p_weight" class="w-full mt-1 border-b border-gray-300 py-2 outline-none focus:border-[#B36A5E]"></label>
+                        </div>
+
+                        <div class="flex flex-col gap-3 pt-4">
+                            <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" id="p_isNew" checked class="accent-[#B36A5E] w-4 h-4"> <span class="text-xs font-bold uppercase text-gray-600">New Arrival</span></label>
+                            <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" id="p_isVisible" checked class="accent-[#B36A5E] w-4 h-4"> <span class="text-xs font-bold uppercase text-gray-600">Visible on Store</span></label>
+                            <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer border-[#10B981] bg-green-50"><input type="checkbox" id="p_isFreeDelivery" class="accent-[#10B981] w-4 h-4"> <span class="text-xs font-bold uppercase text-green-700">Free Delivery Available</span></label>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <label class="block text-[11px] font-bold uppercase text-gray-500">Short Description<textarea id="p_shortDesc" class="w-full mt-1 border rounded-lg p-2 text-xs h-16 outline-none focus:border-[#B36A5E]"></textarea></label>
+                        <label class="block text-[11px] font-bold uppercase text-gray-500">Special Instructions<textarea id="p_instructions" class="w-full mt-1 border rounded-lg p-2 text-xs h-20 outline-none focus:border-[#B36A5E]"></textarea></label>
+                        <label class="block text-[11px] font-bold uppercase text-gray-500">Detailed Description<textarea id="p_longDesc" class="w-full mt-1 border rounded-lg p-2 text-xs h-32 outline-none focus:border-[#B36A5E]"></textarea></label>
+                        
+                        <p class="text-[10px] font-bold tracking-widest uppercase text-gray-400 mt-4">Product Gallery</p>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="border-2 border-dashed rounded-lg p-1 h-24 relative flex items-center justify-center bg-gray-50"><input type="file" class="absolute inset-0 opacity-0 cursor-pointer" onchange="processGalleryImage(this, 'preview1', 1)"><img id="preview1" class="hidden h-full w-full object-cover rounded"><span id="placeholder1" class="text-[8px] font-bold text-gray-400">MAIN</span></div>
+                            <div class="border-2 border-dashed rounded-lg p-1 h-24 relative flex items-center justify-center bg-gray-50"><input type="file" class="absolute inset-0 opacity-0 cursor-pointer" onchange="processGalleryImage(this, 'preview2', 2)"><img id="preview2" class="hidden h-full w-full object-cover rounded"><span id="placeholder2" class="text-[8px] font-bold text-gray-400">+ IMG 2</span></div>
+                            <div class="border-2 border-dashed rounded-lg p-1 h-24 relative flex items-center justify-center bg-gray-50"><input type="file" class="absolute inset-0 opacity-0 cursor-pointer" onchange="processGalleryImage(this, 'preview3', 3)"><img id="preview3" class="hidden h-full w-full object-cover rounded"><span id="placeholder3" class="text-[8px] font-bold text-gray-400">+ IMG 3</span></div>
+                        </div>
+                        <p id="compress-msg" class="hidden text-[10px] text-[#B36A5E] text-center animate-pulse">Processing images...</p>
+                    </div>
+                    <div class="md:col-span-2 pt-4 border-t"><button type="submit" id="submitBtn" class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase hover:bg-[#B36A5E] transition shadow-lg">Save Product</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="restockModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[250] p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b bg-gray-50 flex justify-between items-center"><h2 class="font-bold text-[#322C2B]">Restock: <span id="restock-product-name" class="text-[#B36A5E]">...</span></h2><button onclick="closeRestockModal()" class="text-gray-400 text-2xl hover:text-black transition">&times;</button></div>
+            <div class="p-8 space-y-4">
+                <p class="text-xs text-gray-500 mb-4">Adding stock here will log a new FIFO batch.</p>
+                <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500">Quantity to Add <input type="number" id="r_qty" required class="w-full mt-1 border-b py-2 outline-none focus:border-[#B36A5E] text-base"></label>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500">Purchase Price / Unit (৳) <input type="number" id="r_price" required class="w-full mt-1 border-b py-2 outline-none focus:border-[#B36A5E]"></label>
+                    <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500">Shipping Cost / Unit (৳) <input type="number" id="r_shipping" required class="w-full mt-1 border-b py-2 outline-none focus:border-[#B36A5E]"></label>
+                </div>
+                <button onclick="submitRestock()" id="restockBtn" class="w-full mt-4 bg-[#10B981] text-white py-3 rounded-xl font-bold uppercase text-[10px] shadow-lg hover:bg-green-600 transition">Confirm Restock</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="categoryModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[200] backdrop-blur-sm p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6">
+            <h3 class="text-xl font-bold mb-4">Manage Categories</h3>
+            <form id="categoryForm" class="space-y-4 mb-4"><input type="text" id="cat_name" list="existing-cats" placeholder="Category Name" class="w-full border p-3 rounded-lg text-sm font-bold" required autocomplete="off"><datalist id="existing-cats"></datalist><input type="text" id="sub_name" placeholder="Sub-Category" class="w-full border p-3 rounded-lg text-sm"><button type="submit" class="w-full bg-[#322C2B] text-white py-3 rounded-lg font-bold uppercase text-xs">+ Add / Append</button></form>
+            <div id="category-list" class="max-h-48 overflow-y-auto"></div><button onclick="document.getElementById('categoryModal').classList.add('hidden')" class="mt-4 w-full text-gray-500 text-xs font-bold uppercase">Close</button>
+        </div>
+    </div>
+
+    <div id="crmDetailModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[250] p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b flex justify-between items-center bg-gray-50 shrink-0">
+                <h2 class="font-bold text-lg text-[#322C2B]">Customer Profile: <span id="crm-user-name">...</span></h2>
+                <button onclick="closeCRMModal()" class="text-gray-400 text-2xl hover:text-black transition">&times;</button>
+            </div>
+            <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 overflow-y-auto">
+                <div class="space-y-4 flex flex-col">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Control Panel</p>
+                    <label class="block">
+                        <span class="text-xs text-gray-500">Customer Tag</span>
+                        <select id="crm-edit-tag" class="w-full border rounded-lg p-2 text-xs mt-1 outline-none focus:border-[#B36A5E]">
+                            <option value="VIP">VIP</option>
+                            <option value="Good">Good</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Risky">Risky (Returns)</option>
+                        </select>
+                    </label>
+                    <div class="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-100 mt-2">
+                        <input type="checkbox" id="crm-edit-block" class="accent-red-600 w-4 h-4 cursor-pointer">
+                        <span class="text-xs font-bold text-red-600">Block Customer Account</span>
+                    </div>
+                    <button onclick="saveCRMChanges()" class="w-full bg-[#322C2B] text-white py-3 mt-2 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-md">Apply Changes</button>
+                    
+                    <div class="pt-6 mt-2 flex-1 flex flex-col min-h-0">
+                        <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-3 shrink-0 border-b border-gray-100 pb-2">Saved Addresses</p>
+                        <div id="crm-saved-addresses" class="flex-1 overflow-y-auto pr-1"></div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 p-6 rounded-xl flex flex-col h-full border border-gray-100 min-h-0">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 shrink-0">Snapshot Stats</p>
+                    <div class="space-y-2 pb-4 border-b border-gray-200 shrink-0">
+                        <div class="flex justify-between"><span class="text-xs text-gray-600">Total Spend:</span><span id="crm-stat-spend" class="font-bold text-[#B36A5E]">৳0</span></div>
+                        <div class="flex justify-between"><span class="text-xs text-gray-600">Total no. of orders:</span><span id="crm-stat-total-orders" class="font-bold text-[#322C2B]">0</span></div>
+                        <div class="flex justify-between"><span class="text-xs text-gray-600">Total successful orders:</span><span id="crm-stat-success-orders" class="font-bold text-green-600">0</span></div>
+                        <div class="flex justify-between"><span class="text-xs text-gray-600">Total orders Returned:</span><span id="crm-stat-returned-orders" class="font-bold text-red-600">0</span></div>
+                        <div class="flex justify-between"><span class="text-xs text-gray-600">Total orders Cancelled:</span><span id="crm-stat-cancelled-orders" class="font-bold text-red-600">0</span></div>
+                    </div>
+
+                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-4 mb-2 shrink-0">Full Order History</p>
+                    <div id="crm-order-history" class="flex-1 overflow-y-auto pr-1 space-y-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="shipModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[250] p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b bg-gray-50 flex justify-between items-center"><h2 class="font-bold text-[#322C2B]">Verify Order: <span id="verify-order-id" class="text-blue-600">...</span></h2><button onclick="closeShipModal()" class="text-gray-400 text-2xl">&times;</button></div>
+            <div class="p-8 space-y-6">
+                <div id="verification-user-info"><p class="text-center text-gray-400 text-xs animate-pulse">Loading customer profile...</p></div>
+                <div class="space-y-4"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Update Delivery Info</p><input type="text" id="verify-edit-name" placeholder="Receiver Name" class="w-full border-b py-2 outline-none text-sm"><input type="tel" id="verify-edit-phone" placeholder="Contact Number" class="w-full border-b py-2 outline-none text-sm"></div>
+                <div class="grid grid-cols-3 gap-3 pt-4"><button onclick="updateOrderStatus('Cancelled')" class="bg-red-50 text-red-600 py-3 rounded-xl font-bold uppercase text-[9px] hover:bg-red-100 transition">Cancel Order</button><button onclick="updateOrderStatus('Pending')" class="bg-gray-100 text-gray-500 py-3 rounded-xl font-bold uppercase text-[9px] hover:bg-gray-200 transition">Unreachable</button><button onclick="updateOrderStatus('Confirmed')" class="bg-[#10B981] text-white py-3 rounded-xl font-bold uppercase text-[9px] shadow-lg hover:opacity-90 transition">Confirm Order</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="returnModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[250] p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b bg-gray-50 flex justify-between items-center"><h2 class="font-bold text-red-600">Initiate Return: <span id="return-order-id" class="text-gray-700">...</span></h2><button onclick="closeReturnModal()" class="text-gray-400 text-2xl hover:text-black transition">&times;</button></div>
+            <div class="p-8 space-y-4">
+                <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500">Reason for Return</label>
+                <select id="return-reason" class="w-full border rounded-lg p-3 text-sm outline-none focus:border-[#B36A5E] bg-white">
+                    <option value="Damaged during delivery">Damaged during delivery</option>
+                    <option value="Defective / Not working">Defective / Not working</option>
+                    <option value="Missing parts or accessories">Missing parts or accessories</option>
+                    <option value="Wrong item delivered">Wrong item delivered</option>
+                    <option value="Incomplete package">Incomplete package</option>
+                    <option value="Changed Mind">Changed Mind</option>
+                </select>
+                
+                <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500 mt-4">Custom Remarks (Optional)</label>
+                <textarea id="return-remarks" class="w-full border rounded-lg p-3 text-sm outline-none focus:border-[#B36A5E] h-24" placeholder="Any specific details about the issue..."></textarea>
+                
+                <button onclick="submitReturn()" class="w-full mt-4 bg-red-600 text-white py-3 rounded-xl font-bold uppercase text-[10px] shadow-lg hover:bg-red-700 transition">Initiate Return</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="receiveReturnModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[260] p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b bg-gray-50 flex justify-between items-center"><h2 class="font-bold text-[#322C2B]">Process Returned Items: <span id="receive-order-id" class="text-blue-600">...</span></h2><button onclick="closeReceiveReturnModal()" class="text-gray-400 text-2xl hover:text-black transition">&times;</button></div>
+            <div class="p-8 space-y-4">
+                <p class="text-xs text-gray-600 mb-4">The return has been physically received. What is the condition of the returned product(s)?</p>
+                
+                <label class="flex items-center gap-3 p-4 border rounded-xl cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="return_condition" value="Restock" checked class="w-4 h-4 accent-[#10B981]">
+                    <div>
+                        <p class="font-bold text-sm">Good Condition (Restock)</p>
+                        <p class="text-[10px] text-gray-500">Products will be safely added back to cloud inventory.</p>
+                    </div>
+                </label>
+                
+                <label class="flex items-center gap-3 p-4 border rounded-xl cursor-pointer hover:bg-red-50 border-red-100">
+                    <input type="radio" name="return_condition" value="Defective" class="w-4 h-4 accent-red-600">
+                    <div>
+                        <p class="font-bold text-sm text-red-600">Defective / Damaged</p>
+                        <p class="text-[10px] text-red-400">Do not restock. Will be logged as damaged product loss.</p>
+                    </div>
+                </label>
+
+                <button onclick="submitReceiveReturn()" class="w-full mt-4 bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px] shadow-lg hover:bg-[#B36A5E] transition">Confirm & Mark Returned</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="damagedListModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[260] p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="p-6 border-b bg-gray-50 flex justify-between items-center shrink-0">
+                <h2 class="font-bold text-red-600">Damaged Products Log</h2>
+                <button onclick="closeDamagedListModal()" class="text-gray-400 text-2xl hover:text-black transition">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <table class="w-full text-left text-xs border border-gray-100 rounded-lg overflow-hidden">
+                    <thead class="bg-gray-50 text-[10px] font-bold uppercase text-gray-400">
+                        <tr><th class="p-3">Date Logged</th><th>Order ID</th><th>Product</th><th>Qty</th><th>Loss Val</th></tr>
+                    </thead>
+                    <tbody id="damaged-list-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="requestModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[200] p-4 backdrop-blur-sm flex">
+        <div class="bg-white w-full max-w-lg rounded-2xl p-8 max-h-[80vh] overflow-y-auto flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-4">
+                <h2 class="text-xl font-bold text-[#322C2B]">Product Requests</h2>
+                <button onclick="exportRequestsCSV()" class="bg-[#10B981] text-white px-4 py-2 rounded-lg text-[9px] font-bold uppercase hover:bg-green-600 transition shadow-sm">Export to CSV</button>
+            </div>
+            <div class="flex gap-4 mb-4 border-b border-gray-100 pb-2">
+                <button id="tab-req-new" onclick="toggleRequestView('new')" class="text-xs font-bold uppercase tracking-widest text-[#B36A5E] underline">Active / New</button>
+                <button id="tab-req-res" onclick="toggleRequestView('resolved')" class="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-gray-600">Resolved History</button>
+            </div>
+            <div id="request-list" class="space-y-3 flex-1 overflow-y-auto pr-1"></div>
+            <button onclick="document.getElementById('requestModal').classList.add('hidden')" class="mt-4 bg-gray-100 w-full text-gray-600 py-3 rounded-xl text-xs font-bold uppercase hover:bg-gray-200 transition shrink-0">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // --- FIREBASE INIT ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0",
+            authDomain: "sterling-erp.firebaseapp.com",
+            projectId: "sterling-erp",
+            storageBucket: "sterling-erp.firebasestorage.app",
+            messagingSenderId: "692099720173",
+            appId: "1:692099720173:web:2a615f750352021d693de4"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // --- GLOBAL VARIABLES ---
+        let ordersCache = {};
+        let editProductId = null;
+        let activeRestockProductId = null; 
+        let galleryBlobs = { 1: null, 2: null, 3: null }; 
+        let profitChart, logisticsChart;
+        let activeOrderDocId = null;
+        let activeCRMUserId = null;
+        let activeReturnOrderId = null; 
+        let activeReceiveOrderId = null; 
+        let invoiceTermsText = "Exchange allowed within 7 days. No Cash Refund."; 
+
+        let inventoryDataCache = [];
+        let inventorySort = { key: 'dateAdded', desc: true };
+        let activeRequestProductId = null;
+        let activeRequestView = 'new';
+        let requestsDataCache = [];
+        let isInventoryLoading = false; 
+
+        // --- HELPER FOR ROBUST ADDRESS DISPLAY ---
+        window.getAddressDisplay = function(addr) {
+            if (!addr) return "N/A";
+            if (typeof addr === 'string') return addr;
+            if (addr.fullDisplay) return addr.fullDisplay;
+            if (addr.detail) return addr.detail;
+            
+            let parts = [];
+            if (addr.addressLine1) parts.push(addr.addressLine1);
+            if (addr.street) parts.push(addr.street);
+            if (addr.house) parts.push(addr.house);
+            if (addr.addressLine2) parts.push(addr.addressLine2);
+            if (addr.area) parts.push(addr.area);
+            if (addr.city) parts.push(addr.city);
+            if (addr.zone) parts.push(addr.zone);
+            if (addr.zip || addr.postalCode) parts.push(addr.zip || addr.postalCode);
+            if (addr.address) parts.push(addr.address);
+            
+            if (parts.length > 0) return [...new Set(parts)].filter(Boolean).join(', ');
+            
+            // Ultimate fallback for custom structures that might not match standard keys
+            try {
+                let cleanObj = Object.assign({}, addr);
+                delete cleanObj.phone;
+                delete cleanObj.type;
+                delete cleanObj._exactType;
+                delete cleanObj.tag;
+                delete cleanObj.isDefault;
+                delete cleanObj.name;
+                if (Object.keys(cleanObj).length > 0) {
+                    return Object.values(cleanObj).filter(Boolean).join(', ');
+                }
+            } catch(e) {}
+            
+            return "N/A";
+        };
+        
+        // --- ORDER PIPELINE & SORTING/FILTERING ---
+        window.ordersArrayCache = []; 
+        window.orderSorts = {
+            'Pending': { key: 'orderDate', desc: true },
+            'Processing': { key: 'orderDate', desc: true },
+            'History': { key: 'orderDate', desc: true }
+        };
+
+        window.loadOrders = async function() {
+            const pendingList = document.getElementById('pipeline-pending');
+            const processingList = document.getElementById('pipeline-processing');
+            const historyList = document.getElementById('pipeline-history');
+            
+            if(pendingList) pendingList.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-gray-400"><div class="loader mx-auto"><\/div><\/td><\/tr>';
+            if(processingList) processingList.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-gray-400"><div class="loader mx-auto"><\/div><\/td><\/tr>';
+            if(historyList) historyList.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-gray-400"><div class="loader mx-auto"><\/div><\/td><\/tr>'; 
+            
+            try {
+                const snap = await db.collection("orders").orderBy("orderDate", "desc").limit(100).get();
+                
+                let tempCache = {};
+                let tempArray = [];
+                
+                snap.forEach(function(doc) {
+                    const o = doc.data();
+                    o.id = doc.id;
+                    tempCache[doc.id] = o; 
+                    tempArray.push(o);
+                });
+                
+                ordersCache = tempCache;
+                window.ordersArrayCache = tempArray;
+                
+                window.renderOrdersTable();
+                window.calculateDamagedLoss(); 
+                
+            } catch (e) { 
+                console.error("Order Load Error:", e); 
+                if(pendingList) pendingList.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500">Error loading orders. Check Console.<\/td><\/tr>'; 
+            }
+        };
+
+window.sortOrders = function(stage, key) {
+            // Apply sorting rules only to the specific table that was clicked
+            if (!window.orderSorts[stage]) return;
+            if (window.orderSorts[stage].key === key) { 
+                window.orderSorts[stage].desc = !window.orderSorts[stage].desc; 
+            } else { 
+                window.orderSorts[stage].key = key; 
+                window.orderSorts[stage].desc = true; 
+            }
+            window.renderOrdersTable();
+        };
+
+        window.renderOrdersTable = function() {
+            const pendingList = document.getElementById('pipeline-pending');
+            const processingList = document.getElementById('pipeline-processing');
+            const historyList = document.getElementById('pipeline-history');
+            
+            const searchInput = document.getElementById('order-search');
+            const searchVal = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const fromVal = document.getElementById('order-date-from') ? document.getElementById('order-date-from').value : '';
+            const toVal = document.getElementById('order-date-to') ? document.getElementById('order-date-to').value : '';
+            
+            // 1. GLOBAL FILTERING
+            let filteredOrders = [];
+            let phoneOrderMap = {};
+
+            window.ordersArrayCache.forEach(o => {
+                const accountPhone = o.userPhone || o.phone || 'N/A';
+                const pStr = accountPhone.toLowerCase();
+                const dTime = o.orderDate ? (o.orderDate.toDate ? o.orderDate.toDate().getTime() : new Date(o.orderDate).getTime()) : Date.now();
+                if (!phoneOrderMap[pStr] || dTime < phoneOrderMap[pStr]) {
+                    phoneOrderMap[pStr] = dTime;
+                }
+
+                let dateMatch = true;
+                const oTime = o.orderDate ? (o.orderDate.toDate ? o.orderDate.toDate().getTime() : new Date(o.orderDate).getTime()) : 0;
+                if (fromVal || toVal) {
+                    const fromTime = fromVal ? new Date(fromVal).setHours(0,0,0,0) : 0;
+                    const toTime = toVal ? new Date(toVal).setHours(23,59,59,999) : Infinity;
+                    if (oTime < fromTime || oTime > toTime) dateMatch = false;
+                }
+
+                let searchMatch = true;
+                if (searchVal) {
+                    const phoneStr = (o.phone || o.verifiedPhone || o.userPhone || '').toLowerCase();
+                    const orderIdStr = (o.orderId || '').toLowerCase();
+                    if (!phoneStr.includes(searchVal) && !orderIdStr.includes(searchVal)) searchMatch = false; 
+                }
+
+                if (dateMatch && searchMatch) {
+                    filteredOrders.push(o);
+                }
+            });
+
+            // 2. SPLIT INTO INDEPENDENT ARRAYS BEFORE SORTING
+            let pendingArr = [], processingArr = [], historyArr = [];
+            
+            filteredOrders.forEach(o => {
+                const status = o.status || 'Pending';
+                if (status === 'Pending') pendingArr.push(o);
+                else if (['Confirmed', 'Packed', 'Handed over', 'Return Initiated'].includes(status)) processingArr.push(o);
+                else historyArr.push(o);
+            });
+
+            // 3. INDEPENDENT SORTING FUNCTION
+            const applyTableSort = (arr, sortSettings) => {
+                arr.sort((a, b) => {
+                    let v1 = a[sortSettings.key];
+                    let v2 = b[sortSettings.key];
+
+                    if (sortSettings.key === 'orderDate') {
+                        v1 = a.orderDate ? (a.orderDate.toDate ? a.orderDate.toDate().getTime() : new Date(a.orderDate).getTime()) : 0;
+                        v2 = b.orderDate ? (b.orderDate.toDate ? b.orderDate.toDate().getTime() : new Date(b.orderDate).getTime()) : 0;
+                    } else if (sortSettings.key === 'status' || sortSettings.key === 'orderId') {
+                        v1 = (v1 || '').toString().toLowerCase();
+                        v2 = (v2 || '').toString().toLowerCase();
+                    }
+
+                    if (v1 < v2) return sortSettings.desc ? 1 : -1;
+                    if (v1 > v2) return sortSettings.desc ? -1 : 1;
+                    return 0;
+                });
+            };
+
+            applyTableSort(pendingArr, window.orderSorts['Pending']);
+            applyTableSort(processingArr, window.orderSorts['Processing']);
+            applyTableSort(historyArr, window.orderSorts['History']);
+
+            // 4. GENERATE HTML USING YOUR EXACT STRING FORMATTING
+            let pHTML = '', prHTML = '', hHTML = '';
+            
+            const generateRowHTML = (o, targetList) => {
+                const oid = o.id;
+                let dateStr = "N/A";
+                let rawDateObj = null;
+                if(o.orderDate && o.orderDate.toDate) rawDateObj = o.orderDate.toDate();
+                else if (o.orderDate) rawDateObj = new Date(o.orderDate);
+                if(rawDateObj) dateStr = rawDateObj.toLocaleDateString();
+
+                let lastUpdateStr = o.lastUpdate ? new Date(o.lastUpdate).toLocaleDateString() : 'N/A';
+                const status = o.status || 'Pending';
+                const amount = o.totalAmount || 0;
+                const customerName = o.userName || 'Unknown';
+                
+                let accountPhone = o.userPhone || o.phone;
+                if ((!accountPhone || accountPhone === 'N/A') && o.userId && window.crmDataCache) {
+                    const crmUser = window.crmDataCache.find(u => u.id === o.userId);
+                    if (crmUser && crmUser.phone && crmUser.phone !== 'N/A') accountPhone = crmUser.phone;
+                }
+                if (!accountPhone || accountPhone === 'N/A') {
+                    accountPhone = (o.billingAddress && o.billingAddress.phone) || (o.address && o.address.phone) || (o.shippingAddress && o.shippingAddress.phone) || 'N/A';
+                }
+                
+                let isNewBadge = '';
+                const pStr = accountPhone.toLowerCase();
+                if (rawDateObj && pStr !== 'n/a' && pStr !== 'unknown' && phoneOrderMap[pStr] === rawDateObj.getTime()) {
+                    isNewBadge = '<span class="bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded text-[8px] uppercase font-bold ml-2 shadow-sm tracking-widest">NEW<\/span>';
+                }
+                
+                let crmTagBadge = '';
+                if (window.crmDataCache && window.crmDataCache.length > 0) {
+                    const userCRM = window.crmDataCache.find(u => u.phone === accountPhone || u.id === o.userId);
+                    if (userCRM && userCRM.tag) {
+                        let cBg = 'bg-gray-100 text-gray-600';
+                        if (userCRM.tag === 'VIP') cBg = 'bg-purple-100 text-purple-600';
+                        if (userCRM.tag === 'Good') cBg = 'bg-green-100 text-green-600';
+                        if (userCRM.tag === 'Medium') cBg = 'bg-orange-100 text-orange-600';
+                        if (userCRM.tag === 'Risky') cBg = 'bg-red-100 text-red-600';
+                        crmTagBadge = '<span class="' + cBg + ' px-1.5 py-0.5 rounded text-[8px] uppercase font-bold ml-2 shadow-sm">' + userCRM.tag + '<\/span>';
+                    }
+                }
+
+                const customerNameDisplay = '<div class="font-bold flex items-center">' + customerName + crmTagBadge + isNewBadge + '<\/div>';
+                const customerPhoneDisplay = '<div class="text-[10px] text-gray-500 font-mono">' + accountPhone + '<\/div>';
+                const invoiceBtn = '<button onclick="generateInvoice(\'' + oid + '\')" class="text-xs border px-3 py-1.5 rounded-lg hover:bg-gray-100 shadow-sm" title="Print Invoice">📄 Invoice<\/button>';
+
+                if (targetList === 'Pending') {
+                    const revertedBadge = o.isReverted ? '<span class="bg-red-100 text-red-600 px-2 py-0.5 rounded text-[9px] uppercase font-bold ml-2 shadow-sm">Reverted<\/span>' : '';
+                    pHTML += '<tr class="border-b hover:bg-gray-50 transition">' +
+                        '<td class="p-4 font-mono font-bold text-blue-600">' + o.orderId + revertedBadge + '<\/td>' +
+                        '<td class="text-xs font-medium">' + dateStr + '<\/td>' +
+                        '<td>' + customerNameDisplay + '<\/td>' +
+                        '<td>' + customerPhoneDisplay + '<\/td>' +
+                        '<td class="font-bold">৳' + amount.toLocaleString() + '<\/td>' +
+                        '<td><span class="text-orange-500 font-bold text-[10px] bg-orange-50 px-2 py-1 rounded border border-orange-100">Pending Call<\/span><\/td>' +
+                        
+                        // --- UPDATED CELL (Wrapped flex inside a div) ---
+                        '<td class="p-4">' +
+                            '<div class="flex gap-2 items-center">' +
+                                '<button onclick="openShipModal(\'' + oid + '\')" class="bg-[#1F2937] text-white px-3 py-1.5 rounded-lg font-bold uppercase text-[9px] hover:bg-black transition shadow-sm">Verify<\/button>' +
+                            '<\/div>' +
+                        '<\/td>' +
+                        // ------------------------------------------------
+                        
+                    '<\/tr>';
+                }
+
+                else if (targetList === 'Processing') {
+                    let nextAction = '';
+                    let badgeClass = 'bg-blue-50 text-blue-600 border border-blue-100';
+
+                    if (status === 'Confirmed') {
+                         nextAction = '<button onclick="quickUpdate(\'' + oid + '\', \'Packed\')" class="bg-purple-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Mark Packed<\/button>';
+                    } else if (status === 'Packed') {
+                         badgeClass = 'bg-purple-50 text-purple-600 border border-purple-100';
+                         nextAction = '<button onclick="quickUpdate(\'' + oid + '\', \'Handed over\')" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Hand Over<\/button>';
+                    } else if (status === 'Handed over') {
+                         badgeClass = 'bg-orange-50 text-orange-600 border border-orange-100';
+                         nextAction = '<button onclick="quickUpdate(\'' + oid + '\', \'Delivered\')" class="bg-green-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Mark Delivered<\/button>';
+                    } else if (status === 'Return Initiated') {
+                         badgeClass = 'bg-red-50 text-red-600 border border-red-200 animate-pulse';
+                         nextAction = '<button onclick="openReceiveReturnModal(\'' + oid + '\')" class="bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-md hover:bg-red-700 transition whitespace-nowrap">Process Return Receipt<\/button>';
+                    }
+
+                    prHTML += '<tr class="border-b hover:bg-gray-50 transition">' +
+                        '<td class="p-4 font-mono font-bold text-gray-600">' + o.orderId + '<\/td>' +
+                        '<td class="text-xs font-medium">' + dateStr + '<\/td>' +
+                        '<td><span class="text-[10px] text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded">' + lastUpdateStr + '<\/span><\/td>' +
+                        '<td>' + customerNameDisplay + '<\/td>' +
+                        '<td>' + customerPhoneDisplay + '<\/td>' +
+                        '<td><span class="' + badgeClass + ' font-bold text-[10px] px-2 py-1 rounded">' + status + '<\/span><\/td>' +
+                        '<td>' + nextAction + '<\/td>' +
+                        '<td class="p-4">' + invoiceBtn + '<\/td>' +
+                    '<\/tr>';
+                } 
+                else if (targetList === 'History') {
+                    let badgeClass = '';
+                    let actionBtn = '';
+
+                    if (status === 'Delivered') {
+                        badgeClass = 'bg-green-100 text-green-700 border border-green-200';
+                        let timeExceededTag = '';
+                        if (o.lastUpdate) {
+                            const deliveredDate = new Date(o.lastUpdate).getTime();
+                            const now = Date.now();
+                            if ((now - deliveredDate) / (1000 * 3600 * 24) > 2) {
+                                timeExceededTag = '<span class="text-[8px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded ml-2 font-bold whitespace-nowrap shadow-sm">Time Exceeded<\/span>';
+                            }
+                        }
+                        actionBtn = '<div class="flex items-center"><button onclick="openReturnModal(\'' + oid + '\')" class="text-red-500 font-bold underline text-[10px] uppercase hover:text-red-700 transition">Return<\/button>' + timeExceededTag + '<\/div>';
+                        
+                    } else if (status === 'Returned') {
+                        badgeClass = 'bg-red-600 text-white border border-red-700';
+                        let conditionBadge = o.returnCondition === 'Defective' ? '<span class="bg-red-100 text-red-600 px-1 py-0.5 rounded text-[8px] ml-1">DEFECTIVE<\/span>' : '';
+                        actionBtn = '<div class="flex flex-col gap-1 items-start"><button onclick="alert(\'Reason: ' + (o.returnReason||'N/A') + '\\nRemarks: ' + (o.returnRemarks||'None') + '\')" class="text-gray-500 font-bold text-[9px] uppercase hover:underline transition">View Reason<\/button>' + conditionBadge + '<\/div>';
+                        
+                    } else {
+                        badgeClass = 'bg-red-100 text-red-700 border border-red-200';
+                        actionBtn = '<button onclick="revertToPending(\'' + oid + '\')" class="text-blue-500 font-bold underline text-[10px] uppercase hover:text-blue-700 transition">Revert<\/button>';
+                    }
+
+                    hHTML += '<tr class="border-b hover:bg-gray-50 opacity-90 transition">' +
+                        '<td class="p-4 font-mono text-gray-500">' + o.orderId + '<\/td>' +
+                        '<td class="text-xs text-gray-500 font-medium">' + dateStr + '<\/td>' +
+                        '<td class="text-xs text-[#322C2B] font-bold">' + lastUpdateStr + '<\/td>' +
+                        '<td>' + customerNameDisplay + '<\/td>' +
+                        '<td>' + customerPhoneDisplay + '<\/td>' +
+                        '<td><span class="' + badgeClass + ' font-bold text-[10px] px-2 py-1 rounded">' + status + '<\/span><\/td>' +
+                        '<td class="p-4">' + actionBtn + '<\/td>' +
+                        '<td class="p-4">' + invoiceBtn + '<\/td>' +
+                    '<\/tr>';
+                }
+            };
+
+            pendingArr.forEach(o => generateRowHTML(o, 'Pending'));
+            processingArr.forEach(o => generateRowHTML(o, 'Processing'));
+            historyArr.forEach(o => generateRowHTML(o, 'History'));
+
+            if (document.getElementById('count-pending')) document.getElementById('count-pending').innerText = pendingArr.length;
+            if (document.getElementById('count-processing')) document.getElementById('count-processing').innerText = processingArr.length;
+            
+            if(pendingList) pendingList.innerHTML = pHTML || '<tr><td colspan="7" class="p-4 text-center text-xs text-gray-400">No matching orders found.<\/td><\/tr>';
+            if(processingList) processingList.innerHTML = prHTML || '<tr><td colspan="8" class="p-4 text-center text-xs text-gray-400">Pipeline empty.<\/td><\/tr>';
+            if(historyList) historyList.innerHTML = hHTML || '<tr><td colspan="8" class="p-4 text-center text-xs text-gray-400">No history matches your search.<\/td><\/tr>'; 
+        };
+
+        window.quickUpdate = async function(id, status) {
+            if(confirm('Update status to "' + status + '"?')) {
+                await db.collection("orders").doc(id).update({ status: status, lastUpdate: new Date().toISOString() });
+                loadOrders();
+            }
+        };
+        
+        window.revertToPending = async function(id) {
+            if(confirm('Revert this order back to Stage 1 (Pending)?')) {
+                await db.collection("orders").doc(id).update({ status: 'Pending', isReverted: true, lastUpdate: new Date().toISOString() });
+                loadOrders();
+            }
+        };
+
+        // --- DASHBOARD DAMAGED LOSS CALCULATION ---
+        window.calculateDamagedLoss = function() {
+            let totalLoss = 0;
+            let listHtml = '';
+            
+            const damagedOrders = window.ordersArrayCache.filter(o => o.status === 'Returned' && o.returnCondition === 'Defective');
+            
+            damagedOrders.forEach(o => {
+                const dateStr = o.lastUpdate ? new Date(o.lastUpdate).toLocaleDateString() : 'N/A';
+                if(o.items && o.items.length > 0) {
+                    o.items.forEach(item => {
+                        const qty = item.quantity || 1;
+                        const price = item.price || 0;
+                        const val = qty * price;
+                        totalLoss += val;
+                        
+                        listHtml += '<tr class="border-b hover:bg-gray-50">' +
+                            '<td class="p-3">' + dateStr + '<\/td>' +
+                            '<td><a href="#orders" onclick="switchTab(\'orders\')" class="text-blue-500 font-mono font-bold hover:underline">#' + o.orderId + '<\/a><\/td>' +
+                            '<td class="font-medium">' + (item.name || 'Unknown Item') + '<\/td>' +
+                            '<td>' + qty + '<\/td>' +
+                            '<td class="font-bold text-red-600">৳' + val.toLocaleString() + '<\/td>' +
+                        '<\/tr>';
+                    });
+                } else {
+                    totalLoss += (o.totalAmount || 0);
+                    listHtml += '<tr class="border-b hover:bg-gray-50">' +
+                        '<td class="p-3">' + dateStr + '<\/td>' +
+                        '<td><a href="#orders" onclick="switchTab(\'orders\')" class="text-blue-500 font-mono font-bold hover:underline">#' + o.orderId + '<\/a><\/td>' +
+                        '<td class="font-medium">Unknown Items<\/td>' +
+                        '<td>-<\/td>' +
+                        '<td class="font-bold text-red-600">৳' + (o.totalAmount || 0).toLocaleString() + '<\/td>' +
+                    '<\/tr>';
+                }
+            });
+            
+            const kpiEl = document.getElementById('kpi-damaged');
+            if(kpiEl) kpiEl.innerText = '৳' + totalLoss.toLocaleString();
+            
+            const tbody = document.getElementById('damaged-list-body');
+            if(tbody) tbody.innerHTML = listHtml || '<tr><td colspan="5" class="p-6 text-center text-gray-400">No damaged returns logged.<\/td><\/tr>';
+        };
+
+        window.openDamagedListModal = function() {
+            document.getElementById('damagedListModal').classList.remove('hidden');
+            document.getElementById('damagedListModal').classList.add('flex');
+        };
+
+        window.closeDamagedListModal = function() {
+            document.getElementById('damagedListModal').classList.add('hidden');
+        };
+
+        // --- INITIATE RETURN LOGIC ---
+        window.openReturnModal = function(oid) {
+            activeReturnOrderId = oid;
+            const order = ordersCache[oid];
+            if(!order) return;
+            document.getElementById('return-order-id').innerText = order.orderId;
+            document.getElementById('return-reason').value = 'Damaged during delivery';
+            document.getElementById('return-remarks').value = '';
+            document.getElementById('returnModal').classList.remove('hidden');
+            document.getElementById('returnModal').classList.add('flex');
+        };
+
+        window.closeReturnModal = function() {
+            document.getElementById('returnModal').classList.add('hidden');
+            activeReturnOrderId = null;
+        };
+
+        window.submitReturn = async function() {
+            if(!activeReturnOrderId) return;
+            const reason = document.getElementById('return-reason').value;
+            const remarks = document.getElementById('return-remarks').value;
+            
+            try {
+                await db.collection("orders").doc(activeReturnOrderId).update({
+                    status: 'Return Initiated',
+                    isReverted: false,
+                    returnReason: reason,
+                    returnRemarks: remarks,
+                    lastUpdate: new Date().toISOString()
+                });
+                alert("Order moved to Logistics Stage for Return Processing.");
+                closeReturnModal();
+                loadOrders();
+            } catch (err) { alert("Error initiating return: " + err.message); }
+        };
+
+        // --- PROCESS RECEIVED RETURN LOGIC (RESTOCK OR DEFECTIVE) ---
+        window.openReceiveReturnModal = function(oid) {
+            activeReceiveOrderId = oid;
+            const order = ordersCache[oid];
+            if(!order) return;
+            document.getElementById('receive-order-id').innerText = order.orderId;
+            document.getElementById('receiveReturnModal').classList.remove('hidden');
+            document.getElementById('receiveReturnModal').classList.add('flex');
+        };
+
+        window.closeReceiveReturnModal = function() {
+            document.getElementById('receiveReturnModal').classList.add('hidden');
+            activeReceiveOrderId = null;
+        };
+
+        window.submitReceiveReturn = async function() {
+            if(!activeReceiveOrderId) return;
+            
+            const conditionInput = document.querySelector('input[name="return_condition"]:checked');
+            if(!conditionInput) return alert("Please select a condition.");
+            const condition = conditionInput.value;
+            
+            const order = ordersCache[activeReceiveOrderId];
+            
+            try {
+                await db.collection("orders").doc(activeReceiveOrderId).update({
+                    status: 'Returned',
+                    returnCondition: condition,
+                    lastUpdate: new Date().toISOString()
+                });
+
+                if (condition === 'Restock' && order.items && order.items.length > 0) {
+                    const batch = db.batch();
+                    let hasUpdates = false;
+                    order.items.forEach(item => {
+                        if (item.id) { 
+                            const pRef = db.collection("products").doc(item.id);
+                            batch.update(pRef, { stock: firebase.firestore.FieldValue.increment(item.quantity || 1) });
+                            hasUpdates = true;
+                        }
+                    });
+                    if(hasUpdates) await batch.commit();
+                }
+
+                alert("Return marked as received (" + condition + ").");
+                closeReceiveReturnModal();
+                loadOrders(); 
+                if(typeof loadInventory === 'function') loadInventory(); 
+            } catch (err) { alert("Error: " + err.message); }
+        };
+
+        window.loadInvoiceSettings = async function() {
+            try {
+                const doc = await db.collection("settings").doc("invoice_terms").get();
+                if(doc.exists) {
+                    invoiceTermsText = doc.data().text || "No returns.";
+                    const input = document.getElementById('invoice_terms_input');
+                    if(input) input.value = invoiceTermsText;
+                }
+            } catch(e) { console.error(e); }
+        };
+
+        window.saveInvoiceTerms = async function() {
+            const text = document.getElementById('invoice_terms_input').value;
+            await db.collection("settings").doc("invoice_terms").set({ text: text });
+            invoiceTermsText = text;
+            alert("Invoice terms saved successfully.");
+        };
+
+// --- CORRECTED INVOICE GENERATION LOGIC ---
+window.generateInvoice = async function(oid) {
+            const order = ordersCache[oid];
+            if(!order) return;
+            
+            const win = window.open('', '_blank');
+            win.document.open();
+            win.document.write('<div style="font-family: sans-serif; padding: 20px; color: #666;">Generating Invoice...<br>Please wait...<\/div>');
+
+            let fetchedUserPhone = null;
+            if (order.userId) {
+                try {
+                    const userDoc = await db.collection("users").doc(order.userId).get();
+                    if (userDoc.exists) fetchedUserPhone = userDoc.data().phone;
+                } catch(e) { console.error("Could not fetch user phone:", e); }
+            }
+
+            var itemsHtml = '';
+            
+            let orderDateStr = "N/A";
+            if(order.orderDate && order.orderDate.toDate) orderDateStr = order.orderDate.toDate().toLocaleDateString();
+            else if (order.orderDate) orderDateStr = new Date(order.orderDate).toLocaleDateString();
+            
+            const generationDate = new Date().toLocaleDateString();
+
+            let invoiceSubtotal = 0;
+            let itemLevelDiscountTotal = 0;
+
+            if (order.items) {
+                itemsHtml = order.items.map(function(i) {
+                    var qty = Number(i.quantity) || 1;
+                    var price = Number(i.price) || 0; 
+                    
+                    var origPrice = Number(i.originalPrice);
+                    if (isNaN(origPrice) || origPrice <= 0 || origPrice < price) origPrice = price; 
+                    
+                    var itemDiscount = (origPrice - price) * qty; 
+                    var itemFinalTotal = price * qty;             
+                    
+                    invoiceSubtotal += (origPrice * qty);
+                    itemLevelDiscountTotal += itemDiscount;
+
+                    var skuDisplay = i.sku || i.skuId || (i.id && i.id.length < 15 ? i.id : "N/A");
+                    var discountDisplay = itemDiscount > 0 ? '৳' + itemDiscount.toLocaleString() : '-';
+                    
+                    return '<tr>' +
+                        '<td style="text-align:left;">' + (i.name || "N/A") + '<\/td>' +
+                        '<td>' + skuDisplay + '<\/td>' +
+                        '<td>' + qty + '<\/td>' +
+                        '<td>৳' + origPrice.toLocaleString() + '<\/td>' + 
+                        '<td>' + discountDisplay + '<\/td>' +             
+                        '<td style="font-weight:bold;">৳' + itemFinalTotal.toLocaleString() + '<\/td>' + 
+                    '<\/tr>';
+                }).join('');
+            }
+            
+            let orderLevelDiscount = Number(order.discount) || Number(order.discountAmount) || 0;
+            let finalDiscountAmount = itemLevelDiscountTotal + orderLevelDiscount;
+
+            const termsArray = (typeof invoiceTermsText !== 'undefined' ? invoiceTermsText : "Exchange allowed within 7 days.\nNo Cash Refund.").split('\n').filter(function(line){ return line.trim() !== ""; });
+            const termsHtml = termsArray.map(function(line){ return '<li>' + line.trim() + '<\/li>'; }).join('');
+            
+            const billObj = order.billingAddress || order.address || {};
+            const billingName = order.userName || "N/A";
+            
+            const billingPhone = order.userPhone || order.phone || fetchedUserPhone || billObj.phone || "N/A";
+            const billDisplay = window.getAddressDisplay ? window.getAddressDisplay(billObj) : "N/A";
+
+            let shippingName = billingName;
+            let shippingPhone = billingPhone;
+            let relationBadge = "";
+            
+            if (order.receiverInfo && order.receiverInfo.type === 'Other') {
+                shippingName = order.receiverInfo.name || shippingName;
+                shippingPhone = order.receiverInfo.phone || shippingPhone;
+                if (order.receiverInfo.relation) {
+                    relationBadge = ' <span style="font-size:9px; background:#B36A5E; color:white; padding:2px 4px; border-radius:3px;">(' + order.receiverInfo.relation + ')<\/span>';
+                }
+            }
+            
+            if (order.verifiedName) shippingName = order.verifiedName;
+            if (order.verifiedPhone) shippingPhone = order.verifiedPhone; 
+
+            const shipObj = order.shippingAddress || order.address || {};
+            const shipDisplay = window.getAddressDisplay ? window.getAddressDisplay(shipObj) : "N/A";
+
+            let instructionsHtml = '';
+            if (order.deliveryInstructions) {
+                instructionsHtml = '<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #E5E7EB; color:#B36A5E; font-size:11px;"><b>Delivery Note:<\/b> ' + order.deliveryInstructions + '<\/div>';
+            }
+
+            var inv = '<!DOCTYPE html><html><head><title>Invoice ' + order.orderId + '<\/title>';
+            inv += '<link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Inter:wght@400;700&display=swap" rel="stylesheet">';
+            inv += '<style>' +
+                'body{font-family: "Inter", sans-serif; padding: 40px; color: #1A1A1A; line-height: 1.4;}' +
+                '.header{display:flex; justify-content:space-between; align-items: center; margin-bottom: 30px;}' +
+                '.logo{width: 180px;}' +
+                '.meta-info{text-align:right; font-size:11px; color:#4B5563;}' +
+                '.meta-info b{color:#111827;}' +
+                '.address-section{display:flex; gap: 40px; margin-bottom: 30px; border-top: 1px solid #E5E7EB; padding-top: 20px;}' +
+                '.address-box{flex: 1; font-size: 12px; color: #374151;}' +
+                '.address-box h4{margin: 0 0 5px 0; text-transform: uppercase; color: #9CA3AF; font-size: 9px; letter-spacing: 1px;}' +
+                '.address-box .name{font-weight: bold; font-size: 13px; color: #111827; margin-bottom: 2px;}' +
+                'table{width:100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #F3F4F6;}' +
+                'th{background:#F9FAFB; text-align:center; padding: 12px 8px; font-size:10px; font-weight:700; text-transform:uppercase; color:#6B7280; border-bottom: 2px solid #E5E7EB;}' +
+                'td{padding: 12px 8px; border-bottom: 1px solid #F3F4F6; font-size:12px; text-align:center;}' +
+                '.bottom-flex{display: flex; justify-content: space-between; align-items: flex-start; margin-top: 10px;}' +
+                '.greeting-area{flex: 1; font-size: 11px; color: #6B7280;}' +
+                '.greeting-area b{display: block; color: #B36A5E; margin-bottom: 3px; font-size: 13px;}' +
+                '.total-area{width: 250px; text-align: right; font-size: 12px;}' +
+                '.total-row{display: flex; justify-content: space-between; padding: 5px 0; color: #4B5563;}' +
+                '.grand-total{display: flex; justify-content: space-between; font-size: 16px; font-weight: 800; color: #111827; padding: 10px 0; border-top: 1px solid #E5E7EB; margin-top: 5px;}' +
+                '.footer-terms{margin-top: 40px; font-size: 10px; color: #4B5563; border-top: 1px dotted #E5E7EB; padding-top: 15px;}' +
+                '.footer-terms ul{margin: 5px 0 0 15px; padding: 0; list-style-type: disc;}' +
+                '.star-line{text-align:center; margin-top:60px; font-family: "Playfair Display", serif; font-weight:400; font-size:20px; color:#B36A5E; text-transform:uppercase; letter-spacing: 4px;}' +
+            '<\/style><\/head>';
+            
+            inv += '<body onload="window.print()">';
+            inv += '<div class="header">';
+            inv += '<img src="web-logo2.png" class="logo" alt="Sterling You">'; 
+            inv += '<div class="meta-info"><b>INVOICE #<\/b> ' + order.orderId + '<br>';
+            inv += '<b>ORDER DATE:<\/b> ' + orderDateStr + '<br>';
+            inv += '<b>GENERATION DATE:<\/b> ' + generationDate + '<br>';
+            inv += '<b>PAYMENT:<\/b> ' + (order.paymentMethod || 'Cash on Delivery') + '<\/div>';
+            inv += '<\/div>';
+
+            inv += '<div class="address-section">';
+            inv += '<div class="address-box"><h4>Billing Address<\/h4><div class="name">' + billingName + '<\/div>' + billingPhone + '<br><br>' + billDisplay + '<\/div>';
+            inv += '<div class="address-box"><h4>Delivery Address<\/h4><div class="name">' + shippingName + relationBadge + '<\/div>' + shippingPhone + '<br><br>' + shipDisplay + instructionsHtml + '<\/div>';
+            inv += '<\/div>';
+
+            inv += '<table><thead><tr>' +
+                '<th style="text-align:left;">Product Name<\/th><th>SKU ID<\/th><th>Qty<\/th><th>Rate<\/th><th>Discount<\/th><th>Amount<\/th>' +
+                '<\/tr><\/thead>';
+            inv += '<tbody>' + itemsHtml + '<\/tbody><\/table>';
+
+            inv += '<div class="bottom-flex">';
+            inv += '<div class="greeting-area"><b>Hello ' + billingName + ',<\/b>Thank you for your purchase from Sterling You.<br>Hope you will shop with us again.<\/div>';
+            
+            inv += '<div class="total-area">';
+            inv += '<div class="total-row"><span>Subtotal:<\/span><span>৳' + invoiceSubtotal.toLocaleString() + '<\/span><\/div>';
+            if (finalDiscountAmount > 0) {
+                inv += '<div class="total-row" style="color: #10B981;"><span>Discount:<\/span><span>-৳' + finalDiscountAmount.toLocaleString() + '<\/span><\/div>';
+            }
+
+            let actualShipping = 0;
+            if (order.customerShippingFee !== undefined) actualShipping = Number(order.customerShippingFee);
+            else if (order.shippingFee !== undefined) actualShipping = Number(order.shippingFee);
+            else if (order.shippingCost !== undefined) actualShipping = Number(order.shippingCost);
+            else if (order.deliveryFee !== undefined) actualShipping = Number(order.deliveryFee);
+            else if (order.totalAmount) {
+                let itemTotalSum = order.items.reduce((sum, item) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 1)), 0);
+                actualShipping = Number(order.totalAmount) - itemTotalSum;
+                if (actualShipping < 0) actualShipping = 0;
+            }
+
+            inv += '<div class="total-row"><span>Shipping Fee:<\/span><span>৳' + actualShipping.toLocaleString() + '<\/span><\/div>';
+            let finalGrandTotal = order.totalAmount ? Number(order.totalAmount) : (invoiceSubtotal - finalDiscountAmount + actualShipping);
+            inv += '<div class="grand-total"><span>Grand Total:<\/span><span>৳' + finalGrandTotal.toLocaleString() + '<\/span><\/div>';
+            inv += '<\/div>';
+            
+            inv += '<\/div>';
+            inv += '<div class="footer-terms"><b>INVOICE TERMS & POLICY:<\/b><ul>' + termsHtml + '<\/ul><\/div>';
+            inv += '<div class="star-line">YOU ARE THE STAR<\/div>';
+            inv += '<\/body><\/html>';
+            
+            // Re-open before writing new full HTML to overwrite the initial loading text
+            win.document.open();
+            win.document.write(inv);
+            win.document.close();
+        };
+
+        window.openShipModal = async function(orderDocId) {
+            activeOrderDocId = orderDocId;
+            const modal = document.getElementById('shipModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            try {
+                const order = ordersCache[orderDocId];
+                if(!order) return;
+                
+                const userDoc = await db.collection("users").doc(order.userId).get();
+                const user = userDoc.data() || { fullName: order.userName, phone: 'N/A' };
+                
+                document.getElementById('verify-order-id').innerText = order.orderId;
+
+                let deliveryName = user.fullName || order.userName;
+                let deliveryPhone = user.phone || 'N/A';
+                let receiverBadge = '<span class="bg-gray-200 text-gray-600 px-2 py-0.5 rounded text-[9px] uppercase font-bold ml-2">Self<\/span>';
+
+                if (order.receiverInfo && order.receiverInfo.type === 'Other') {
+                    deliveryName = order.receiverInfo.name;
+                    deliveryPhone = order.receiverInfo.phone;
+                    receiverBadge = `<span class="bg-[#B36A5E] text-white px-2 py-0.5 rounded text-[9px] uppercase font-bold ml-2">Someone Else (${order.receiverInfo.relation})<\/span>`;
+                }
+
+                document.getElementById('verify-edit-name').value = deliveryName;
+                document.getElementById('verify-edit-phone').value = deliveryPhone;
+
+                const shipAddr = window.getAddressDisplay(order.shippingAddress || order.address);
+                const billAddr = window.getAddressDisplay(order.billingAddress || order.address);
+
+                const itemsHtml = (order.items || []).map(i => `
+                    <div class="flex justify-between text-[11px] py-1 border-b border-gray-100 last:border-0">
+                        <span class="text-gray-600">${i.quantity}x ${i.name}<\/span>
+                        <span class="font-bold text-[#322C2B]">৳${(i.price * i.quantity).toLocaleString()}<\/span>
+                    <\/div>
+                `).join('');
+
+// --- REPLACE THIS SECTION IN openShipModal ---
+                
+                // 1. Calculate the dynamic shipping fee for the modal
+                let itemTotalSum = (order.items || []).reduce((acc, i) => acc + (i.price * (i.quantity || 1)), 0);
+                let modalShipping = 0;
+                if (order.shippingFee !== undefined) modalShipping = order.shippingFee;
+                else if (order.shippingCost !== undefined) modalShipping = order.shippingCost;
+                else if (order.deliveryFee !== undefined) modalShipping = order.deliveryFee;
+                else if (order.totalAmount) {
+                    modalShipping = order.totalAmount - itemTotalSum;
+                    if (modalShipping < 0) modalShipping = 0; 
+                }
+
+                document.getElementById('verification-user-info').innerHTML = `
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Ordered By<\/p>
+                                <a href="user-history.html?uid=${order.userId}" target="_blank" class="text-sm font-bold text-[#B36A5E] hover:underline cursor-pointer block">
+                                    ${user.fullName || order.userName}
+                                <\/a>
+                                <p class="text-[10px] text-gray-500 mt-0.5 font-medium">${user.phone || 'N/A'}<\/p>
+                            <\/div>
+                            <div class="text-right">
+                                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Payment / Total<\/p>
+                                <p class="text-sm font-bold text-[#322C2B]">${order.paymentMethod || 'COD'} / ৳${(order.totalAmount || 0).toLocaleString()}<\/p>
+                            <\/div>
+                        <\/div>
+
+                        <div>
+                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1 flex items-center">
+                                Delivery Target ${receiverBadge}
+                            <\/p>
+                            ${order.deliveryInstructions ? `<p class="text-[10px] text-[#B36A5E] italic mt-1 font-medium">Note: "${order.deliveryInstructions}"<\/p>` : ''}
+                        <\/div>
+
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-2 border-b pb-1">Order Items<\/p>
+                            ${itemsHtml}
+                            <div class="flex justify-between text-[11px] py-1 border-t border-gray-200 mt-1 pt-1">
+                                <span class="text-gray-600 font-medium">Shipping Fee<\/span>
+                                <span class="font-bold text-[#322C2B]">৳${modalShipping.toLocaleString()}<\/span>
+                            <\/div>
+                        <\/div>
+
+                        <div class="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <div>
+                                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1">Shipping Address<\/p>
+                                <p class="text-[10px] text-gray-600 leading-relaxed">${shipAddr}<\/p>
+                            <\/div>
+                            <div>
+                                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1">Billing Address<\/p>
+                                <p class="text-[10px] text-gray-600 leading-relaxed">${billAddr}<\/p>
+                            <\/div>
+                        <\/div>
+                    <\/div>
+                `;
+              
+                
+            } catch (err) {
+                console.error("Error opening ship modal:", err);
+            }
+        }
+
+        window.updateOrderStatus = async function(newStatus) {
+            if (!activeOrderDocId) return;
+            
+            if (newStatus === 'Cancelled') {
+                if (!confirm("Are you sure you want to cancel this order? This will move it to History.")) {
+                    return;
+                }
+            }
+
+            try {
+                await db.collection("orders").doc(activeOrderDocId).update({
+                    status: newStatus, 
+                    verifiedName: document.getElementById('verify-edit-name').value, 
+                    verifiedPhone: document.getElementById('verify-edit-phone').value, 
+                    verificationDate: new Date().toISOString(),
+                    lastUpdate: new Date().toISOString()
+                });
+                alert('Order ' + newStatus);
+                closeShipModal();
+                loadOrders(); 
+            } catch (err) { alert("Error: " + err.message); }
+        };
+
+        window.closeShipModal = function() { document.getElementById('shipModal').classList.add('hidden'); };
+
+        function initCharts() {
+            const ctx1 = document.getElementById('chart-profit');
+            const ctx2 = document.getElementById('chart-logistics');
+            if (profitChart) profitChart.destroy();
+            if (logisticsChart) logisticsChart.destroy();
+            if (ctx1 && ctx2) {
+                profitChart = new Chart(ctx1, { type: 'bar', data: { labels: ['Revenue', 'COGS', 'Expenses', 'Net Profit'], datasets: [{ label: 'Amount (৳)', data: [450200, 280000, 45000, 125200], backgroundColor: ['#3B82F6', '#9CA3AF', '#F87171', '#10B981'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+                logisticsChart = new Chart(ctx2, { type: 'doughnut', data: { labels: ['Delivered', 'In Transit', 'Returned'], datasets: [{ data: [85, 10, 5], backgroundColor: ['#10B981', '#F59E0B', '#EF4444'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false } });
+            }
+        }
+
+        function generateAbbreviation(str) {
+            if (!str) return 'XX';
+            const words = str.trim().split(/[\s-]+/);
+            if (words.length > 1) {
+                return (words[0][0] + words[1][0]).toUpperCase(); 
+            } else {
+                const caps = str.match(/[A-Z]/g);
+                if (caps && caps.length >= 2) return (caps[0] + caps[1]).toUpperCase();
+                return str.substring(0, 2).toUpperCase(); 
+            }
+        }
+
+        window.autoGenerateSKU = function() {
+            if (editProductId) return; 
+            
+            const cat = document.getElementById('p_category').value;
+            const subCat = document.getElementById('p_subcategory').value;
+            
+            if (cat) {
+                const catAbbr = generateAbbreviation(cat);
+                const subAbbr = subCat ? generateAbbreviation(subCat) : 'XX';
+                const randomNum = Math.floor(1000 + Math.random() * 9000); 
+                
+                document.getElementById('p_sku').value = 'SKU-' + catAbbr + '-' + subAbbr + '-' + randomNum;
+            }
+        };
+
+        let categoryMap = {}; 
+        let allSubCats = new Set(); 
+
+        window.loadCategories = async function() {
+            const catSel = document.getElementById('p_category');
+            const subSel = document.getElementById('p_subcategory');
+            const dataList = document.getElementById('existing-cats');
+            const list = document.getElementById('category-list');
+
+            if (!catSel || !subSel) return;
+
+            try {
+                const snap = await db.collection("categories").get();
+                let uniqueCats = new Set();
+                categoryMap = {}; 
+                allSubCats.clear(); 
+
+                if (list) list.innerHTML = '';
+                
+                snap.forEach(doc => {
+                    const c = doc.data();
+                    const cName = c.name ? c.name.trim() : "";
+                    const cSub = c.sub ? c.sub.trim() : "";
+                    
+                    if (cSub) allSubCats.add(cSub); 
+
+                    if (cName) {
+                        uniqueCats.add(cName);
+                        if (!categoryMap[cName]) categoryMap[cName] = [];
+                        if (cSub && !categoryMap[cName].includes(cSub)) {
+                            categoryMap[cName].push(cSub);
+                        }
+                    }
+
+                    if (list) {
+                        list.innerHTML += '<div class="flex justify-between p-2 border-b text-xs">' +
+                            '<span><b>' + (c.name || '') + '<\/b> ' + (c.sub ? ' > ' + c.sub : '') + '<\/span>' +
+                            '<button type="button" onclick="deleteCategory(\'' + doc.id + '\')" class="text-red-500 font-bold">X<\/button>' +
+                        '<\/div>';
+                    }
+                });
+
+                catSel.innerHTML = '';
+                const defaultOpt = document.createElement("option");
+                defaultOpt.value = "";
+                defaultOpt.textContent = "Select...";
+                catSel.appendChild(defaultOpt);
+                
+                if (dataList) dataList.innerHTML = '';
+                
+                uniqueCats.forEach(name => {
+                    const opt = document.createElement("option");
+                    opt.value = name;
+                    opt.textContent = name;
+                    catSel.appendChild(opt);
+                    if (dataList) dataList.innerHTML += '<option value="' + name + '">';
+                });
+
+                catSel.onchange = function() {
+                    const selectedCat = this.value;
+                    subSel.innerHTML = ''; 
+                    
+                    const subDefault = document.createElement("option");
+                    subDefault.value = "";
+                    subDefault.textContent = "Select...";
+                    subSel.appendChild(subDefault);
+                    
+                    let subsToShow = categoryMap[selectedCat] || [];
+                    
+                    if (subsToShow.length === 0) {
+                        subsToShow = Array.from(allSubCats);
+                    }
+                    
+                    subsToShow.forEach(sub => {
+                        const o = document.createElement("option");
+                        o.value = sub;
+                        o.textContent = sub;
+                        subSel.appendChild(o);
+                    });
+                    
+                    window.autoGenerateSKU();
+                };
+
+            } catch (e) { console.error("Error loading categories:", e); }
+        };
+
+        const originalEditProduct = window.editProduct;
+        window.editProduct = async function(id) {
+            if (typeof originalEditProduct === 'function') await originalEditProduct(id);
+            
+            const catSel = document.getElementById('p_category');
+            const subSel = document.getElementById('p_subcategory');
+            
+            if (catSel && catSel.value) {
+                catSel.onchange(); 
+                const doc = await db.collection("products").doc(id).get();
+                if (doc.exists) {
+                    subSel.value = doc.data().subcategory || '';
+                }
+            }
+        };
+        
+        window.getRequestCount = async function(productId) {
+            try {
+                const snap = await db.collection("product_requests").where("productId", "==", productId).get();
+                let count = 0;
+                snap.forEach(doc => {
+                    const r = doc.data();
+                    if (!r.status || r.status.toLowerCase() === "new") count++;
+                });
+                return count;
+            } catch(e) { 
+                console.error("Request Count Error for Product ID:", productId, e);
+                return 0; 
+            }
+        };
+
+        window.toggleRequestView = function(viewType) {
+            activeRequestView = viewType;
+            const tabNew = document.getElementById('tab-req-new');
+            const tabRes = document.getElementById('tab-req-res');
+            
+            tabNew.classList.toggle('text-[#B36A5E]', viewType === 'new');
+            tabNew.classList.toggle('underline', viewType === 'new');
+            tabNew.classList.toggle('text-gray-400', viewType !== 'new');
+            
+            tabRes.classList.toggle('text-[#B36A5E]', viewType === 'resolved');
+            tabRes.classList.toggle('underline', viewType === 'resolved');
+            tabRes.classList.toggle('text-gray-400', viewType !== 'resolved');
+            
+            window.renderRequestsList();
+        };
+
+        window.viewRequests = async function(productId) {
+            activeRequestProductId = productId;
+            window.toggleRequestView('new');
+            
+            const list = document.getElementById('request-list');
+            list.innerHTML = '<p class="text-center text-xs text-gray-500">Loading requests...<\/p>';
+            document.getElementById('requestModal').classList.remove('hidden');
+            
+            try {
+                const snap = await db.collection("product_requests").where("productId", "==", productId).get();
+                requestsDataCache = [];
+                snap.forEach(doc => {
+                    requestsDataCache.push(Object.assign({ id: doc.id }, doc.data()));
+                });
+                
+                window.renderRequestsList();
+            } catch(e) { 
+                console.error("View Requests Error:", e);
+                list.innerHTML = '<p class="text-center text-red-500">Error loading requests. Check console.<\/p>'; 
+            }
+        };
+
+        window.renderRequestsList = function() {
+            const list = document.getElementById('request-list');
+            let html = '';
+            
+            const filtered = requestsDataCache.filter(r => {
+                const status = r.status ? r.status.toLowerCase() : 'new';
+                if (activeRequestView === 'new') return status !== 'resolved';
+                return status === 'resolved';
+            });
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<p class="text-center text-xs text-gray-500 mt-6">No ' + activeRequestView + ' requests found.<\/p>';
+                return;
+            }
+
+            const grouped = {};
+            filtered.forEach(r => {
+                const phone = r.userPhone || 'No Phone';
+                if(!grouped[phone]) {
+                    grouped[phone] = {
+                        userName: r.userName,
+                        userPhone: phone,
+                        status: r.status,
+                        dates: [],
+                        ids: [] 
+                    };
+                }
+                grouped[phone].dates.push(r.requestDate);
+                grouped[phone].ids.push(r.id);
+            });
+
+            const groupedArray = Object.values(grouped).map(g => {
+                g.dates.sort((a,b) => new Date(b||0) - new Date(a||0)); 
+                g.latestDate = g.dates[0];
+                return g;
+            });
+
+            groupedArray.sort((a,b) => new Date(b.latestDate || 0) - new Date(a.latestDate || 0));
+
+            groupedArray.forEach((g, index) => {
+                const nameDisplay = g.userName || 'Unknown';
+                const phoneDisplay = g.userPhone;
+                const dateDisplay = g.latestDate ? new Date(g.latestDate).toLocaleDateString() : 'No Date';
+                const count = g.dates.length;
+                
+                let countBadge = count > 1 ? '<span onclick="document.getElementById(\'req-hist-' + index + '\').classList.toggle(\'hidden\')" class="ml-2 bg-[#B36A5E] text-white px-2 py-0.5 rounded-full text-[9px] cursor-pointer hover:bg-orange-700 transition" title="Click to view history">' + count + ' Requests ▾<\/span>' : '';
+
+                let historyHtml = '';
+                if(count > 1) {
+                    const datesList = g.dates.map(d => '<li class="text-[10px] text-gray-500 py-1 border-b last:border-0">' + (d ? new Date(d).toLocaleString() : 'N/A') + '<\/li>').join('');
+                    historyHtml = '<div id="req-hist-' + index + '" class="hidden w-full mt-2 p-2 bg-gray-100 rounded border border-gray-200">' +
+                        '<p class="text-[9px] font-bold text-gray-400 uppercase mb-1">Request History<\/p>' +
+                        '<ul class="list-disc pl-4">' + datesList + '<\/ul>' +
+                    '<\/div>';
+                }
+
+                const idsString = g.ids.join(',');
+
+                let actionHtml = '';
+                if (activeRequestView === 'new') {
+                    actionHtml = '<button onclick="resolveMultipleRequests(\'' + idsString + '\')" class="bg-[#10B981] text-white px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase hover:bg-green-600 transition shadow-sm shrink-0">Mark Resolved<\/button>';
+                } else {
+                    actionHtml = '<span class="text-green-600 font-bold text-[9px] uppercase tracking-widest bg-green-50 px-2 py-1 rounded shrink-0">Resolved<\/span>';
+                }
+
+                html += '<div class="bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-col items-start">' +
+                            '<div class="flex justify-between w-full items-center">' +
+                                '<div><p class="font-bold text-sm text-[#322C2B] flex items-center">' + nameDisplay + ' - ' + phoneDisplay + countBadge + '<\/p><p class="text-[10px] text-gray-500 mt-0.5">Latest: ' + dateDisplay + '<\/p><\/div>' +
+                                actionHtml +
+                            '<\/div>' +
+                            historyHtml +
+                        '<\/div>';
+            });
+            
+            list.innerHTML = html;
+        };
+
+        window.resolveMultipleRequests = async function(idsString) {
+            try {
+                const ids = idsString.split(',');
+                await Promise.all(ids.map(id => db.collection("product_requests").doc(id).update({ status: "Resolved" })));
+                
+                ids.forEach(id => {
+                    const req = requestsDataCache.find(r => r.id === id);
+                    if(req) req.status = "Resolved";
+                });
+                
+                window.renderRequestsList();
+                loadInventory(); 
+            } catch(e) { alert("Error: " + e.message); }
+        };
+
+        window.exportRequestsCSV = function() {
+            if (requestsDataCache.length === 0) return alert("No requests found to export.");
+            
+            let csv = "Status,Customer Name,Phone,Date Submitted\n";
+            requestsDataCache.forEach(r => {
+                const status = r.status ? r.status : 'New';
+                const name = '"' + (r.userName || 'Unknown').replace(/"/g, '""') + '"';
+                const date = r.requestDate ? new Date(r.requestDate).toLocaleDateString() : 'N/A';
+                csv += [status, name, r.userPhone || 'N/A', date].join(',') + "\n";
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "Sterling_Product_Requests.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        async function loadInventory() {
+            if (window.isInventoryLoading) return;
+            window.isInventoryLoading = true;
+
+            const tbody = document.getElementById('inventory-table-body');
+            if (!tbody) { window.isInventoryLoading = false; return; }
+            
+            tbody.innerHTML = '<tr><td colspan="8" class="p-10 text-center"><div class="loader mx-auto"><\/div><p class="mt-2 text-gray-400">Syncing Cloud Inventory...<\/p><\/td><\/tr>';
+            
+            try {
+                const snap = await db.collection("products").get();
+                let tempInventoryArray = []; 
+                let lowStockCount = 0;
+
+                for (const doc of snap.docs) {
+                    const p = doc.data();
+                    p.id = doc.id;
+                    if(p.stock < 5) lowStockCount++;
+                    
+                    p.reqCount = await window.getRequestCount(p.id);
+                    tempInventoryArray.push(p);
+                }
+                
+                const alertBox = document.getElementById('low-stock-warning');
+                if(lowStockCount > 0) {
+                    alertBox.classList.remove('hidden');
+                    alertBox.innerHTML = '<span class="w-2 h-2 bg-red-600 rounded-full animate-ping"><\/span> ' + lowStockCount + ' LOW STOCK ALERT';
+                } else {
+                    alertBox.classList.add('hidden');
+                }
+
+                inventoryDataCache = tempInventoryArray; 
+                window.renderInventoryTable();
+
+            } catch(e) { 
+                console.error("Inventory Load Error:", e);
+                tbody.innerHTML = '<tr><td colspan="8" class="p-10 text-center text-red-500 font-bold">Failed to load inventory. Please refresh.<\/td><\/tr>';
+            } finally {
+                window.isInventoryLoading = false; 
+            }
+        }
+
+        window.sortInventory = function(key) {
+            if (inventorySort.key === key) { inventorySort.desc = !inventorySort.desc; } 
+            else { inventorySort.key = key; inventorySort.desc = true; }
+            window.renderInventoryTable();
+        };
+
+        window.filterInventory = function() {
+            window.renderInventoryTable();
+        };
+
+        // --- RESTOCK LOGIC IMPLEMENTATION ---
+        window.openRestockModal = function(id) {
+            activeRestockProductId = id;
+            const product = inventoryDataCache.find(p => p.id === id);
+            if(!product) return;
+            
+            document.getElementById('restock-product-name').innerText = product.name;
+            document.getElementById('r_qty').value = '';
+            document.getElementById('r_price').value = product.purchasePrice || '';
+            document.getElementById('r_shipping').value = product.supplierShippingCost || '';
+            
+            document.getElementById('restockModal').classList.remove('hidden');
+            document.getElementById('restockModal').classList.add('flex');
+        };
+
+        window.closeRestockModal = function() {
+            document.getElementById('restockModal').classList.add('hidden');
+            activeRestockProductId = null;
+        };
+
+        window.submitRestock = async function() {
+            if(!activeRestockProductId) return;
+            const qty = Number(document.getElementById('r_qty').value);
+            const price = Number(document.getElementById('r_price').value);
+            const shipping = Number(document.getElementById('r_shipping').value);
+
+            if(qty <= 0) return alert("Quantity must be greater than 0");
+
+            const btn = document.getElementById('restockBtn');
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+
+            try {
+                const pRef = db.collection("products").doc(activeRestockProductId);
+                const doc = await pRef.get();
+                if(!doc.exists) throw new Error("Product not found in database.");
+
+                const pData = doc.data();
+                let currentStock = Number(pData.stock) || 0;
+                let lots = pData.stockLots || [];
+
+                // Create new FIFO batch record
+                const newLot = {
+                    qty: qty,
+                    purchasePrice: price,
+                    supplierShippingCost: shipping,
+                    dateAdded: new Date().toISOString()
+                };
+                
+                lots.push(newLot);
+
+                await pRef.update({
+                    stock: currentStock + qty,
+                    stockLots: lots,
+                    purchasePrice: price,          // Update current active unit cost
+                    supplierShippingCost: shipping // Update current active supplier shipping
+                });
+
+                alert("Stock successfully added via FIFO Lot!");
+                closeRestockModal();
+                loadInventory();
+            } catch(e) {
+                alert("Restock Error: " + e.message);
+            } finally {
+                btn.innerText = "Confirm Restock";
+                btn.disabled = false;
+            }
+        };
+
+        window.renderInventoryTable = function() {
+            const tbody = document.getElementById('inventory-table-body');
+            const searchInput = document.getElementById('inventory-search');
+            const searchVal = searchInput ? searchInput.value.toLowerCase() : '';
+            
+            let filtered = inventoryDataCache.filter(p => (p.name || '').toLowerCase().includes(searchVal));
+            
+            filtered.sort((a, b) => {
+                let valA = a[inventorySort.key];
+                let valB = b[inventorySort.key];
+                
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+                if (valA == null) valA = '';
+                if (valB == null) valB = '';
+
+                if (valA < valB) return inventorySort.desc ? 1 : -1;
+                if (valA > valB) return inventorySort.desc ? -1 : 1;
+                return 0;
+            });
+
+            let htmlRows = "";
+            filtered.forEach(p => {
+                const reqDisplay = p.reqCount > 0 ? 
+                    '<button onclick="viewRequests(\'' + p.id + '\')" class="text-[#B36A5E] font-bold text-[10px] underline uppercase">View ' + p.reqCount + ' Active<\/button>' :
+                    '<button onclick="viewRequests(\'' + p.id + '\')" class="text-gray-400 font-bold text-[10px] underline uppercase hover:text-gray-600">History<\/button>';
+
+                htmlRows += '<tr class="border-b ' + (p.stock < 5 ? 'bg-red-50' : '') + ' hover:bg-gray-50 transition">' +
+                                '<td class="p-4 flex items-center gap-2">' +
+                                    '<img src="' + (p.image || 'placeholder.png') + '" class="w-8 h-8 object-cover rounded shadow-sm">' +
+                                    '<span class="font-medium">' + p.name + '<\/span>' +
+                                '<\/td>' +
+                                '<td class="font-mono text-gray-500">' + p.sku + '<\/td>' +
+                                '<td><span class="bg-gray-100 px-2 py-1 rounded text-[10px]">' + p.category + '<\/span><\/td>' +
+                                '<td class="font-bold">৳' + (p.price || 0).toLocaleString() + '<\/td>' +
+                                '<td><span class="font-bold ' + (p.stock < 5 ? 'text-red-600' : '') + '">' + p.stock + '<\/span><\/td>' +
+                                '<td class="p-4">' + reqDisplay + '<\/td>' +
+                                '<td>' +
+                                    '<span class="px-2 py-1 rounded-full text-[9px] font-bold uppercase ' + (p.isVisible ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500') + '">' +
+                                        (p.isVisible ? 'Live' : 'Hidden') +
+                                    '<\/span>' +
+                                '<\/td>' +
+                                '<td class="p-4">' +
+                                    '<div class="flex gap-2">' +
+                                        '<button onclick="editProduct(\'' + p.id + '\')" class="text-blue-500 font-bold uppercase text-[10px] hover:underline">Edit<\/button>' +
+                                        '<button onclick="openRestockModal(\'' + p.id + '\')" class="text-green-600 font-bold uppercase text-[10px] hover:underline">Restock<\/button>' +
+                                        '<button onclick="deleteProduct(\'' + p.id + '\')" class="text-red-400 font-bold uppercase text-[10px] hover:underline">Del<\/button>' +
+                                    '<\/div>' +
+                                '<\/td>' +
+                            '<\/tr>';
+            });
+
+            tbody.innerHTML = htmlRows || '<tr><td colspan="8" class="p-10 text-center text-gray-400">No products match your search.<\/td><\/tr>';
+        };
+
+        window.processGalleryImage = function(input, previewId, slot) { 
+            if (input.files && input.files[0]) { 
+                const file = input.files[0]; 
+                const reader = new FileReader(); 
+                document.getElementById('compress-msg').classList.remove('hidden'); 
+                reader.onload = function(e) { 
+                    const img = new Image(); 
+                    img.src = e.target.result; 
+                    img.onload = function() { 
+                        const canvas = document.createElement('canvas'); 
+                        const ctx = canvas.getContext('2d'); 
+                        const maxWidth = 1000; 
+                        const scaleSize = maxWidth / img.width; 
+                        canvas.width = (img.width > maxWidth) ? maxWidth : img.width; 
+                        canvas.height = (img.width > maxWidth) ? (img.height * scaleSize) : img.height; 
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height); 
+                        canvas.toBlob((blob) => { 
+                            galleryBlobs[slot] = blob; 
+                            const preview = document.getElementById(previewId); 
+                            preview.src = URL.createObjectURL(blob); 
+                            preview.classList.remove('hidden'); 
+                            document.getElementById('placeholder' + slot).classList.add('hidden'); 
+                            document.getElementById('compress-msg').classList.add('hidden'); 
+                        }, 'image/jpeg', 0.7); 
+                    } 
+                }; 
+                reader.readAsDataURL(file); 
+            } 
+        };
+        
+        document.getElementById('productForm').addEventListener('submit', async (e) => { 
+            e.preventDefault(); 
+            const btn = document.getElementById('submitBtn'); 
+            btn.disabled = true; btn.innerText = "SAVING..."; 
+            try { 
+                let imageUrls = { 1: null, 2: null, 3: null }; 
+                let existingData = {}; 
+                if (editProductId) { const doc = await db.collection("products").doc(editProductId).get(); existingData = doc.data(); } 
+                
+                for (let i = 1; i <= 3; i++) { 
+                    if (galleryBlobs[i]) { 
+                        const ref = storage.ref('products/' + Date.now() + '_' + i + '.jpg'); 
+                        const snap = await ref.put(galleryBlobs[i]); 
+                        imageUrls[i] = await snap.ref.getDownloadURL(); 
+                    } else if (editProductId) { 
+                        imageUrls[i] = i === 1 ? existingData.image : (existingData['image' + i] || null); 
+                    } 
+                } 
+                
+                if (!imageUrls[1]) throw new Error("Main image is required"); 
+
+                const purchasePrice = Number(document.getElementById('p_purchasePrice').value) || 0;
+                const supplierShippingCost = Number(document.getElementById('p_supplierShipping').value) || 0;
+                const weightKg = Number(document.getElementById('p_weight').value) || 0;
+                const isFreeDelivery = document.getElementById('p_isFreeDelivery').checked;
+                const currentStock = Number(document.getElementById('p_stock').value) || 0;
+
+                const productData = { 
+                    name: document.getElementById('p_name').value, 
+                    sku: document.getElementById('p_sku').value, 
+                    price: Number(document.getElementById('p_price').value), 
+                    originalPrice: document.getElementById('p_originalPrice').value !== "" ? Number(document.getElementById('p_originalPrice').value) : null, 
+                    purchasePrice: purchasePrice,
+                    supplierShippingCost: supplierShippingCost,
+                    weightKg: weightKg,
+                    isFreeDelivery: isFreeDelivery,
+                    category: document.getElementById('p_category').value, 
+                    subcategory: document.getElementById('p_subcategory').value,
+                    stock: currentStock, 
+                    shortDesc: document.getElementById('p_shortDesc').value, 
+                    longDesc: document.getElementById('p_longDesc').value, 
+                    instructions: document.getElementById('p_instructions').value, 
+                    isNew: document.getElementById('p_isNew').checked, 
+                    isVisible: document.getElementById('p_isVisible').checked, 
+                    image: imageUrls[1], 
+                    image2: imageUrls[2], 
+                    image3: imageUrls[3], 
+                    dateAdded: existingData.dateAdded || new Date().toISOString().split('T')[0] 
+                }; 
+                
+                if (editProductId) {
+                    await db.collection("products").doc(editProductId).update(productData); 
+                } else {
+                    // Create initial FIFO Lot if brand new product
+                    productData.stockLots = [{
+                        qty: currentStock,
+                        purchasePrice: purchasePrice,
+                        supplierShippingCost: supplierShippingCost,
+                        dateAdded: new Date().toISOString()
+                    }];
+                    await db.collection("products").add(productData); 
+                }
+                
+                closeProductModal(); 
+                loadInventory(); 
+                galleryBlobs = { 1: null, 2: null, 3: null }; 
+            } catch (err) { alert(err.message); } 
+            finally { btn.disabled = false; btn.innerText = "Save Product"; } 
+        });
+
+        window.openCategoryModal = function() { document.getElementById('categoryModal').classList.remove('hidden'); document.getElementById('categoryModal').classList.add('flex'); loadCategories(); };
+        window.openAddModal = function() { document.getElementById('productForm').reset(); editProductId = null; resetGalleryUI(); loadCategories(); document.getElementById('productModal').classList.remove('hidden'); document.getElementById('productModal').classList.add('flex'); };
+        window.closeProductModal = function() { document.getElementById('productModal').classList.add('hidden'); };
+        
+        window.editProduct = async function(id) { 
+            editProductId = id; await loadCategories(); 
+            const doc = await db.collection("products").doc(id).get(); 
+            const p = doc.data(); 
+            document.getElementById('p_name').value = p.name || ''; 
+            document.getElementById('p_sku').value = p.sku || ''; 
+            document.getElementById('p_price').value = p.price || ''; 
+            document.getElementById('p_originalPrice').value = p.originalPrice || ''; 
+            
+            // Populate New Fields
+            document.getElementById('p_purchasePrice').value = p.purchasePrice || ''; 
+            document.getElementById('p_supplierShipping').value = p.supplierShippingCost || ''; 
+            document.getElementById('p_weight').value = p.weightKg || ''; 
+            document.getElementById('p_isFreeDelivery').checked = p.isFreeDelivery || false; 
+
+            document.getElementById('p_stock').value = p.stock || 0; 
+            document.getElementById('p_category').value = p.category || ''; 
+            document.getElementById('p_subcategory').value = p.subcategory || ''; 
+            document.getElementById('p_shortDesc').value = p.shortDesc || ''; 
+            document.getElementById('p_longDesc').value = p.longDesc || ''; 
+            document.getElementById('p_instructions').value = p.instructions || ''; 
+            document.getElementById('p_isNew').checked = p.isNew; 
+            document.getElementById('p_isVisible').checked = p.isVisible; 
+            
+            [1,2,3].forEach(function(i) { 
+                const src = i===1?p.image:p['image'+i]; 
+                const prev = document.getElementById('preview'+i); 
+                const ph = document.getElementById('placeholder'+i); 
+                if(src){ prev.src=src; prev.classList.remove('hidden'); ph.classList.add('hidden'); } 
+                else { prev.classList.add('hidden'); ph.classList.remove('hidden'); }
+            }); 
+            
+            document.getElementById('productModal').classList.remove('hidden'); 
+            document.getElementById('productModal').classList.add('flex'); 
+            document.getElementById('submitBtn').innerText = "Update Product"; 
+        };
+        
+        function resetGalleryUI() { galleryBlobs = { 1: null, 2: null, 3: null }; [1, 2, 3].forEach(function(i) { document.getElementById('preview'+i).classList.add('hidden'); document.getElementById('placeholder'+i).classList.remove('hidden'); }); }
+
+        // --- CRM INTELLIGENCE ---
+        window.crmDataCache = [];
+        let crmSort = { key: 'totalSpend', desc: true };
+
+        window.loadCRMUsers = async function() { 
+            const tbody = document.getElementById('crm-table'); 
+            tbody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-gray-400"><div class="loader mx-auto"><\/div><\/td><\/tr>'; 
+            try { 
+                const userSnap = await db.collection("users").get(); 
+                const orderSnap = await db.collection("orders").get(); 
+                
+                window.crmDataCache = []; 
+                
+                userSnap.forEach(function(userDoc) { 
+                    const u = userDoc.data(); 
+                    const userId = userDoc.id; 
+                    
+                    const userOrders = orderSnap.docs
+                        .map(o => Object.assign({ id: o.id }, o.data()))
+                        .filter(o => o.userId === userId)
+                        .sort((a, b) => new Date(b.orderDate || 0) - new Date(a.orderDate || 0)); 
+                        
+                    const successfulOrders = userOrders.filter(o => o.status === 'Completed' || o.status === 'Delivered');
+                    const returnedOrders = userOrders.filter(o => o.status === 'Returned' || o.status === 'Return Initiated');
+                    const cancelledOrders = userOrders.filter(o => o.status === 'Cancelled');
+                    
+                    const totalSpend = successfulOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0); 
+                    const lastOrderDate = userOrders.length > 0 ? new Date(userOrders[0].orderDate || userOrders[0].date || 0) : null;
+                    
+                    let extractedAddresses = [];
+                    
+                    function addAddrSafely(addrData, forceType) {
+                        if (!addrData) return;
+                        if (typeof addrData === 'string') {
+                            extractedAddresses.push({ detail: addrData, _exactType: forceType });
+                        } else if (typeof addrData === 'object') {
+                            extractedAddresses.push(Object.assign({}, addrData, { _exactType: forceType || addrData.type || addrData.label }));
+                        }
+                    }
+
+                    addAddrSafely(u.billingAddress, 'BILLING ADDRESS');
+                    addAddrSafely(u.shippingAddress || u.deliveryAddress, 'SHIPPING ADDRESS');
+                    
+                    if (Array.isArray(u.addresses)) {
+                        u.addresses.forEach(a => addAddrSafely(a, null));
+                    }
+                    
+                    window.crmDataCache.push({
+                        id: userId,
+                        name: u.fullName || 'N/A',
+                        phone: u.phone || 'N/A',
+                        tag: u.crmTags || 'Good',
+                        isBlocked: u.isBlocked || false,
+                        
+                        totalSpend: totalSpend,
+                        totalOrdersCount: userOrders.length,
+                        successOrdersCount: successfulOrders.length,
+                        returnedOrdersCount: returnedOrders.length,
+                        cancelledOrdersCount: cancelledOrders.length,
+                        
+                        lastOrderDate: lastOrderDate,
+                        orders: userOrders,
+                        addresses: extractedAddresses
+                    });
+                }); 
+                
+                window.renderCRMTable();
+                if(typeof window.renderOrdersTable === 'function') window.renderOrdersTable(); 
+            } catch (e) { 
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-red-500 py-10">Error loading CRM data.<\/td><\/tr>'; 
+            } 
+        };
+
+        window.sortCRM = function(key) {
+            if (crmSort.key === key) { crmSort.desc = !crmSort.desc; } 
+            else { crmSort.key = key; crmSort.desc = true; }
+            window.renderCRMTable();
+        };
+
+        window.getFilteredCRMData = function() {
+            const searchInput = document.getElementById('crm-search');
+            const searchVal = searchInput ? searchInput.value.toLowerCase() : '';
+            const fromVal = document.getElementById('crm-date-from') ? document.getElementById('crm-date-from').value : '';
+            const toVal = document.getElementById('crm-date-to') ? document.getElementById('crm-date-to').value : '';
+            
+            return window.crmDataCache.filter(u => {
+                const matchSearch = u.name.toLowerCase().includes(searchVal) || u.phone.includes(searchVal);
+                let matchDate = true;
+                
+                if (fromVal || toVal) {
+                    const fromTime = fromVal ? new Date(fromVal).setHours(0,0,0,0) : 0;
+                    const toTime = toVal ? new Date(toVal).setHours(23,59,59,999) : Infinity;
+                    
+                    matchDate = u.orders.some(o => {
+                        const oTime = new Date(o.orderDate || 0).getTime();
+                        return oTime >= fromTime && oTime <= toTime;
+                    });
+                }
+                return matchSearch && matchDate;
+            }).sort((a, b) => {
+                let valA = a[crmSort.key];
+                let valB = b[crmSort.key];
+                
+                if (crmSort.key === 'lastOrderDate') {
+                    valA = valA ? valA.getTime() : 0;
+                    valB = valB ? valB.getTime() : 0;
+                }
+                
+                if (valA < valB) return crmSort.desc ? 1 : -1;
+                if (valA > valB) return crmSort.desc ? -1 : 1;
+                return 0;
+            });
+        };
+
+        window.renderCRMTable = function() {
+            const tbody = document.getElementById('crm-table');
+            const filtered = window.getFilteredCRMData();
+            
+            let html = '';
+            filtered.forEach(u => {
+                let tagBadge = '';
+                if (u.tag === 'Risky') tagBadge = '<span class="text-white bg-red-500 px-2 py-0.5 rounded">' + u.tag + '<\/span>';
+                else if (u.tag === 'VIP') tagBadge = '<span class="text-white bg-purple-500 px-2 py-0.5 rounded">' + u.tag + '<\/span>';
+                else if (u.tag === 'Medium') tagBadge = '<span class="text-orange-600 bg-orange-100 px-2 py-0.5 rounded">' + u.tag + '<\/span>';
+                else tagBadge = '<span class="text-green-600 bg-green-100 px-2 py-0.5 rounded">' + u.tag + '<\/span>';
+
+                const dateStr = u.lastOrderDate ? u.lastOrderDate.toLocaleDateString() : 'Never';
+
+                html += '<tr class="border-b hover:bg-gray-50 cursor-pointer transition" onclick="openUserCRM(\'' + u.id + '\')">';
+                html += '<td class="p-4"><div class="font-bold text-[#322C2B]">' + u.name + '<\/div><div class="text-[9px] font-bold uppercase tracking-widest mt-1.5">' + tagBadge + '<\/div><\/td>';
+                html += '<td class="font-mono text-gray-500">' + u.phone + '<\/td>';
+                html += '<td class="text-xs text-gray-500 font-medium">' + dateStr + '<\/td>';
+                html += '<td class="font-bold text-[#B36A5E]">৳' + u.totalSpend.toLocaleString() + '<\/td>';
+                html += '<td><span class="px-2 py-1 rounded-full text-[9px] font-bold uppercase ' + (u.isBlocked ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600') + '">' + (u.isBlocked ? 'Blocked' : 'Active') + '<\/span><\/td>';
+                html += '<\/tr>';
+            });
+            
+            tbody.innerHTML = html || '<tr><td colspan="5" class="p-8 text-center text-gray-400">No customers match your filter parameters.<\/td><\/tr>';
+        };
+
+        window.exportCRMExcel = function() {
+            const filtered = window.getFilteredCRMData();
+            if (filtered.length === 0) return alert("No data to export!");
+            
+            let csv = "Customer Name,Phone,Total Spend (BDT),Last Order Date,Customer Tag,Status\n";
+            filtered.forEach(u => {
+                let name = '"' + u.name.replace(/"/g, '""') + '"';
+                let dateStr = u.lastOrderDate ? u.lastOrderDate.toLocaleDateString() : 'Never';
+                let status = u.isBlocked ? 'Blocked' : 'Active';
+                csv += [name, u.phone, u.totalSpend, dateStr, u.tag, status].join(',') + "\n";
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "Sterling_Customers_Export.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        window.openUserCRM = function(uid) { 
+            activeCRMUserId = uid; 
+            const user = window.crmDataCache.find(function(u) { return u.id === uid; });
+            if (!user) return;
+            
+            document.getElementById('crm-user-name').innerText = user.name; 
+            document.getElementById('crm-edit-tag').value = user.tag || "Medium"; 
+            document.getElementById('crm-edit-block').checked = user.isBlocked || false; 
+            
+            document.getElementById('crm-stat-spend').innerText = '৳' + user.totalSpend.toLocaleString(); 
+            document.getElementById('crm-stat-total-orders').innerText = user.totalOrdersCount; 
+            document.getElementById('crm-stat-success-orders').innerText = user.successOrdersCount; 
+            document.getElementById('crm-stat-returned-orders').innerText = user.returnedOrdersCount; 
+            document.getElementById('crm-stat-cancelled-orders').innerText = user.cancelledOrdersCount; 
+            
+            const addrDiv = document.getElementById('crm-saved-addresses');
+            if (!user.addresses || user.addresses.length === 0) {
+                addrDiv.innerHTML = '<p class="text-xs text-gray-400 mt-2">No saved addresses.<\/p>';
+            } else {
+                let seen = new Set();
+                let uniqueAddresses = user.addresses.filter(function(a) {
+                    let text = window.getAddressDisplay(a);
+                    let rawType = a.tag || a._exactType || a.type || a.label || '';
+                    
+                    let dedupeKey = rawType + '|' + text; 
+                    if (seen.has(dedupeKey)) return false;
+                    seen.add(dedupeKey);
+                    return true;
+                });
+
+                addrDiv.innerHTML = uniqueAddresses.map(function(a, index) {
+                    let text = window.getAddressDisplay(a);
+                    let rawType = a.tag || a._exactType || a.type || a.label;
+                    
+                    if (!rawType) {
+                        let lowerText = text.toLowerCase();
+                        if (lowerText.includes('billing')) rawType = 'BILLING ADDRESS';
+                        else if (lowerText.includes('shipping') || lowerText.includes('delivery')) rawType = 'SHIPPING ADDRESS';
+                    }
+                    
+                    let addrTitle = rawType ? rawType.toUpperCase() : ('SAVED ADDRESS ' + (index + 1));
+                    if (rawType && !addrTitle.includes('ADDRESS')) addrTitle += ' ADDRESS';
+                    
+                    text = text.replace(/^billing address:?\s*/i, '').replace(/^shipping address:?\s*/i, '');
+                    let defaultBadge = a.isDefault ? '<span class="bg-[#B36A5E] text-white px-1.5 py-0.5 rounded text-[7px] ml-2 font-bold tracking-widest">DEFAULT<\/span>' : '';
+
+                    return '<div class="bg-gray-50 p-3 mb-3 rounded-lg border border-gray-100 text-[10px] text-gray-600">' +
+                                '<div class="font-bold text-[#322C2B] tracking-widest text-[9px] mb-1.5 flex items-center">' + addrTitle + defaultBadge + '<\/div>' +
+                                '<p class="leading-relaxed">' + text + '<\/p>' +
+                            '<\/div>';
+                }).join('');
+            }
+
+            const historyDiv = document.getElementById('crm-order-history');
+            if (user.orders.length === 0) {
+                historyDiv.innerHTML = '<p class="text-center text-gray-400 text-[10px] mt-4">No order history found.<\/p>';
+            } else {
+                historyDiv.innerHTML = user.orders.map(function(o) {
+                    const oDate = o.orderDate ? new Date(o.orderDate).toLocaleDateString() : 'N/A';
+                    const s = o.status || 'Pending';
+                    let sColor = 'text-orange-500 bg-orange-50';
+                    if (s === 'Delivered' || s === 'Completed') sColor = 'text-green-600 bg-green-50';
+                    if (s === 'Cancelled' || s === 'Returned' || s === 'Return Initiated') sColor = 'text-red-600 bg-red-50';
+                    if (s === 'Handed over' || s === 'Packed') sColor = 'text-blue-600 bg-blue-50';
+                    
+                    let itemsHtml = '';
+                    let itemTotalSum = 0;
+                    if (o.items && o.items.length > 0) {
+                        itemsHtml = o.items.map(function(i) {
+                            let itemSum = (i.price||0) * (i.quantity||1);
+                            itemTotalSum += itemSum;
+                            return '<div class="flex justify-between border-b border-gray-200 py-1.5 last:border-0"><span class="truncate pr-2">' + (i.quantity||1) + 'x ' + i.name + '<\/span><span class="font-bold">৳' + itemSum.toLocaleString() + '<\/span><\/div>';
+                        }).join('');
+                    }
+
+                    let shipFee = 100;
+                    let grandTotal = o.totalAmount || (itemTotalSum + shipFee);
+
+                    let deliveryName = o.verifiedName || o.userName || user.name || "N/A";
+                    let deliveryPhone = o.verifiedPhone || o.phone || user.phone || "N/A";
+                    let receiverBadge = '';
+                    
+                    if (o.receiverInfo && o.receiverInfo.type === 'Other') {
+                        deliveryName = o.receiverInfo.name || deliveryName;
+                        deliveryPhone = o.receiverInfo.phone || deliveryPhone;
+                        receiverBadge = ' <span class="bg-[#B36A5E] text-white px-1.5 py-0.5 rounded text-[7px] uppercase ml-1">(' + o.receiverInfo.relation + ')<\/span>';
+                    }
+
+                    let shipObj = o.shippingAddress || o.address || {};
+                    let shipDisplay = window.getAddressDisplay(shipObj);
+                    let payMethod = o.paymentMethod || 'Cash on Delivery';
+                    
+                    return '<div class="bg-white rounded-lg border border-gray-100 overflow-hidden shadow-sm mb-2">' +
+                        '<div class="p-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition" onclick="document.getElementById(\'crm-ord-' + o.id + '\').classList.toggle(\'hidden\')">' +
+                            '<div>' +
+                                '<a href="admin.html?orderId=' + o.orderId + '#orders" target="_blank" onclick="event.stopPropagation()" class="font-mono text-[10px] text-blue-600 font-bold hover:underline inline-flex items-center gap-1" title="Open in New Tab">#' + o.orderId + ' ↗<\/a>' +
+                                '<p class="font-bold text-xs mt-0.5">৳' + grandTotal.toLocaleString() + '<\/p>' +
+                            '<\/div>' +
+                            '<div class="text-right flex flex-col items-end">' +
+                                '<span class="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ' + sColor + '">' + s + '<\/span>' +
+                                '<p class="text-[9px] text-gray-500 mt-1 font-medium">' + oDate + ' ▾<\/p>' +
+                            '<\/div>' +
+                        '<\/div>' +
+                        '<div id="crm-ord-' + o.id + '" class="hidden bg-gray-100 p-3 border-t border-gray-200 text-[10px] space-y-4">' +
+                            '<div>' +
+                                '<p class="font-bold text-gray-400 uppercase tracking-widest mb-1 text-[8px]">Items<\/p>' +
+                                '<div class="mb-2">' + itemsHtml + '<\/div>' +
+                                '<div class="flex justify-between border-t border-gray-200 pt-1.5 text-gray-500"><span>Shipping Fee<\/span><span>৳' + shipFee + '<\/span><\/div>' +
+                                '<div class="flex justify-between mt-1 pt-1 font-bold text-[#322C2B] text-[11px]"><span>Grand Total<\/span><span>৳' + grandTotal.toLocaleString() + '<\/span><\/div>' +
+                            '<\/div>' +
+                            '<div class="grid grid-cols-2 gap-3">' +
+                                '<div>' +
+                                    '<p class="font-bold text-gray-400 uppercase tracking-widest mb-1 text-[8px]">Payment<\/p>' +
+                                    '<p class="font-medium">' + payMethod + '<\/p>' +
+                                '<\/div>' +
+                                '<div>' +
+                                    '<p class="font-bold text-gray-400 uppercase tracking-widest mb-1 text-[8px]">Deliver To<\/p>' +
+                                    '<p class="font-medium text-[#322C2B]">' + deliveryName + receiverBadge + '<\/p>' +
+                                    '<p class="text-gray-500">' + deliveryPhone + '<\/p>' +
+                                '<\/div>' +
+                            '<\/div>' +
+                            '<div>' +
+                                '<p class="font-bold text-gray-400 uppercase tracking-widest mb-1 text-[8px]">Delivery Address<\/p>' +
+                                '<p class="text-gray-600 leading-relaxed">' + shipDisplay + '<\/p>' +
+                            '<\/div>' +
+                        '<\/div>' +
+                    '<\/div>';
+                }).join('');
+            }
+            
+            document.getElementById('crmDetailModal').classList.remove('hidden'); 
+            document.getElementById('crmDetailModal').classList.add('flex'); 
+        };
+        
+        window.saveCRMChanges = async function() { 
+            if (!activeCRMUserId) return; 
+            const newTag = document.getElementById('crm-edit-tag').value; 
+            const isBlocked = document.getElementById('crm-edit-block').checked; 
+            try { 
+                await db.collection("users").doc(activeCRMUserId).update({ crmTags: newTag, isBlocked: isBlocked }); 
+                alert("Customer profile updated successfully."); 
+                closeCRMModal(); 
+                loadCRMUsers(); 
+            } catch (err) { alert(err.message); } 
+        };
+        
+        window.closeCRMModal = function() { document.getElementById('crmDetailModal').classList.add('hidden'); };
+
+        window.deleteCategory = async function(id) { 
+            if(confirm("Delete?")) { 
+                await db.collection("categories").doc(id).delete(); 
+                loadCategories(); 
+            } 
+        };
+        
+        window.deleteProduct = async function(id) { 
+            if(confirm("Delete?")) { 
+                await db.collection("products").doc(id).delete(); 
+                loadInventory(); 
+            } 
+        };
+        
+        document.getElementById('categoryForm').addEventListener('submit', async (e) => { 
+            e.preventDefault(); 
+            await db.collection("categories").add({ 
+                name: document.getElementById('cat_name').value, 
+                sub: document.getElementById('sub_name').value 
+            }); 
+            e.target.reset(); 
+            loadCategories(); 
+        });
+
+        // --- NEW: LOGISTICS SETTINGS LOGIC ---
+        window.loadLogisticsSettings = async function() {
+            try {
+                // 1. Load Customer Facing Rates
+                const custDoc = await db.collection("customerShippingRules").doc("standard_rates").get();
+                if (custDoc.exists) {
+                    const d = custDoc.data();
+                    document.getElementById('cust_in_05').value = d.in_05 || 0;
+                    document.getElementById('cust_in_10').value = d.in_10 || 0;
+                    document.getElementById('cust_in_20').value = d.in_20 || 0;
+                    document.getElementById('cust_in_extra').value = d.in_extra || 0;
+                    
+                    document.getElementById('cust_out_05').value = d.out_05 || 0;
+                    document.getElementById('cust_out_10').value = d.out_10 || 0;
+                    document.getElementById('cust_out_20').value = d.out_20 || 0;
+                    document.getElementById('cust_out_extra').value = d.out_extra || 0;
+                    
+                    document.getElementById('cust_sub_05').value = d.sub_05 || 0;
+                    document.getElementById('cust_sub_10').value = d.sub_10 || 0;
+                    document.getElementById('cust_sub_20').value = d.sub_20 || 0;
+                    document.getElementById('cust_sub_extra').value = d.sub_extra || 0;
+                }
+
+                // 2. Load Logistics Partner Rates
+                const snap = await db.collection("logisticsRates").get();
+                const list = document.getElementById('partner-rates-list');
+                let html = '';
+                snap.forEach(doc => {
+                    const r = doc.data();
+                    html += `<tr class="border-b hover:bg-gray-50">
+                        <td class="p-3">
+                            <span class="font-bold text-[#322C2B]">${r.partnerName}</span><br>
+                            <span class="text-[9px] text-gray-500 uppercase">${r.destinationZone}</span>
+                        </td>
+                        <td class="text-[10px] text-gray-600 font-mono">
+                            ৳${r.cost_up_to_0_5kg} / ৳${r.cost_up_to_1kg} / ৳${r.cost_up_to_2kg} / +৳${r.extra_per_kg_after_2kg}
+                        </td>
+                        <td class="text-[10px] text-gray-600 font-bold">${r.cod_percentage || 0}%</td>
+                        <td>
+                            <div class="flex gap-2">
+                                <button onclick="editPartnerRate('${doc.id}')" class="text-blue-500 font-bold text-[9px] uppercase hover:underline">Edit</button>
+                                <button onclick="deletePartnerRate('${doc.id}')" class="text-red-500 font-bold text-[9px] uppercase hover:underline">Del</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                list.innerHTML = html || '<tr><td colspan="4" class="p-6 text-center text-gray-400">No partner rates configured.</td></tr>';
+            } catch (e) {
+                console.error("Logistics Load Error:", e);
+            }
+        };
+
+        if(document.getElementById('customerRatesForm')) {
+            document.getElementById('customerRatesForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('btn-save-cust-rates');
+                btn.innerText = "Saving...";
+                try {
+                    await db.collection("customerShippingRules").doc("standard_rates").set({
+                        in_05: Number(document.getElementById('cust_in_05').value),
+                        in_10: Number(document.getElementById('cust_in_10').value),
+                        in_20: Number(document.getElementById('cust_in_20').value),
+                        in_extra: Number(document.getElementById('cust_in_extra').value),
+                        
+                        out_05: Number(document.getElementById('cust_out_05').value),
+                        out_10: Number(document.getElementById('cust_out_10').value),
+                        out_20: Number(document.getElementById('cust_out_20').value),
+                        out_extra: Number(document.getElementById('cust_out_extra').value),
+                        
+                        sub_05: Number(document.getElementById('cust_sub_05').value),
+                        sub_10: Number(document.getElementById('cust_sub_10').value),
+                        sub_20: Number(document.getElementById('cust_sub_20').value),
+                        sub_extra: Number(document.getElementById('cust_sub_extra').value)
+                    }, {merge: true}); 
+                    alert("Customer Rates Saved Successfully!");
+                } catch(err) { alert(err.message); }
+                btn.innerText = "Save Customer Rates";
+            });
+        }
+
+        if(document.getElementById('partnerRateForm')) {
+            document.getElementById('partnerRateForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const pName = document.getElementById('log_part_name').value;
+                const pDest = document.getElementById('log_part_dest').value;
+                const docId = `${pName}_${pDest}`.replace(/\s+/g, '_').toLowerCase(); 
+
+                try {
+                    await db.collection("logisticsRates").doc(docId).set({
+                        partnerName: pName,
+                        originZone: "Inside Dhaka", 
+                        destinationZone: pDest,
+                        cost_up_to_0_5kg: Number(document.getElementById('log_part_05').value),
+                        cost_up_to_1kg: Number(document.getElementById('log_part_10').value),
+                        cost_up_to_2kg: Number(document.getElementById('log_part_20').value),
+                        extra_per_kg_after_2kg: Number(document.getElementById('log_part_extra').value),
+                        cod_percentage: Number(document.getElementById('log_part_cod').value)
+                    });
+                    e.target.reset();
+                    window.loadLogisticsSettings();
+                } catch(err) { alert(err.message); }
+            });
+        }
+
+        window.editPartnerRate = async function(id) {
+            try {
+                const doc = await db.collection("logisticsRates").doc(id).get();
+                if(doc.exists) {
+                    const r = doc.data();
+                    document.getElementById('log_part_name').value = r.partnerName;
+                    document.getElementById('log_part_dest').value = r.destinationZone;
+                    document.getElementById('log_part_05').value = r.cost_up_to_0_5kg;
+                    document.getElementById('log_part_10').value = r.cost_up_to_1kg;
+                    document.getElementById('log_part_20').value = r.cost_up_to_2kg;
+                    document.getElementById('log_part_extra').value = r.extra_per_kg_after_2kg;
+                    document.getElementById('log_part_cod').value = r.cod_percentage || 0;
+                    document.getElementById('log_part_name').scrollIntoView({behavior: 'smooth', block: 'center'});
+                }
+            } catch(e) { console.error(e); }
+        };
+
+        window.deletePartnerRate = async function(id) {
+            if(confirm("Delete this logistics rate tier?")) {
+                await db.collection("logisticsRates").doc(id).delete();
+                window.loadLogisticsSettings();
+            }
+        };
+        // --- END LOGISTICS SETTINGS LOGIC ---
+
+        // --- QUERIES LOGIC ---
+        window.loadQueries = async function() {
+            const tbody = document.getElementById('queries-table-body');
+            if(!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-400"><div class="loader mx-auto"><\/div><\/td><\/tr>';
+            try {
+                const snap = await db.collection("contact_messages").orderBy("date", "desc").get();
+                let html = '';
+                let pending = 0, solved = 0;
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const status = d.status || 'Pending';
+                    if(status === 'Pending') pending++; else solved++;
+                    html += '<tr class="border-b hover:bg-gray-50">' +
+                        '<td class="p-4">' + new Date(d.date).toLocaleDateString() + '<\/td>' +
+                        '<td>' + d.name + '<br><span class="text-[10px] text-gray-400">' + d.phone + '<\/span><\/td>' +
+                        '<td>' + d.message + '<\/td>' +
+                        '<td>' + (status==='Pending' ? '<button onclick="resolveQuery(\''+doc.id+'\')" class="bg-[#10B981] text-white px-2 py-1 rounded text-[9px] uppercase font-bold">Resolve<\/button>' : '<span class="text-green-600 font-bold text-[10px] uppercase">Resolved<\/span>') + '<\/td>' +
+                        '<\/tr>';
+                });
+                tbody.innerHTML = html || '<tr><td colspan="4" class="p-6 text-center text-gray-400">No queries.<\/td><\/tr>';
+                document.getElementById('query-stat-pending').innerText = pending;
+                document.getElementById('query-stat-solved').innerText = solved;
+            } catch(e) { tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-red-500">Error loading queries<\/td><\/tr>'; }
+        };
+
+        window.resolveQuery = async function(id) {
+            await db.collection("contact_messages").doc(id).update({status: "Resolved"});
+            if(typeof loadQueries === 'function') loadQueries();
+        };
+
+        window.loadContactInfoAdmin = async function() { 
+            const doc = await db.collection("settings").doc("contact").get(); 
+            if(doc.exists) { 
+                const d = doc.data(); 
+                document.getElementById('con_phone').value = d.phone; 
+                document.getElementById('con_email').value = d.email; 
+                document.getElementById('con_address').value = d.address; 
+            } 
+        };
+        
+        if(document.getElementById('contactInfoForm')) {
+            document.getElementById('contactInfoForm').addEventListener('submit', async (e) => { 
+                e.preventDefault(); 
+                await db.collection("settings").doc("contact").set({ 
+                    phone: document.getElementById('con_phone').value, 
+                    email: document.getElementById('con_email').value, 
+                    address: document.getElementById('con_address').value 
+                }); 
+                alert("Saved"); 
+            });
+        }
+
+        window.loadSocialLinksAdmin = async function() { 
+            const list = document.getElementById('social-link-list'); 
+            const snap = await db.collection("social_links").get(); 
+            list.innerHTML = ''; 
+            snap.forEach(function(doc) { 
+                const d = doc.data(); 
+                list.innerHTML += '<div class="flex justify-between p-2 bg-gray-50 rounded"><span>' + d.platform + '<\/span><button onclick="deleteSocial(\'' + doc.id + '\')" class="text-red-400">✕<\/button><\/div>'; 
+            }); 
+        };
+        
+        if(document.getElementById('socialLinkForm')) {
+            document.getElementById('socialLinkForm').addEventListener('submit', async (e) => { 
+                e.preventDefault(); 
+                const p = document.getElementById('soc_platform').value; 
+                await db.collection("social_links").doc(p).set({ 
+                    platform: p, 
+                    url: document.getElementById('soc_url').value 
+                }); 
+                e.target.reset(); 
+                loadSocialLinksAdmin(); 
+            });
+        }
+        
+        window.deleteSocial = async function(id) { 
+            if(confirm("Delete?")) { 
+                await db.collection("social_links").doc(id).delete(); 
+                loadSocialLinksAdmin(); 
+            } 
+        };
+
+        window.loadSupportLinksAdmin = async function() { 
+            if(!db) return;
+            const list = document.getElementById('support-link-list'); 
+            const snap = await db.collection("support_links").orderBy("order", "asc").get(); 
+            list.innerHTML = ''; 
+            snap.forEach(function(doc) { const l = doc.data(); list.innerHTML += '<div class="flex justify-between p-2 bg-gray-50"><span>' + l.title + '<\/span><button onclick="deleteSupportLink(\'' + doc.id + '\')" class="text-red-400">✕<\/button><\/div>'; }); 
+        };
+    
+        if(document.getElementById('supportLinkForm')) {
+            document.getElementById('supportLinkForm').addEventListener('submit', async (e) => { 
+                e.preventDefault(); 
+                await db.collection("support_links").add({ title: document.getElementById('sup_title').value, url: document.getElementById('sup_url').value, order: Date.now() }); 
+                e.target.reset(); 
+                window.loadSupportLinksAdmin(); 
+            });
+        }
+    
+        window.deleteSupportLink = async function(id) { if(confirm("Delete?")) { await db.collection("support_links").doc(id).delete(); window.loadSupportLinksAdmin(); } };
+
+        const originalSwitchTab = window.switchTab;
+        if (originalSwitchTab && !window.switchTabWrapped) {
+            window.switchTab = function(tabId) {
+                originalSwitchTab(tabId); 
+                if (history.replaceState) {
+                    history.replaceState(null, null, '#' + tabId); 
+                } else {
+                    window.location.hash = tabId;
+                }
+            };
+            window.switchTabWrapped = true;
+        }
+
+        window.onload = function() { 
+            if (typeof loadProducts === 'function') loadProducts();
+            if (typeof loadInventory === 'function') loadInventory(); 
+            
+            if (typeof loadCRMUsers === 'function') loadCRMUsers().then(() => {
+                if (typeof loadOrders === 'function') loadOrders();
+            }).catch(() => {
+                if (typeof loadOrders === 'function') loadOrders();
+            });
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderIdParam = urlParams.get('orderId');
+            const currentHash = window.location.hash.replace('#', '');
+            
+            if (orderIdParam) {
+                window.switchTab('orders');
+                
+                let attempts = 0;
+                const scrollInterval = setInterval(function() {
+                    attempts++;
+                    const orderCells = document.querySelectorAll('td.font-mono');
+                    let targetCell = null;
+                    
+                    for (let i = 0; i < orderCells.length; i++) {
+                        if (orderCells[i].innerText.includes(orderIdParam)) {
+                            targetCell = orderCells[i];
+                            break;
+                        }
+                    }
+                    
+                    if (targetCell) {
+                        clearInterval(scrollInterval);
+                        const row = targetCell.closest('tr');
+                        if (row) {
+                            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            row.classList.add('bg-yellow-100', 'transition-colors', 'duration-500');
+                            setTimeout(function() { 
+                                row.classList.remove('bg-yellow-100'); 
+                            }, 2500);
+                        }
+                    } else if (attempts > 20) { 
+                        clearInterval(scrollInterval);
+                    }
+                }, 500);
+            } else if (currentHash) {
+                window.switchTab(currentHash);
+            } else {
+                window.switchTab('dashboard'); 
+            }
+        };
+        console.log("✅ Admin Panel Loaded Successfully");
+    </script>
+</body>
+</html>
