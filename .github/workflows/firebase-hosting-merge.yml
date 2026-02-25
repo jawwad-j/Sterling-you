@@ -5,7 +5,7 @@ name: Deploy to Firebase Hosting on merge
 on:
   push:
     branches:
-      - git add .
+      - main
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
@@ -16,4 +16,4 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STERLING_ERP }}
           channelId: live
-          projectId: sterling-erp
+          projectId: sterling-erp 
