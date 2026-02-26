@@ -13,11 +13,11 @@
         body { 
             font-family: 'Montserrat', sans-serif; 
             background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            padding: 20px 0;
         }
 
         .font-serif { font-family: 'Playfair Display', serif; }
@@ -34,90 +34,87 @@
             50% { transform: translateY(-15px); }
             100% { transform: translateY(0px); }
         }
-
         .float { animation: floating 4s ease-in-out infinite; }
 
+        /* Mobile-Friendly Countdown */
         .countdown-item {
             position: relative;
-            min-width: 80px;
+            min-width: 65px;
         }
-
+        @media (min-width: 768px) {
+            .countdown-item { min-width: 80px; }
+        }
         .countdown-item::after {
             content: ':';
             position: absolute;
-            right: -10px;
-            top: 20%;
-            font-size: 1.5rem;
+            right: -6px;
+            top: 15%;
+            font-size: 1.2rem;
             color: #B36A5E;
         }
         .countdown-item:last-child::after { content: ''; }
     </style>
 </head>
 <body>
-
-    <div class="max-w-3xl w-full px-6 py-12 text-center animate-fadeIn">
-        <div class="mb-10 float">
-            <img src="web-logo2.png" alt="Sterling You" class="h-20 mx-auto object-contain">
+    <div class="max-w-3xl w-full px-4 md:px-6 text-center">
+        <div class="mb-8 float">
+            <img src="web-logo2.png" alt="Sterling You" class="h-16 md:h-20 mx-auto object-contain">
         </div>
 
-        <div class="glass-card rounded-3xl p-8 md:p-12">
-            <p class="text-[10px] md:text-[12px] font-bold tracking-[0.4em] uppercase text-[#B36A5E] mb-4">A New Era of Curated Luxury</p>
+        <div class="glass-card rounded-3xl p-6 md:p-12">
+            <p class="text-[9px] md:text-[12px] font-bold tracking-[0.3em] md:tracking-[0.4em] uppercase text-[#B36A5E] mb-4">A New Era of Curated Luxury</p>
             
-            <h1 class="text-4xl md:text-6xl font-serif text-[#322C2B] mb-6 leading-tight">
+            <h1 class="text-3xl md:text-6xl font-serif text-[#322C2B] mb-6 leading-tight">
                 Because <span class="italic font-normal">You Are The Star</span>
             </h1>
 
-            <p class="text-sm md:text-base text-gray-500 mb-10 max-w-lg mx-auto leading-relaxed">
+            <p class="text-xs md:text-base text-gray-500 mb-8 max-w-lg mx-auto leading-relaxed">
                 Our full collection is almost ready. We are curating the finest handbags, footwear, and accessories to elevate your everyday.
             </p>
 
-            <div id="countdown" class="flex justify-center gap-4 md:gap-8 mb-12">
+            <div id="countdown" class="flex flex-wrap justify-center gap-1 md:gap-8 mb-10">
                 <div class="countdown-item">
-                    <span id="days" class="block text-3xl font-bold text-[#322C2B]">00</span>
-                    <span class="text-[9px] uppercase tracking-widest text-gray-400">Days</span>
+                    <span id="days" class="block text-2xl md:text-3xl font-bold text-[#322C2B]">00</span>
+                    <span class="text-[8px] uppercase tracking-widest text-gray-400">Days</span>
                 </div>
                 <div class="countdown-item">
-                    <span id="hours" class="block text-3xl font-bold text-[#322C2B]">00</span>
-                    <span class="text-[9px] uppercase tracking-widest text-gray-400">Hours</span>
+                    <span id="hours" class="block text-2xl md:text-3xl font-bold text-[#322C2B]">00</span>
+                    <span class="text-[8px] uppercase tracking-widest text-gray-400">Hours</span>
                 </div>
                 <div class="countdown-item">
-                    <span id="minutes" class="block text-3xl font-bold text-[#322C2B]">00</span>
-                    <span class="text-[9px] uppercase tracking-widest text-gray-400">Mins</span>
+                    <span id="minutes" class="block text-2xl md:text-3xl font-bold text-[#322C2B]">00</span>
+                    <span class="text-[8px] uppercase tracking-widest text-gray-400">Mins</span>
                 </div>
                 <div class="countdown-item">
-                    <span id="seconds" class="block text-3xl font-bold text-[#322C2B]">00</span>
-                    <span class="text-[9px] uppercase tracking-widest text-gray-400">Secs</span>
+                    <span id="seconds" class="block text-2xl md:text-3xl font-bold text-[#322C2B]">00</span>
+                    <span class="text-[8px] uppercase tracking-widest text-gray-400">Secs</span>
                 </div>
             </div>
 
             <form id="notify-form" class="max-w-md mx-auto relative">
                 <input type="email" id="email-input" required placeholder="ENTER YOUR EMAIL" 
-                       class="w-full bg-white/50 border border-gray-200 rounded-full py-4 px-8 text-xs tracking-widest outline-none focus:border-[#B36A5E] transition-all uppercase">
+                       class="w-full bg-white/50 border border-gray-200 rounded-full py-4 px-6 md:px-8 text-[10px] tracking-widest outline-none focus:border-[#B36A5E] transition-all uppercase">
                 <button type="submit" 
-                        class="mt-4 md:mt-0 md:absolute md:right-2 md:top-2 bg-[#322C2B] text-white py-2.5 px-6 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-[#B36A5E] transition-all shadow-md">
+                        class="w-full mt-4 md:mt-0 md:absolute md:right-2 md:top-2 md:w-auto bg-[#322C2B] text-white py-2.5 px-6 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-[#B36A5E] transition-all shadow-md">
                     Notify Me
                 </button>
             </form>
             <p id="form-msg" class="mt-4 text-[10px] font-bold uppercase text-green-600 hidden">You're on the list! We'll reach out soon.</p>
         </div>
 
-        <div class="mt-12 flex justify-center gap-8 text-[#322C2B]">
-            <a href="#" class="hover:text-[#B36A5E] transition-all transform hover:scale-110">Instagram</a>
-            <a href="#" class="hover:text-[#B36A5E] transition-all transform hover:scale-110">Facebook</a>
-            <a href="#" class="hover:text-[#B36A5E] transition-all transform hover:scale-110">WhatsApp</a>
+        <div class="mt-10 flex flex-wrap justify-center gap-6 md:gap-8 text-[#322C2B] text-xs font-semibold uppercase tracking-widest">
+            <a href="https://www.instagram.com/sterlingyoubd/" target="_blank" class="hover:text-[#B36A5E] transition-all">Instagram</a>
+            <a href="https://www.facebook.com/profile.php?id=61588497843328" target="_blank" class="hover:text-[#B36A5E] transition-all">Facebook</a>
+            <a href="https://wa.me/8801800000775" target="_blank" class="hover:text-[#B36A5E] transition-all">WhatsApp</a>
         </div>
     </div>
 
     <script>
-        // --- Countdown Logic ---
         const targetDate = new Date("March 15, 2026 00:00:00").getTime();
-
         function updateCountdown() {
             const now = new Date().getTime();
             const gap = targetDate - now;
-
             const second = 1000, minute = second * 60, hour = minute * 60, day = hour * 24;
-
             if (gap > 0) {
                 document.getElementById("days").innerText = Math.floor(gap / day);
                 document.getElementById("hours").innerText = Math.floor((gap % day) / hour);
@@ -127,7 +124,6 @@
         }
         setInterval(updateCountdown, 1000);
 
-        // --- Firebase Notify Logic ---
         const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
@@ -136,10 +132,8 @@
             e.preventDefault();
             const email = document.getElementById('email-input').value;
             const btn = e.target.querySelector('button');
-            
             btn.innerText = "SAVING...";
             btn.disabled = true;
-
             try {
                 await db.collection("newsletter_subscribers").add({
                     email: email,
@@ -150,11 +144,11 @@
                 document.getElementById('form-msg').classList.remove('hidden');
                 btn.innerText = "THANK YOU";
             } catch (err) {
-                alert("Something went wrong. Please try again.");
+                alert("Something went wrong.");
                 btn.innerText = "NOTIFY ME";
                 btn.disabled = false;
             }
         };
     </script>
 </body>
-</html> 
+</html>

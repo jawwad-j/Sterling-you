@@ -1,0 +1,18 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Newsletter: Allow anyone to sign up, but NO ONE can read the list from the browser
+    match /newsletter_subscribers/{subscriber} {
+      allow create: if true; 
+      allow read, update, delete: if false; 
+    }
+
+    // 2. ERP/Admin Data: Lock everything else down completely
+    // You will access this via the Firebase Admin SDK or Console for now
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
