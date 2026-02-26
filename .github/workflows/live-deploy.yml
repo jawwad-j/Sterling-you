@@ -1,30 +1,16 @@
 name: Deploy to Firebase
-
 on:
   push:
     branches:
       - main
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Debug secret
-        run: |
-          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT_STERLING_ERP }}" ]; then
-            echo "Secret is EMPTY"
-            exit 1
-          else
-            echo "Secret is PRESENT"
-          fi
-
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STERLING_ERP }}
-          channelId: live
-          projectId: sterling-erp
-          
+            repoToken: ${{ secrets.GITHUB_TOKEN }}
+            firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STERLING_ERP }}
+            channelId: live
+            projectId: sterling-erp
