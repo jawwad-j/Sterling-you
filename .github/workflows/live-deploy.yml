@@ -8,9 +8,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+            - name: Debug secret
+        run: |
+          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT_STERLING_ERP }}" ]; then
+            echo "Secret is EMPTY"
+            exit 1
+          else
+            echo "Secret is PRESENT"
+          fi
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0.8.0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseService_account: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STERLING_ERP }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STERLING_ERP }}
           channelId: live
           projectId: sterling-you-692099720173
+      - uses: FirebaseExtended/action-hosting-deploy@v0.8.0
+  with:
+    repoToken: ${{ secrets.GITHUB_TOKEN }}
+    firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STERLING_ERP }}
+    projectId: sterling-you-692099720173
+    channelId: live
