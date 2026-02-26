@@ -20,4 +20,4 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STERLING_ERP }}
-          projectId: sterling-you-692099720173
+          projectId: sterling-erp
