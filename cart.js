@@ -142,19 +142,36 @@ function renderSidebarCart() {
     l.innerHTML = c.map((i, x) => {
         const tot = i.price * i.quantity;
         const org = (i.originalPrice || i.price) * i.quantity;
-        savings += (org - tot); 
+        const itemSavings = org - tot; // Calculate savings for this specific item
+        savings += itemSavings; 
         subtotal += tot;
+
         return `
         <div class="flex gap-4 mb-6 border-b border-gray-100 pb-6 last:border-0 animate-fadeIn">
             <div class="w-16 h-20 flex-shrink-0 bg-gray-50 rounded overflow-hidden border border-gray-100"><img src="${i.image}" class="w-full h-full object-cover"></div>
             <div class="flex-1 flex flex-col justify-between">
                 <div>
-                    <div class="flex justify-between items-start"><h4 class="text-[11px] font-bold uppercase text-[#322C2B] leading-tight pr-4 line-clamp-2">${i.name}</h4><button onclick="removeFromCart(${x})" class="text-gray-400 hover:text-red-500 transition">×</button></div>
-                    <p class="text-[10px] text-gray-400 mt-1">Unit: ৳${Number(i.price).toLocaleString()}</p>
+                    <div class="flex justify-between items-start">
+                        <h4 class="text-[11px] font-bold uppercase text-[#322C2B] leading-tight pr-4 line-clamp-2">${i.name}</h4>
+                        <button onclick="removeFromCart(${x})" class="text-gray-400 hover:text-red-500 transition">×</button>
+                    </div>
+                    <div class="flex justify-between items-center mt-1">
+                        <p class="text-[10px] text-gray-400">Unit: ৳${Number(i.price).toLocaleString()}</p>
+                        ${i.originalPrice && i.originalPrice > i.price ? `<span class="text-[10px] text-gray-400 line-through">৳${Number(i.originalPrice).toLocaleString()}</span>` : ''}
+                    </div>
                 </div>
                 <div class="flex justify-between items-end mt-2">
-                    <div class="flex items-center border border-gray-200 rounded-md"><button onclick="changeQty(${x},-1)" class="px-2.5 py-1 hover:bg-gray-50 text-gray-500">-</button><span class="text-[10px] font-bold text-[#322C2B] min-w-[20px] text-center">${i.quantity}</span><button onclick="changeQty(${x},1)" class="px-2.5 py-1 hover:bg-gray-50 text-gray-500">+</button></div>
-                    <span class="text-[12px] font-bold text-[#322C2B]">৳${tot.toLocaleString()}</span>
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center border border-gray-200 rounded-md">
+                            <button onclick="changeQty(${x},-1)" class="px-2.5 py-1 hover:bg-gray-50 text-gray-500">-</button>
+                            <span class="text-[10px] font-bold text-[#322C2B] min-w-[20px] text-center">${i.quantity}</span>
+                            <button onclick="changeQty(${x},1)" class="px-2.5 py-1 hover:bg-gray-50 text-gray-500">+</button>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        ${itemSavings > 0 ? `<p class="text-[9px] text-green-600 font-bold mb-0.5">Save ৳${itemSavings.toLocaleString()}</p>` : ''}
+                        <span class="text-[12px] font-bold text-[#322C2B]">৳${tot.toLocaleString()}</span>
+                    </div>
                 </div>
             </div>
         </div>`;
@@ -163,7 +180,6 @@ function renderSidebarCart() {
     // --- FOOTER RENDERING ---
     const footer = document.querySelector('#cart-drawer .border-t');
     if (footer) {
-        // Get the button to preserve it
         let btn = footer.querySelector('button');
         if (!btn) {
             btn = document.createElement('button');
@@ -174,15 +190,11 @@ function renderSidebarCart() {
 
         let html = '';
 
-        // 1. Savings (Green, exact size requested)
         if (savings > 0) {
             html += `<div class="flex justify-between text-[11px] text-green-600 font-bold mb-2"><span>Total Savings</span><span>-৳${savings.toLocaleString()}</span></div>`;
         }
 
-        // 2. Subtotal
         html += `<div class="flex justify-between font-bold text-[#322C2B] text-sm mb-2"><span>Subtotal</span><span>৳${subtotal.toLocaleString()}</span></div>`;
-
-        // 3. Static Text
         html += `<p class="text-[10px] text-gray-400 italic mb-4 text-right">Shipping calculated at checkout</p>`;
 
         footer.innerHTML = html;
@@ -272,3 +284,29 @@ window.requestProduct = async (pid, pname) => {
         alert("Request sent! We will notify you when stock is available.");
     } catch (e) { console.error(e); alert("Error sending request."); }
 };
+// --- 4. SURROGATE SESSION (ADMIN MANUAL ORDERS) ---
+function checkSurrogateSession() {
+    const surrogateData = sessionStorage.getItem('surrogate_session');
+    if (surrogateData) {
+        const surrogate = JSON.parse(surrogateData);
+        const banner = document.createElement('div');
+        banner.className = "bg-red-600 text-white text-[10px] font-bold uppercase tracking-widest py-2 px-6 flex justify-between items-center z-[99999] relative shadow-md";
+        banner.innerHTML = `
+            <span class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                ADMIN MODE: Ordering for ${surrogate.name} (${surrogate.phone})
+            </span>
+            <button onclick="endSurrogateSession()" class="underline hover:text-red-200">End Session & Clear Cart</button>
+        `;
+        document.body.insertBefore(banner, document.body.firstChild);
+    }
+}
+
+window.endSurrogateSession = () => {
+    sessionStorage.removeItem('surrogate_session');
+    localStorage.removeItem('cart');
+    window.location.href = 'index.html'; // Send admin home
+};
+
+// Hook it into the load sequence
+document.addEventListener('DOMContentLoaded', checkSurrogateSession);

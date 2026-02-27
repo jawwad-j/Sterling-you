@@ -3,11 +3,11 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // 1. Product Images: Publicly readable so customers can see them on the site
-    // Only the Admin (You) can upload/delete them
+    // 1. Product Images: Publicly readable for your storefront
     match /products/{allPaths=**} {
       allow read: if true;
-      allow write: if false; // Change to 'if request.auth != null' once you add Login
+      // FIX: Changed from 'if false' to check for authentication
+      allow write: if request.auth != null; 
     }
 
     // 2. Private ERP/Shipping Docs: Completely locked down

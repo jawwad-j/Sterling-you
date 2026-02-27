@@ -75,8 +75,8 @@
             
             <p class="mt-6 text-center text-xs text-gray-500">
                 <span id="auth-toggle-text">New to Sterling?</span> 
-                <button onclick="toggleAuth()" class="text-[#B36A5E] font-bold ml-1 hover:underline">Create Account</button>
-            </p>
+                <button type="button" id="auth-toggle-btn" onclick="toggleAuth()" class="text-[#B36A5E] font-bold ml-1 hover:underline">Create Account</button>
+            </p>       
         </div>
     </div>
 
@@ -228,7 +228,7 @@
     <div id="addressModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[200] p-4 backdrop-blur-sm flex">
         <div class="bg-white w-full max-w-lg rounded-2xl p-8 max-h-[90vh] overflow-y-auto">
             <h2 class="text-xl font-bold mb-6" id="addr-modal-title">Address Details</h2>
-            <form id="addressForm" class="space-y-5">
+            <form id="addressForm" class="space-y-5" novalidate>
                 <input type="hidden" id="addr-edit-index" value="-1">
                 
                 <div class="mb-4">
@@ -378,17 +378,23 @@
             document.getElementById('auth-subtitle').innerText = isLogin ? "Welcome back to Sterling" : "Join us for exclusive access";
             document.getElementById('reg-fields').style.display = isLogin ? 'none' : 'block';
             document.getElementById('auth-toggle-text').innerText = isLogin ? "New to Sterling?" : "Already have an account?";
+            document.getElementById('auth-toggle-btn').innerText = isLogin ? "Create Account" : "Login"; 
             document.getElementById('auth-btn').innerText = isLogin ? "Login" : "Create Account";
             document.getElementById('auth-error').classList.add('hidden');
         }
 
-        auth.onAuthStateChanged(async (user) => {
+        auth.onAuthStateChanged((user) => {
             if (user) {
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('dashboard-section').classList.remove('hidden');
                 document.getElementById('main-header').classList.remove('hidden');
                 document.getElementById('main-footer').classList.remove('hidden');
-                loadDashboard(user.uid);
+                
+                // FIX: Support surrogate session so admin manages the correct customer's profile addresses
+                const surrogateData = sessionStorage.getItem('surrogate_session');
+                const targetUid = surrogateData ? JSON.parse(surrogateData).uid : user.uid;
+
+                loadDashboard(targetUid);
             } else {
                 document.getElementById('auth-section').classList.remove('hidden');
                 document.getElementById('dashboard-section').classList.add('hidden');
@@ -397,39 +403,114 @@
             }
         });
 
+        function executeRedirect() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectPage = urlParams.get('from') || urlParams.get('redirect');
+            
+            if (redirectPage) {
+                window.location.href = redirectPage.includes('.html') ? redirectPage : `${redirectPage}.html`;
+            } else if (document.referrer && new URL(document.referrer).origin === window.location.origin && !document.referrer.includes('account.html')) {
+                window.location.href = document.referrer;
+            } else {
+                window.location.href = 'index.html'; 
+            }
+        }
+
         document.getElementById('auth-form').onsubmit = async (e) => {
             e.preventDefault();
-            const phone = document.getElementById('user-phone').value;
+            const phoneInput = document.getElementById('user-phone').value;
             const pass = document.getElementById('user-pass').value;
             const name = document.getElementById('user-name').value;
+            
+            const phone = phoneInput.trim().replace(/\s+/g, '');
             const email = phone.includes('@') ? phone : phone + "@sterling.com"; 
+            
             const errorMsg = document.getElementById('auth-error');
             errorMsg.classList.add('hidden');
 
             try {
+                document.getElementById('auth-btn').disabled = true;
+                document.getElementById('auth-btn').innerText = "Please wait...";
+
                 if (!isLogin) {
                     const lookup = await db.collection("phone_lookups").doc(phone).get();
-                    if (lookup.exists) throw new Error("Account already exists. Please Login.");
+                    if (lookup.exists) {
+                        throw new Error("Account already exists. <a href='javascript:void(0)' onclick='toggleAuth()' class='underline text-[#B36A5E] ml-1'>Click here to Login</a>");
+                    }
                     const userCred = await auth.createUserWithEmailAndPassword(email, pass);
-                    await db.collection("users").doc(userCred.user.uid).set({ fullName: name, phone: phone, email: email, crmTags: "Good", isBlocked: false, addresses: [], paymentMethods: [], totalSpend: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-                    if(!phone.includes('@')) await db.collection("phone_lookups").doc(phone).set({ uid: userCred.user.uid });
+                    
+                    await db.collection("users").doc(userCred.user.uid).set({ 
+                        fullName: name, 
+                        phone: phone, 
+                        email: email, 
+                        crmTags: "Good", 
+                        isBlocked: false, 
+                        addresses: [], 
+                        paymentMethods: [], 
+                        totalSpend: 0, 
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp() 
+                    });
+                    
+                    if(!phone.includes('@')) {
+                        await db.collection("phone_lookups").doc(phone).set({ uid: userCred.user.uid });
+                    }
                 } else {
                     await auth.signInWithEmailAndPassword(email, pass);
                 }
+                
+                executeRedirect();
+
             } catch (err) { 
-                errorMsg.innerText = err.message; errorMsg.classList.remove('hidden');
+                document.getElementById('auth-btn').disabled = false;
+                document.getElementById('auth-btn').innerText = isLogin ? "Login" : "Create Account";
+                
+                let msg = err.message;
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+                    msg = "Incorrect phone number or password. Please try again.";
+                } else if (err.code === 'auth/invalid-email') {
+                    msg = "Invalid phone number format.";
+                }
+                
+                errorMsg.innerHTML = msg; 
+                errorMsg.classList.remove('hidden');
             }
         };
 
+        window.signInWithGoogle = async () => { 
+            try {
+                const result = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+                
+                const userDoc = await db.collection("users").doc(result.user.uid).get();
+                if (!userDoc.exists) {
+                    await db.collection("users").doc(result.user.uid).set({ 
+                        fullName: result.user.displayName || "Google User", 
+                        phone: result.user.phoneNumber || "", 
+                        email: result.user.email, 
+                        crmTags: "Good", 
+                        isBlocked: false, 
+                        addresses: [], 
+                        paymentMethods: [], 
+                        totalSpend: 0, 
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp() 
+                    });
+                }
+                
+                executeRedirect();
+            } catch(e) { 
+                console.error(e); 
+            } 
+        };
+
         // DASHBOARD
-        async function loadDashboard(uid) {
+        async function loadDashboard(uid, retries = 3) {
             const doc = await db.collection("users").doc(uid).get();
             if(doc.exists) {
                 currentUserData = doc.data();
-                document.getElementById('display-name').innerText = currentUserData.fullName;
-                document.getElementById('profile-name').innerText = currentUserData.fullName;
-                document.getElementById('profile-phone').innerText = currentUserData.phone;
-                document.getElementById('profile-email').innerText = currentUserData.email;
+                currentUserData.uid = uid; // FIX: Store target UID for database updates
+                document.getElementById('display-name').innerText = currentUserData.fullName || "User";
+                document.getElementById('profile-name').innerText = currentUserData.fullName || "Not Set";
+                document.getElementById('profile-phone').innerText = currentUserData.phone || 'Not Set';
+                document.getElementById('profile-email').innerText = currentUserData.email || 'Not Set';
                 document.getElementById('profile-gender').value = currentUserData.gender || "";
 
                 if(currentUserData.dob) {
@@ -441,6 +522,8 @@
                 renderAddresses();
                 renderPayments();
                 populateOrderDropdown(uid);
+            } else if (retries > 0) {
+                setTimeout(() => loadDashboard(uid, retries - 1), 500);
             }
         }
         
@@ -450,15 +533,17 @@
             document.getElementById('btn-'+t).className="active-tab text-left px-6 py-4 border-b border-gray-50 transition";
         }
 
-        async function saveGender(val) { await db.collection("users").doc(auth.currentUser.uid).update({ gender: val }); }
+        // FIX: Replaced auth.currentUser.uid with currentUserData.uid for all profile updates
+        async function saveGender(val) { await db.collection("users").doc(currentUserData.uid).update({ gender: val }); }
         
         const days = document.getElementById('dob-day'), months = document.getElementById('dob-month'), years = document.getElementById('dob-year');
         for(let i=1;i<=31;i++) days.add(new Option(i<10?'0'+i:i, i<10?'0'+i:i));
         for(let i=1;i<=12;i++) months.add(new Option(i<10?'0'+i:i, i<10?'0'+i:i));
         for(let i=new Date().getFullYear();i>=1950;i--) years.add(new Option(i,i));
+        
         async function saveDOB() {
             const dob = `${years.value}-${months.value}-${days.value}`;
-            await db.collection("users").doc(auth.currentUser.uid).update({ dob: dob });
+            await db.collection("users").doc(currentUserData.uid).update({ dob: dob });
             alert("Date of Birth Saved");
         }
 
@@ -481,18 +566,20 @@
         }
         window.openCardModal = () => document.getElementById('cardModal').classList.remove('hidden');
         window.closeCardModal = () => document.getElementById('cardModal').classList.add('hidden');
+        
         document.getElementById('cardForm').onsubmit = async (e) => {
             e.preventDefault();
             const num = document.getElementById('card-num').value;
             const newCard = { last4: num.slice(-4), expiry: document.getElementById('card-expiry').value };
-            await db.collection("users").doc(auth.currentUser.uid).update({ paymentMethods: firebase.firestore.FieldValue.arrayUnion(newCard) });
-            closeCardModal(); loadDashboard(auth.currentUser.uid);
+            await db.collection("users").doc(currentUserData.uid).update({ paymentMethods: firebase.firestore.FieldValue.arrayUnion(newCard) });
+            closeCardModal(); loadDashboard(currentUserData.uid);
         };
+        
         async function deleteCard(i) {
             if(confirm("Delete this card?")) {
                 const updated = currentUserData.paymentMethods.filter((_, idx) => idx !== i);
-                await db.collection("users").doc(auth.currentUser.uid).update({ paymentMethods: updated });
-                loadDashboard(auth.currentUser.uid);
+                await db.collection("users").doc(currentUserData.uid).update({ paymentMethods: updated });
+                loadDashboard(currentUserData.uid);
             }
         }
 
@@ -711,7 +798,6 @@
             if (zoneContainer) {
                 zoneContainer.classList.add('hidden');
                 thanaContainer.classList.add('col-span-2');
-                zoneSel.required = false;
             }
 
             const d = divSel.value;
@@ -726,16 +812,13 @@
             if (zoneContainer) {
                 zoneContainer.classList.add('hidden');
                 thanaContainer.classList.add('col-span-2');
-                zoneSel.required = false;
             }
 
             const d = divSel.value, k = distSel.value;
             if(d && k && locationData[d][k]) {
                 if (Array.isArray(locationData[d][k])) {
-                    // Rural / Non-Metro Data Structure
                     locationData[d][k].sort().forEach(t => thanaSel.add(new Option(t,t)));
                 } else {
-                    // Metro Data Structure
                     Object.keys(locationData[d][k]).sort().forEach(t => thanaSel.add(new Option(t,t)));
                 }
             }
@@ -748,20 +831,17 @@
             const d = divSel.value, k = distSel.value, t = thanaSel.value;
             if(d && k && t && locationData[d][k] && !Array.isArray(locationData[d][k])) {
                 const zones = locationData[d][k][t];
-                if (zones && zones.length > 1) { // Only show if real zones exist
+                if (zones && zones.length > 1) { 
                     zoneContainer.classList.remove('hidden');
                     thanaContainer.classList.remove('col-span-2');
-                    zoneSel.required = true;
                     zones.sort().forEach(z => zoneSel.add(new Option(z,z)));
                 } else {
                     zoneContainer.classList.add('hidden');
                     thanaContainer.classList.add('col-span-2');
-                    zoneSel.required = false;
                 }
             } else {
                 zoneContainer.classList.add('hidden');
                 thanaContainer.classList.add('col-span-2');
-                zoneSel.required = false;
             }
         };
 
@@ -776,8 +856,13 @@
             const btn = document.getElementById('addr-submit-btn');
             if(btn) btn.innerText = "Save Address";
             
-            // Reset dropdowns
+            // FIX: Explicitly Reset dropdowns innerHTML to clear out populated options from past edits
             document.getElementById('addr-type').value = "";
+            document.getElementById('addr-division').value = "";
+            if(document.getElementById('addr-district')) document.getElementById('addr-district').innerHTML = '<option value="" disabled selected hidden>District</option>';
+            if(document.getElementById('addr-thana')) document.getElementById('addr-thana').innerHTML = '<option value="" disabled selected hidden>Area / Thana</option>';
+            if(document.getElementById('addr-zone')) document.getElementById('addr-zone').innerHTML = '<option value="" disabled selected hidden>Sub-Area / Zone</option>';
+
             if (zoneContainer) {
                 zoneContainer.classList.add('hidden');
                 thanaContainer.classList.add('col-span-2');
@@ -798,7 +883,6 @@
             
             document.getElementById('addr-edit-index').value = index;
             
-            // Set dropdown value dynamically based on tag
             const typeSel = document.getElementById('addr-type');
             if (addr.tag === 'Billing Address') { typeSel.value = 'billing'; }
             else if (addr.tag === 'Shipping Address') { typeSel.value = 'shipping'; }
@@ -812,12 +896,10 @@
             if(document.getElementById('addr-thana')) document.getElementById('addr-thana').value = addr.thana;
             updateZones();
             
-            // Hydrate the new Zone variable safely
             if(document.getElementById('addr-zone') && addr.subArea) {
                  document.getElementById('addr-zone').value = addr.subArea;
             }
             
-            // Extract details safely
             if(document.getElementById('addr-house')) document.getElementById('addr-house').value = addr.house || '';
             if(document.getElementById('addr-floor')) document.getElementById('addr-floor').value = addr.floor || '';
             if(document.getElementById('addr-road')) document.getElementById('addr-road').value = addr.road || '';
@@ -828,7 +910,6 @@
             if(detailField) detailField.value = addr.detail || '';
         };
 
-        // Custom Delivery Zone Logic Based on Selected Location
         const getDeliveryZone = (district, area) => {
             if (district === 'Gazipur' || district === 'Narayanganj' || area === 'Keraniganj' || area === 'Savar') {
                 return 'Dhaka Suburb';
@@ -841,16 +922,9 @@
 
         document.getElementById('addressForm').onsubmit = async (e) => {
             e.preventDefault();
-            const idx = parseInt(document.getElementById('addr-edit-index').value);
-            let updatedList = currentUserData.addresses ? [...currentUserData.addresses] : [];
             
+            // MANUAL VALIDATION to bypass silent browser blocking 
             const addrType = document.getElementById('addr-type').value;
-            if (!addrType) {
-                alert("Please select an Address Type.");
-                return;
-            }
-
-            // Gather values safely
             const div = document.getElementById('addr-division').value;
             const dist = document.getElementById('addr-district').value;
             const thana = document.getElementById('addr-thana').value;
@@ -863,53 +937,73 @@
             const detailed = document.getElementById('addr-detailed') ? document.getElementById('addr-detailed').value.trim() : '';
             const extra = document.getElementById('addr-details') ? document.getElementById('addr-details').value.trim() : '';
 
-            // Apply Delivery Zone Logic
-            const deliveryZone = getDeliveryZone(dist, thana);
-
-            // Super robust Full Display combination including the new Zone Area
-            const parts = [];
-            if(detailed) parts.push(detailed);
-            if(house) parts.push(`House: ${house}`);
-            if(floor) parts.push(`Floor/Flat: ${floor}`);
-            if(road) parts.push(`Road: ${road}`);
-            if(block) parts.push(`Block/Sector: ${block}`);
-            if(subArea) parts.push(subArea);
-            if(thana) parts.push(thana);
-            if(dist) parts.push(dist);
-            if(extra) parts.push(`(Directions: ${extra})`);
+            if (!addrType || !div || !dist || !thana || !house || !road || !detailed) {
+                alert("Please fill in all required fields: Address Type, Division, District, Area, House, Road, and Detailed Address.");
+                return;
+            }
             
-            const fullDisplay = parts.join(', ');
-
-            // Create Base Address Object
-            const baseAddr = {
-                id: idx > -1 ? updatedList[idx].id : Date.now().toString(),
-                division: div, district: dist, thana: thana, subArea: subArea, zone: deliveryZone, 
-                tag: addrType === 'shipping' ? 'Shipping Address' : 'Billing Address', 
-                house: house, floor: floor, road: road, block: block, detailed: detailed, detail: extra,
-                fullDisplay: fullDisplay
-            };
-
-            // Remove old entry if editing
-            if (idx > -1) {
-                updatedList.splice(idx, 1);
+            if (!zoneContainer.classList.contains('hidden') && !subArea) {
+                alert("Please select a Sub-Area / Zone for this location.");
+                return;
             }
 
-            const resetDefaults = (list, tag) => {
-                return list.map(a => { if(a.tag === tag) a.isDefault = false; return a; });
-            };
+            try {
+                const idx = parseInt(document.getElementById('addr-edit-index').value);
+                
+                let updatedList = (currentUserData && currentUserData.addresses) ? [...currentUserData.addresses] : [];
 
-            if (addrType === 'shipping' || addrType === 'both') {
-                updatedList = resetDefaults(updatedList, 'Shipping Address');
-                updatedList.push({ ...baseAddr, id: Date.now().toString() + 'S', tag: 'Shipping Address', isDefault: true });
-            } 
-            if (addrType === 'billing' || addrType === 'both') {
-                updatedList = resetDefaults(updatedList, 'Billing Address');
-                updatedList.push({ ...baseAddr, id: Date.now().toString() + 'B', tag: 'Billing Address', isDefault: true });
+                const deliveryZone = getDeliveryZone(dist, thana);
+
+                const parts = [];
+                if(detailed) parts.push(detailed);
+                if(house) parts.push(`House: ${house}`);
+                if(floor) parts.push(`Floor/Flat: ${floor}`);
+                if(road) parts.push(`Road: ${road}`);
+                if(block) parts.push(`Block/Sector: ${block}`);
+                if(subArea) parts.push(subArea);
+                if(thana) parts.push(thana);
+                if(dist) parts.push(dist);
+                if(extra) parts.push(`(Directions: ${extra})`);
+                
+                const fullDisplay = parts.join(', ');
+
+                const baseAddr = {
+                    id: idx > -1 ? updatedList[idx].id : Date.now().toString(),
+                    division: div, district: dist, thana: thana, subArea: subArea, zone: deliveryZone, 
+                    tag: addrType === 'shipping' ? 'Shipping Address' : 'Billing Address', 
+                    house: house, floor: floor, road: road, block: block, detailed: detailed, detail: extra,
+                    fullDisplay: fullDisplay
+                };
+
+                if (idx > -1) {
+                    updatedList.splice(idx, 1);
+                }
+
+                const resetDefaults = (list, tag) => {
+                    return list.map(a => { if(a.tag === tag) a.isDefault = false; return a; });
+                };
+
+                if (addrType === 'shipping' || addrType === 'both') {
+                    updatedList = resetDefaults(updatedList, 'Shipping Address');
+                    updatedList.push({ ...baseAddr, id: Date.now().toString() + 'S', tag: 'Shipping Address', isDefault: true });
+                } 
+                if (addrType === 'billing' || addrType === 'both') {
+                    updatedList = resetDefaults(updatedList, 'Billing Address');
+                    updatedList.push({ ...baseAddr, id: Date.now().toString() + 'B', tag: 'Billing Address', isDefault: true });
+                }
+
+                // FIX: Update the specific target user instead of admin's personal profile
+                await db.collection("users").doc(currentUserData.uid).set({ addresses: updatedList }, { merge: true });
+                
+                if (!currentUserData) currentUserData = {};
+                currentUserData.addresses = updatedList;
+                
+                closeAddressModal();
+                loadDashboard(currentUserData.uid);
+            } catch (error) {
+                console.error(error);
+                alert("Could not save address: " + error.message);
             }
-
-            await db.collection("users").doc(auth.currentUser.uid).update({ addresses: updatedList });
-            closeAddressModal();
-            loadDashboard(auth.currentUser.uid);
         };
 
         // --- SAFE RENDERING FOR ADDRESSES ---
@@ -947,15 +1041,15 @@
                 if (a.tag === type) { a.isDefault = (i === index); }
                 return a;
             });
-            await db.collection("users").doc(auth.currentUser.uid).update({ addresses: updated });
-            loadDashboard(auth.currentUser.uid);
+            await db.collection("users").doc(currentUserData.uid).update({ addresses: updated });
+            loadDashboard(currentUserData.uid);
         };
         
         async function deleteAddress(i) {
             if(confirm("Delete this address?")) {
                 const updated = currentUserData.addresses.filter((_, idx) => idx !== i);
-                await db.collection("users").doc(auth.currentUser.uid).update({ addresses: updated });
-                loadDashboard(auth.currentUser.uid);
+                await db.collection("users").doc(currentUserData.uid).update({ addresses: updated });
+                loadDashboard(currentUserData.uid);
             }
         }
 
@@ -971,7 +1065,7 @@
             e.preventDefault();
             const btn = e.target.querySelector('button'); btn.disabled = true; btn.innerText = "Sending...";
             await db.collection("customer_queries").add({
-                userId: auth.currentUser.uid, userName: currentUserData.fullName, userPhone: currentUserData.phone,
+                userId: currentUserData.uid, userName: currentUserData.fullName, userPhone: currentUserData.phone,
                 orderId: document.getElementById('contact-order-id').value || null,
                 subject: document.getElementById('contact-subject').value,
                 message: document.getElementById('contact-message').value,
@@ -997,7 +1091,6 @@
             globalOrders = snap.docs.map(d => d.data());
             globalOrders.sort((a,b) => new Date(b.orderDate) - new Date(a.orderDate));
 
-            // View Order Action Column Added
             list.innerHTML = globalOrders.map(o => `
                 <tr class="border-b last:border-0 hover:bg-gray-50">
                     <td class="p-4 font-mono font-bold text-[#B36A5E]">${o.orderId}</td>
@@ -1010,7 +1103,6 @@
                 </tr>`).join('');
         }
         
-        // Modal Trigger Logic
         window.viewOrder = (orderId) => {
             const order = globalOrders.find(o => o.orderId === orderId);
             if(!order) return;
@@ -1069,11 +1161,10 @@
             document.getElementById('viewOrderModal').classList.add('hidden');
         };
         
-        // Actions
         function editField(field) {
             const val = prompt(`Enter new ${field}:`);
             if(val) {
-                db.collection("users").doc(auth.currentUser.uid).update({ [field]: val }).then(() => loadDashboard(auth.currentUser.uid));
+                db.collection("users").doc(currentUserData.uid).update({ [field]: val }).then(() => loadDashboard(currentUserData.uid));
             }
         }
         function resetPassword() {
@@ -1081,7 +1172,6 @@
         }
 
         window.logout=()=>auth.signOut();
-        window.signInWithGoogle=async()=>{ try{await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());}catch(e){console.log(e);} }
     </script>
 </body>
 </html>

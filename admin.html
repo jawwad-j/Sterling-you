@@ -10,9 +10,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; font-size: 13px; color: #1A1A1A; }
+        body { font-family: 'Inter', sans-serif; font-size: 13px; color: #1A1A1A; margin: 0; padding: 0; }
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
         .sidebar-item.active { background: #B36A5E; color: white; border-radius: 12px; }
@@ -42,6 +43,7 @@
             if (tabId === 'crm' && typeof window.loadCRMUsers === 'function') window.loadCRMUsers();
             if (tabId === 'dashboard' && typeof window.initCharts === 'function') setTimeout(window.initCharts, 50);
             if (tabId === 'queries' && typeof window.loadQueries === 'function') window.loadQueries();
+            if (tabId === 'team' && typeof window.loadTeamMembers === 'function') window.loadTeamMembers();
             
             if (tabId === 'support' && typeof window.loadSupportLinksAdmin === 'function') { window.loadSupportLinksAdmin(); window.loadInvoiceSettings(); }
             if (tabId === 'contact-settings') { 
@@ -55,87 +57,217 @@
 
 </head>
 
-<body class="bg-[#F3F4F6] flex min-h-screen">
+<body class="bg-[#F3F4F6]">
 
-    <aside class="w-64 bg-[#1F2937] text-gray-300 flex flex-col sticky top-0 h-screen z-50">
-        <div class="p-6 border-b border-gray-700">
-            <h1 class="text-white font-bold text-xl tracking-tighter">STERLING <span class="text-[#B36A5E]">ERP</span></h1>
+    <div id="login-screen" class="fixed inset-0 bg-[#F3F4F6] flex flex-col items-center justify-center z-[9999]">
+        <div class="mb-8 text-center float">
+            <h1 class="font-bold text-3xl tracking-tighter text-[#1F2937]">STERLING <span class="text-[#B36A5E]">ERP</span></h1>
+            <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400 mt-2">Authorized Personnel Only</p>
         </div>
-        <nav class="flex-1 p-4 space-y-2">
-            <button onclick="switchTab('dashboard')" class="sidebar-item active w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📊 Dashboard</button>
-            <button onclick="switchTab('orders')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📦 Order Pipeline</button>
-            <button onclick="switchTab('crm')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">👥 Customer CRM</button>
-            <button onclick="switchTab('inventory')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🛠 Inventory</button>
-            <button onclick="switchTab('logistics-settings')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🚚 Logistics Rules</button>
-            <button onclick="switchTab('support')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📜 Policy Manager</button>
-            <button onclick="switchTab('queries')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">💬 Customer Queries</button>
-            <button onclick="switchTab('contact-settings')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📱 Social & Contact</button>
-        </nav>
-    </aside>
-
-    <main class="flex-1 p-8 overflow-y-auto h-screen">
-        <div class="bg-white p-4 rounded-2xl shadow-sm mb-8 flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-4 bg-gray-50 p-2 rounded-xl border border-gray-200 px-4">
-                <span class="text-[10px] font-bold uppercase text-gray-400">System Ready</span>
-                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            </div>
-            <div id="low-stock-warning" class="hidden bg-red-100 text-red-600 px-4 py-2 rounded-full font-bold text-[10px] flex items-center gap-2">
-                <span class="w-2 h-2 bg-red-600 rounded-full animate-ping"></span> LOW STOCK ALERT
-            </div>
+        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm border border-gray-100">
+            <form id="admin-login-form" class="space-y-5">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Email Address</label>
+                    <input type="email" id="login-email" required class="w-full border p-3 rounded-xl text-sm outline-none focus:border-[#B36A5E] bg-gray-50">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Password</label>
+                    <input type="password" id="login-password" required class="w-full border p-3 rounded-xl text-sm outline-none focus:border-[#B36A5E] bg-gray-50">
+                </div>
+                <p id="login-error" class="text-red-500 text-[10px] font-bold hidden uppercase tracking-widest text-center"></p>
+                <button type="submit" id="btn-login" class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg tracking-widest mt-4">Access Portal</button>
+                <div style="text-align: right; margin-bottom: 15px;">
+                    <a href="#" id="forgot-password-btn" style="font-size: 14px; text-decoration: none; color: #007bff;">Forgot Password?</a>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <section id="dashboard" class="tab-content active">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-blue-500">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase">Total Revenue</p>
-                    <h2 id="kpi-revenue" class="text-2xl font-bold mt-1">৳450,200</h2>
-                </div>
-                 <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-green-500">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase">Gross Profit</p>
-                    <h2 id="kpi-gross" class="text-2xl font-bold mt-1 text-green-600">৳125,500</h2>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-[#B36A5E]">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase">Net Profit</p>
-                    <h2 id="kpi-net" class="text-2xl font-bold mt-1 text-[#B36A5E]">৳82,100</h2>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-orange-400">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase">Courier Transit</p>
-                    <h2 id="kpi-transit" class="text-2xl font-bold mt-1 text-orange-500">৳12,400</h2>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-red-400">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase">Return Loss</p>
-                    <h2 id="kpi-loss" class="text-2xl font-bold mt-1 text-red-500">৳4,500</h2>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-gray-800 cursor-pointer hover:bg-gray-50 transition" onclick="openDamagedListModal()">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase flex justify-between items-center">Damaged Loss <span class="text-blue-500 underline text-[9px] hover:text-blue-700">Open List</span></p>
-                    <h2 id="kpi-damaged" class="text-2xl font-bold mt-1 text-gray-800">৳0</h2>
-                </div>
+    <div id="profileSetupModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[9999] backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md border border-gray-100">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-[#322C2B]">Welcome to Sterling!</h2>
+                <p class="text-xs text-gray-500 mt-2">Please complete your profile details to access the dashboard.</p>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="bg-white p-6 rounded-3xl shadow-sm h-80 relative">
-                    <h3 class="font-bold text-gray-400 text-xs uppercase mb-2">Financial Composition</h3>
-                    <div class="h-64 w-full"><canvas id="chart-profit"></canvas></div>
+            <form id="profile-setup-form" class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Full Name</label>
+                    <input type="text" id="setup-fullname" required class="w-full border p-3 rounded-xl text-sm outline-none focus:border-[#B36A5E] bg-gray-50" placeholder="e.g. Jawwad Jahangir">
                 </div>
-                <div class="bg-white p-6 rounded-3xl shadow-sm h-80 relative">
-                    <h3 class="font-bold text-gray-400 text-xs uppercase mb-2">Logistics Performance</h3>
-                    <div class="h-64 w-full flex justify-center"><canvas id="chart-logistics"></canvas></div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Contact Number</label>
+                    <input type="tel" id="setup-phone" required class="w-full border p-3 rounded-xl text-sm outline-none focus:border-[#B36A5E] bg-gray-50" placeholder="01XXXXXXXXX">
                 </div>
-            </div>
-        </section>
+                <button type="submit" id="btn-setup-profile" class="w-full bg-[#10B981] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-green-600 transition shadow-lg mt-4">Complete Setup</button>
+            </form>
+        </div>
+    </div>
 
-        <section id="orders" class="tab-content">
-            <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
-                <h2 class="text-xl font-bold">Order Pipeline</h2>
-                <div class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
-                    <input type="date" id="order-date-from" onchange="renderOrdersTable()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-gray-50" title="Date From">
-                    <span class="text-xs text-gray-400 font-bold uppercase">To</span>
-                    <input type="date" id="order-date-to" onchange="renderOrdersTable()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-gray-50" title="Date To">
-                    <div class="w-px h-6 bg-gray-200 mx-1"></div>
-                    <input type="text" id="order-search" onkeyup="renderOrdersTable()" placeholder="Search Order ID or Phone..." class="border p-2 rounded-lg w-64 focus:outline-none focus:border-[#B36A5E] text-xs">
-                </div>
+    <div id="app-container" class="hidden min-h-screen flex">
+        
+        <aside class="w-64 bg-[#1F2937] text-gray-300 flex flex-col sticky top-0 h-screen z-50">
+            <div class="p-6 border-b border-gray-700">
+                <h1 class="text-white font-bold text-xl tracking-tighter">STERLING <span class="text-[#B36A5E]">ERP</span></h1>
+                <p id="nav-user-role" class="text-[9px] text-[#10B981] font-bold uppercase tracking-widest mt-1">Logging in...</p>
             </div>
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <button id="nav-dashboard" onclick="switchTab('dashboard')" class="sidebar-item active w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📊 Dashboard</button>
+                <button id="nav-orders" onclick="switchTab('orders')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📦 Order Pipeline</button>
+                <button id="nav-crm" onclick="switchTab('crm')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">👥 Customer CRM</button>
+                <button id="nav-inventory" onclick="switchTab('inventory')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🛠 Inventory</button>
+                <button id="nav-logistics" onclick="switchTab('logistics-settings')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🚚 Logistics Rules</button>
+                <button id="nav-support" onclick="switchTab('support')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📜 Policy Manager</button>
+                <button id="nav-queries" onclick="switchTab('queries')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">💬 Customer Queries</button>
+                <button id="nav-contact" onclick="switchTab('contact-settings')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📱 Social & Contact</button>
+                
+                <button id="nav-team" onclick="switchTab('team')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition hidden border border-gray-600 mt-4">👑 Team Access</button>
+                <button id="nav-profile" onclick="switchTab('profile-section')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition hidden">👤 User Profile</button>
+            </nav>
+            <div class="p-4 border-t border-gray-700">
+                <button onclick="logoutAdmin()" class="w-full bg-gray-700 text-white py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-red-600 transition tracking-widest">Logout</button>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-8 overflow-y-auto h-screen relative">
             
-<div class="grid grid-cols-1 gap-8">
+            <div class="bg-white p-4 rounded-2xl shadow-sm mb-8 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-4 bg-gray-50 p-2 rounded-xl border border-gray-200 px-4">
+                    <span class="text-[10px] font-bold uppercase text-gray-400">System Ready</span>
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <button onclick="openManualModal()" class="bg-[#322C2B] text-white px-5 py-2.5 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-lg tracking-widest flex items-center gap-2">
+                        <span class="text-sm leading-none">+</span> Manual Order
+                    </button>
+                    
+                    <div id="low-stock-warning" class="hidden bg-red-100 text-red-600 px-4 py-2 rounded-full font-bold text-[10px] flex items-center gap-2">
+                        <span class="w-2 h-2 bg-red-600 rounded-full animate-ping"></span> LOW STOCK ALERT
+                    </div>
+                </div>
+            </div>
+
+            <section id="profile-section" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-[#322C2B]">My Profile</h2>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 max-w-2xl">
+                    <div id="profile-content">
+                        <p class="text-xs text-gray-400 animate-pulse">Loading profile data...</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="team" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-[#322C2B]">Team & Access Control</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 col-span-1 h-fit">
+                        <h3 class="text-xs font-bold uppercase mb-4 text-[#B36A5E] tracking-widest">Add New Staff</h3>
+                        <form id="add-team-form" class="space-y-4">
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Email</label>
+                                <input type="email" id="new_staff_email" required class="w-full border border-gray-300 p-2 rounded-lg outline-none focus:border-[#B36A5E] text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Temporary Password</label>
+                                <input type="password" id="new_staff_pass" required minlength="6" class="w-full border border-gray-300 p-2 rounded-lg outline-none focus:border-[#B36A5E] text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Assign Role</label>
+                                <select id="new_staff_role" required class="w-full border border-gray-300 p-2 rounded-lg outline-none focus:border-[#B36A5E] text-xs bg-white">
+                                    <option value="admin">Admin (All Access)</option>
+                                    <option value="sales">Sales (Orders, CRM, Queries)</option>
+                                    <option value="operations">Operations (Orders, Inventory, Logistics)</option>
+                                    <option value="super_admin">Super Admin (Master)</option>
+                                </select>
+                            </div>
+                            <button type="submit" id="btn-add-staff" class="w-full bg-[#10B981] text-white py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-green-600 transition shadow">Create Account</button>
+                        </form>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 col-span-2">
+                        <h3 class="text-xs font-bold uppercase mb-4 text-gray-400 tracking-widest">Active Personnel</h3>
+                        <div class="overflow-y-auto max-h-[40vh]">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-gray-50 text-[10px] font-bold uppercase text-gray-500 sticky top-0">
+                                    <tr>
+                                        <th class="p-3">Full Name</th>
+                                        <th>Email Address</th>
+                                        <th>PHONE NUMBER</th>
+                                        <th>Assigned Role</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="team-list-body">
+                                    <tr><td colspan="4" class="text-center p-4 text-gray-400">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h3 class="text-xs font-bold uppercase mt-6 mb-4 text-[#B36A5E] tracking-widest border-t pt-4">Profile Update Requests</h3>
+                        <div id="profile-requests-list" class="space-y-2 max-h-[25vh] overflow-y-auto">
+                            </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="dashboard" class="tab-content active">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-blue-500">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase">Total Revenue</p>
+                        <h2 id="kpi-revenue" class="text-2xl font-bold mt-1">৳450,200</h2>
+                    </div>
+                     <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-green-500">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase">Gross Profit</p>
+                        <h2 id="kpi-gross" class="text-2xl font-bold mt-1 text-green-600">৳125,500</h2>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-[#B36A5E]">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase">Net Profit</p>
+                        <h2 id="kpi-net" class="text-2xl font-bold mt-1 text-[#B36A5E]">৳82,100</h2>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-orange-400">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase">Courier Transit</p>
+                        <h2 id="kpi-transit" class="text-2xl font-bold mt-1 text-orange-500">৳12,400</h2>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-red-400">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase">Return Loss</p>
+                        <h2 id="kpi-loss" class="text-2xl font-bold mt-1 text-red-500">৳4,500</h2>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-gray-800 cursor-pointer hover:bg-gray-50 transition" onclick="openDamagedListModal()">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase flex justify-between items-center">Damaged Loss <span class="text-blue-500 underline text-[9px] hover:text-blue-700">Open List</span></p>
+                        <h2 id="kpi-damaged" class="text-2xl font-bold mt-1 text-gray-800">৳0</h2>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-3xl shadow-sm h-80 relative">
+                        <h3 class="font-bold text-gray-400 text-xs uppercase mb-2">Financial Composition</h3>
+                        <div class="h-64 w-full"><canvas id="chart-profit"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl shadow-sm h-80 relative">
+                        <h3 class="font-bold text-gray-400 text-xs uppercase mb-2">Logistics Performance</h3>
+                        <div class="h-64 w-full flex justify-center"><canvas id="chart-logistics"></canvas></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="orders" class="tab-content">
+                <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                    <div class="flex items-center gap-4">
+                        <h2 class="text-xl font-bold">Order Pipeline</h2>
+                        <button onclick="openManualModal()" class="bg-[#322C2B] text-white px-5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-[#B36A5E] transition shadow-sm">+ Manual Order</button>
+                    </div>
+                    <div class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+                        <input type="date" id="order-date-from" onchange="renderOrdersTable()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-gray-50" title="Date From">
+                        <span class="text-xs text-gray-400 font-bold uppercase">To</span>
+                        <input type="date" id="order-date-to" onchange="renderOrdersTable()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-gray-50" title="Date To">
+                        <div class="w-px h-6 bg-gray-200 mx-1"></div>
+                        <input type="text" id="order-search" onkeyup="renderOrdersTable()" placeholder="Search Order ID or Phone..." class="border p-2 rounded-lg w-64 focus:outline-none focus:border-[#B36A5E] text-xs">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-8">
                 <div>
                     <h3 class="font-bold text-lg mb-4 flex items-center gap-2">🔴 Stage 1: Verification <span id="count-pending" class="bg-red-500 text-white text-[10px] px-2 py-1 rounded-full">0</span></h3>
                     <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-red-50 relative">
@@ -176,7 +308,7 @@
                                         <th>Invoice</th>
                                     </tr>
                                 </thead>
-                                <tbody id="pipeline-processing"><tbody>
+                                <tbody id="pipeline-processing"></tbody>
                             </table>
                         </div>
                     </div>
@@ -198,191 +330,211 @@
                                         <th>Invoice</th>
                                     </tr>
                                 </thead>
-                                <tbody id="pipeline-history"><tbody>
+                                <tbody id="pipeline-history"></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
+            </section>
 
-        <section id="crm" class="tab-content">
-            <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
-                <h2 class="text-xl font-bold">Customer Intelligence</h2>
-                <div class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
-                    <input type="date" id="crm-date-from" onchange="renderCRMTable()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-gray-50" title="Order Date From">
-                    <span class="text-xs text-gray-400 font-bold uppercase">To</span>
-                    <input type="date" id="crm-date-to" onchange="renderCRMTable()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-gray-50" title="Order Date To">
-                    <div class="w-px h-6 bg-gray-200 mx-1"></div>
-                    <input type="text" id="crm-search" onkeyup="renderCRMTable()" placeholder="Search phone or name..." class="border p-2 rounded-lg w-48 focus:outline-none focus:border-[#B36A5E] text-xs">
-                    <button onclick="exportCRMExcel()" class="bg-[#10B981] text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-green-600 transition shadow-sm">Export CSV</button>
-                </div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400">
-                        <tr>
-                            <th class="p-4">Customer Profile</th>
-                            <th>Phone Number</th>
-                            <th class="cursor-pointer hover:text-black transition group" onclick="sortCRM('lastOrderDate')">Last Order <span class="opacity-50 group-hover:opacity-100">↕</span></th>
-                            <th class="cursor-pointer hover:text-black transition group" onclick="sortCRM('totalSpend')">Total Spend <span class="opacity-50 group-hover:opacity-100">↕</span></th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="crm-table"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <section id="inventory" class="tab-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-[#322C2B]">Cloud Inventory</h2>
-                <div class="flex gap-3 items-center">
-                    <input type="text" id="inventory-search" onkeyup="filterInventory()" placeholder="Search product name..." class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-white w-48 shadow-sm">
-                    <button onclick="openCategoryModal()" class="bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-gray-50 transition">Manage Categories</button>
-                    <button onclick="openAddModal()" class="bg-[#322C2B] text-white px-6 py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-lg">+ Add New Product</button>
-                </div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400">
-                        <tr>
-                            <th class="p-4 cursor-pointer hover:text-[#B36A5E] transition group" onclick="sortInventory('name')">Product <span class="opacity-50 group-hover:opacity-100">↕</span></th>
-                            <th>SKU</th>
-                            <th class="cursor-pointer hover:text-[#B36A5E] transition group" onclick="sortInventory('category')">Category <span class="opacity-50 group-hover:opacity-100">↕</span></th>
-                            <th>Price</th>
-                            <th class="cursor-pointer hover:text-[#B36A5E] transition group" onclick="sortInventory('stock')">Stock <span class="opacity-50 group-hover:opacity-100">↕</span></th>
-                            <th>Requests</th> <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventory-table-body"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <section id="logistics-settings" class="tab-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-[#322C2B]">Logistics & Shipping Rules</h2>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-fit">
-                    <h3 class="text-xs font-bold uppercase mb-2 text-[#B36A5E] tracking-widest">Customer Checkout Fees</h3>
-                    <p class="text-xs text-gray-500 mb-6">What the customer is charged for shipping on the checkout page.</p>
-                    
-                    <form id="customerRatesForm" class="space-y-4">
-                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
-                            <h4 class="text-[10px] font-bold uppercase text-gray-700 mb-2">Inside Dhaka</h4>
-                            <div class="grid grid-cols-4 gap-2">
-                                <label class="block text-[9px] font-bold uppercase text-gray-500">0-0.5 Kg (৳)<input type="number" id="cust_in_05" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                                <label class="block text-[9px] font-bold uppercase text-gray-500">0.5-1 Kg (৳)<input type="number" id="cust_in_10" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                                <label class="block text-[9px] font-bold uppercase text-gray-500">1-2 Kg (৳)<input type="number" id="cust_in_20" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                                <label class="block text-[9px] font-bold uppercase text-gray-500">> 2Kg / KG (৳)<input type="number" id="cust_in_extra" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
-                            <h4 class="text-[10px] font-bold uppercase text-gray-700 mb-2">Outside Dhaka</h4>
-                            <div class="grid grid-cols-4 gap-2">
-                                <label class="block text-[9px] font-bold uppercase text-gray-500">0-0.5 Kg (৳)<input type="number" id="cust_out_05" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                                <label class="block text-[9px] font-bold uppercase text-gray-500">0.5-1 Kg (৳)<input type="number" id="cust_out_10" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                                <label class="block text-[9px] font-bold uppercase text-gray-500">1-2 Kg (৳)<input type="number" id="cust_out_20" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                                <label class="block text-[9px] font-bold uppercase text-gray-500">> 2Kg / KG (৳)<input type="number" id="cust_out_extra" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
-                            <h4 class="text-[10px] font-bold uppercase text-gray-700 mb-2">Suburbs</h4>
-                            <div class="grid grid-cols-4 gap-2">
-                                <label class="block text-[9px] font-bold uppercase text-gray-500">0-0.5 Kg (৳)<input type="number" id="cust_sub_05" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                                <label class="block text-[9px] font-bold uppercase text-gray-500">0.5-1 Kg (৳)<input type="number" id="cust_sub_10" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                                <label class="block text-[9px] font-bold uppercase text-gray-500">1-2 Kg (৳)<input type="number" id="cust_sub_20" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                                <label class="block text-[9px] font-bold uppercase text-gray-500">> 2Kg / KG (৳)<input type="number" id="cust_sub_extra" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                            </div>
-                        </div>
-                        <button type="submit" id="btn-save-cust-rates" class="w-full mt-4 bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-md">Save Customer Rates</button>
-                    </form>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col max-h-[85vh]">
-                    <h3 class="text-xs font-bold uppercase mb-2 text-[#B36A5E] tracking-widest">Partner Cost Tiers</h3>
-                    <p class="text-xs text-gray-500 mb-4">What you actually pay the courier. Used for internal Net Profit tracking.</p>
-
-                    <form id="partnerRateForm" class="space-y-3 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200 shrink-0">
-                        <div class="grid grid-cols-2 gap-3">
-                            <label class="block text-[10px] font-bold uppercase text-gray-500">Partner
-                                <select id="log_part_name" class="w-full mt-1 border border-gray-300 p-2 rounded-lg outline-none focus:border-[#B36A5E] bg-white"><option value="Pathao">Pathao</option><option value="Steadfast">Steadfast</option><option value="RedX">RedX</option></select>
-                            </label>
-                            <label class="block text-[10px] font-bold uppercase text-gray-500">Destination Zone
-                                <select id="log_part_dest" class="w-full mt-1 border border-gray-300 p-2 rounded-lg outline-none focus:border-[#B36A5E] bg-white"><option value="Inside Dhaka">Inside Dhaka</option><option value="Suburbs">Suburbs</option><option value="Outside Dhaka">Outside Dhaka</option></select>
-                            </label>
-                        </div>
-                        <div class="grid grid-cols-5 gap-2">
-                            <label class="block text-[9px] font-bold uppercase text-gray-500">0-0.5kg (৳)<input type="number" id="log_part_05" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                            <label class="block text-[9px] font-bold uppercase text-gray-500">0.5-1kg (৳)<input type="number" id="log_part_10" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                            <label class="block text-[9px] font-bold uppercase text-gray-500">1-2kg (৳)<input type="number" id="log_part_20" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                            <label class="block text-[9px] font-bold uppercase text-gray-500">> 2kg/KG (৳)<input type="number" id="log_part_extra" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                            <label class="block text-[9px] font-bold uppercase text-gray-500">COD (%)<input type="number" step="0.01" id="log_part_cod" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
-                        </div>
-                        <button type="submit" class="w-full bg-[#10B981] text-white py-2.5 mt-2 rounded-lg font-bold uppercase text-[9px] hover:bg-green-600 transition shadow">+ Add / Update Partner Rate</button>
-                    </form>
-
-                    <div class="flex-1 overflow-y-auto border border-gray-200 rounded-lg">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-gray-100 text-[9px] font-bold uppercase text-gray-500 sticky top-0">
-                                <tr><th class="p-3">Partner & Zone</th><th>0.5k / 1k / 2k / Ex</th><th>COD</th><th>Action</th></tr>
-                            </thead>
-                            <tbody id="partner-rates-list"></tbody>
-                        </table>
+            <section id="crm" class="tab-content">
+                <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                    <h2 class="text-xl font-bold">Customer Intelligence</h2>
+                    <div class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+                        <input type="date" id="crm-date-from" onchange="renderCRMTable()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-gray-50" title="Order Date From">
+                        <span class="text-xs text-gray-400 font-bold uppercase">To</span>
+                        <input type="date" id="crm-date-to" onchange="renderCRMTable()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-gray-50" title="Order Date To">
+                        <div class="w-px h-6 bg-gray-200 mx-1"></div>
+                        <input type="text" id="crm-search" onkeyup="renderCRMTable()" placeholder="Search phone or name..." class="border p-2 rounded-lg w-48 focus:outline-none focus:border-[#B36A5E] text-xs">
+                        <button onclick="exportCRMExcel()" class="bg-[#10B981] text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-green-600 transition shadow-sm">Export CSV</button>
                     </div>
                 </div>
-            </div>
-        </section>
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400">
+                            <tr>
+                                <th class="p-4">Customer Profile</th>
+                                <th>Phone Number</th>
+                                <th class="cursor-pointer hover:text-black transition group" onclick="sortCRM('lastOrderDate')">Last Order <span class="opacity-50 group-hover:opacity-100">↕</span></th>
+                                <th class="cursor-pointer hover:text-black transition group" onclick="sortCRM('totalSpend')">Total Spend <span class="opacity-50 group-hover:opacity-100">↕</span></th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="crm-table"></tbody>
+                    </table>
+                </div>
+            </section>
 
-        <section id="queries" class="tab-content">
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="bg-white p-4 rounded-xl border border-gray-100 flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold">P</div>
-                    <div><p class="text-[10px] uppercase text-gray-400 font-bold">Total Pending</p><h2 id="query-stat-pending" class="text-xl font-bold">0</h2></div>
+            <section id="inventory" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-[#322C2B]">Cloud Inventory</h2>
+                    <div class="flex gap-3 items-center">
+                        <input type="text" id="inventory-search" onkeyup="filterInventory()" placeholder="Search product name..." class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-white w-48 shadow-sm">
+                        <button onclick="openCategoryModal()" class="bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-gray-50 transition">Manage Categories</button>
+                        <button onclick="openAddModal()" class="bg-[#322C2B] text-white px-6 py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-lg">+ Add New Product</button>
+                    </div>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-gray-100 flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">S</div>
-                    <div><p class="text-[10px] uppercase text-gray-400 font-bold">Total Solved</p><h2 id="query-stat-solved" class="text-xl font-bold">0</h2></div>
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400">
+                            <tr>
+                                <th class="p-4 cursor-pointer hover:text-[#B36A5E] transition group" onclick="sortInventory('name')">Product <span class="opacity-50 group-hover:opacity-100">↕</span></th>
+                                <th>SKU</th>
+                                <th class="cursor-pointer hover:text-[#B36A5E] transition group" onclick="sortInventory('category')">Category <span class="opacity-50 group-hover:opacity-100">↕</span></th>
+                                <th>Price</th>
+                                <th class="cursor-pointer hover:text-[#B36A5E] transition group" onclick="sortInventory('stock')">Stock <span class="opacity-50 group-hover:opacity-100">↕</span></th>
+                                <th>Requests</th> <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table-body"></tbody>
+                    </table>
                 </div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-                <table class="w-full text-left"><thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400"><tr><th class="p-4">Date</th><th>Customer</th><th>Subject</th><th>Status</th></tr></thead><tbody id="queries-table-body" class="text-xs"></tbody></table>
-            </div>
-        </section>
-        
-        <section id="support" class="tab-content">
-             <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-[#322C2B]">Footer & Policy Manager</h2></div>
-             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                     <h3 class="text-xs font-bold uppercase mb-4 text-gray-400 tracking-widest">Add Link</h3>
-                     <form id="supportLinkForm" class="space-y-4">
-                         <input type="text" id="sup_title" class="w-full mt-1 border-b p-2 outline-none" required placeholder="Title">
-                         <input type="text" id="sup_url" class="w-full mt-1 border-b p-2 outline-none" required placeholder="URL">
-                         <button type="submit" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px]">Add Link</button>
-                     </form>
+            </section>
+
+            <section id="logistics-settings" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-[#322C2B]">Logistics & Shipping Rules</h2>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-fit">
+                        <h3 class="text-xs font-bold uppercase mb-2 text-[#B36A5E] tracking-widest">Customer Checkout Fees</h3>
+                        <p class="text-xs text-gray-500 mb-6">What the customer is charged for shipping on the checkout page.</p>
+                        
+                        <form id="customerRatesForm" class="space-y-4">
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                                <h4 class="text-[10px] font-bold uppercase text-gray-700 mb-2">Inside Dhaka</h4>
+                                <div class="grid grid-cols-4 gap-2">
+                                    <label class="block text-[9px] font-bold uppercase text-gray-500">0-0.5 Kg (৳)<input type="number" id="cust_in_05" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                    <label class="block text-[9px] font-bold uppercase text-gray-500">0.5-1 Kg (৳)<input type="number" id="cust_in_10" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                    <label class="block text-[9px] font-bold uppercase text-gray-500">1-2 Kg (৳)<input type="number" id="cust_in_20" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                    <label class="block text-[9px] font-bold uppercase text-gray-500">> 2Kg / KG (৳)<input type="number" id="cust_in_extra" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                                <h4 class="text-[10px] font-bold uppercase text-gray-700 mb-2">Outside Dhaka</h4>
+                                <div class="grid grid-cols-4 gap-2">
+                                    <label class="block text-[9px] font-bold uppercase text-gray-500">0-0.5 Kg (৳)<input type="number" id="cust_out_05" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                    <label class="block text-[9px] font-bold uppercase text-gray-500">0.5-1 Kg (৳)<input type="number" id="cust_out_10" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                    <label class="block text-[9px] font-bold uppercase text-gray-500">1-2 Kg (৳)<input type="number" id="cust_out_20" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                    <label class="block text-[9px] font-bold uppercase text-gray-500">> 2Kg / KG (৳)<input type="number" id="cust_out_extra" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                                <h4 class="text-[10px] font-bold uppercase text-gray-700 mb-2">Suburbs</h4>
+                                <div class="grid grid-cols-4 gap-2">
+                                    <label class="block text-[9px] font-bold uppercase text-gray-500">0-0.5 Kg (৳)<input type="number" id="cust_sub_05" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                    <label class="block text-[9px] font-bold uppercase text-gray-500">0.5-1 Kg (৳)<input type="number" id="cust_sub_10" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                    <label class="block text-[9px] font-bold uppercase text-gray-500">1-2 Kg (৳)<input type="number" id="cust_sub_20" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                    <label class="block text-[9px] font-bold uppercase text-gray-500">> 2Kg / KG (৳)<input type="number" id="cust_sub_extra" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                </div>
+                            </div>
+                            <button type="submit" id="btn-save-cust-rates" class="w-full mt-4 bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-md">Save Customer Rates</button>
+                        </form>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col max-h-[85vh]">
+                        <h3 class="text-xs font-bold uppercase mb-2 text-[#B36A5E] tracking-widest">Partner Cost Tiers</h3>
+                        <p class="text-xs text-gray-500 mb-4">What you actually pay the courier. Used for internal Net Profit tracking.</p>
+
+                        <form id="partnerRateForm" class="space-y-3 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200 shrink-0">
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="block text-[10px] font-bold uppercase text-gray-500">Partner
+                                    <select id="log_part_name" class="w-full mt-1 border border-gray-300 p-2 rounded-lg outline-none focus:border-[#B36A5E] bg-white"><option value="Pathao">Pathao</option><option value="Steadfast">Steadfast</option><option value="RedX">RedX</option></select>
+                                </label>
+                                <label class="block text-[10px] font-bold uppercase text-gray-500">Destination Zone
+                                    <select id="log_part_dest" class="w-full mt-1 border border-gray-300 p-2 rounded-lg outline-none focus:border-[#B36A5E] bg-white"><option value="Inside Dhaka">Inside Dhaka</option><option value="Suburbs">Suburbs</option><option value="Outside Dhaka">Outside Dhaka</option></select>
+                                </label>
+                            </div>
+                            <div class="grid grid-cols-5 gap-2">
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">0-0.5kg (৳)<input type="number" id="log_part_05" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">0.5-1kg (৳)<input type="number" id="log_part_10" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">1-2kg (৳)<input type="number" id="log_part_20" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">> 2kg/KG (৳)<input type="number" id="log_part_extra" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                                <label class="block text-[9px] font-bold uppercase text-gray-500">COD (%)<input type="number" step="0.01" id="log_part_cod" class="w-full mt-1 border border-gray-300 p-1.5 rounded outline-none text-center" required></label>
+                            </div>
+                            <button type="submit" class="w-full bg-[#10B981] text-white py-2.5 mt-2 rounded-lg font-bold uppercase text-[9px] hover:bg-green-600 transition shadow">+ Add / Update Partner Rate</button>
+                        </form>
+
+                        <div class="flex-1 overflow-y-auto border border-gray-200 rounded-lg">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-gray-100 text-[9px] font-bold uppercase text-gray-500 sticky top-0">
+                                    <tr><th class="p-3">Partner & Zone</th><th>0.5k / 1k / 2k / Ex</th><th>COD</th><th>Action</th></tr>
+                                </thead>
+                                <tbody id="partner-rates-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="queries" class="tab-content">
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold">P</div>
+                        <div><p class="text-[10px] uppercase text-gray-400 font-bold">Total Pending</p><h2 id="query-stat-pending" class="text-xl font-bold">0</h2></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">S</div>
+                        <div><p class="text-[10px] uppercase text-gray-400 font-bold">Total Solved</p><h2 id="query-stat-solved" class="text-xl font-bold">0</h2></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+                    <table class="w-full text-left"><thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400"><tr><th class="p-4">Date</th><th>Customer</th><th>Subject</th><th>Status</th></tr></thead><tbody id="queries-table-body" class="text-xs"></tbody></table>
+                </div>
+            </section>
+            
+            <section id="support" class="tab-content">
+                 <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-[#322C2B]">Footer & Policy Manager</h2></div>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                         <h3 class="text-xs font-bold uppercase mb-4 text-gray-400 tracking-widest">Add Link</h3>
+                         <form id="supportLinkForm" class="space-y-4">
+                             <input type="text" id="sup_title" class="w-full mt-1 border-b p-2 outline-none" required placeholder="Title">
+                             <input type="text" id="sup_url" class="w-full mt-1 border-b p-2 outline-none" required placeholder="URL">
+                             <button type="submit" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px]">Add Link</button>
+                         </form>
+                     </div>
+                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><h3 class="text-xs font-bold uppercase mb-4 text-gray-400 tracking-widest">Active Links</h3><div id="support-link-list" class="space-y-2"></div></div>
+                     
+                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 md:col-span-2">
+                        <h3 class="text-xs font-bold uppercase mb-4 text-[#B36A5E] tracking-widest">Invoice Terms & Policy (Appears on Invoice Footer)</h3>
+                        <textarea id="invoice_terms_input" class="w-full border rounded-lg p-3 text-xs h-24 outline-none focus:border-[#B36A5E] bg-gray-50" placeholder="Enter terms and conditions, return policy, etc..."></textarea>
+                        <button onclick="saveInvoiceTerms()" class="mt-4 bg-[#322C2B] text-white py-3 px-8 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition">Save Invoice Terms</button>
+                    </div>
                  </div>
-                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><h3 class="text-xs font-bold uppercase mb-4 text-gray-400 tracking-widest">Active Links</h3><div id="support-link-list" class="space-y-2"></div></div>
-                 
-                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 md:col-span-2">
-                    <h3 class="text-xs font-bold uppercase mb-4 text-[#B36A5E] tracking-widest">Invoice Terms & Policy (Appears on Invoice Footer)</h3>
-                    <textarea id="invoice_terms_input" class="w-full border rounded-lg p-3 text-xs h-24 outline-none focus:border-[#B36A5E] bg-gray-50" placeholder="Enter terms and conditions, return policy, etc..."></textarea>
-                    <button onclick="saveInvoiceTerms()" class="mt-4 bg-[#322C2B] text-white py-3 px-8 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition">Save Invoice Terms</button>
-                </div>
-             </div>
-        </section>
+            </section>
 
-        <section id="contact-settings" class="tab-content">
-             <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-[#322C2B]">Social Media & Contact</h2></div>
-             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><h3 class="text-xs font-bold uppercase mb-4 text-[#B36A5E] tracking-widest">Contact Info</h3><form id="contactInfoForm" class="space-y-4"><input type="text" id="con_phone" class="w-full mt-1 border-b p-2 outline-none" placeholder="Phone"><input type="email" id="con_email" class="w-full mt-1 border-b p-2 outline-none" placeholder="Email"><input type="text" id="con_address" class="w-full mt-1 border-b p-2 outline-none" placeholder="Address"><button type="submit" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px]">Update</button></form></div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><h3 class="text-xs font-bold uppercase mb-4 text-[#B36A5E] tracking-widest">Social Media</h3><form id="socialLinkForm" class="space-y-4"><div class="flex gap-2"><select id="soc_platform" class="border p-2 rounded-lg text-xs outline-none"><option value="Instagram">Instagram</option><option value="Facebook">Facebook</option><option value="WhatsApp">WhatsApp</option></select><input type="text" id="soc_url" placeholder="URL..." class="flex-1 border p-2 rounded-lg text-xs outline-none"></div><button type="submit" class="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold uppercase text-[10px]">Save</button></form><div id="social-link-list" class="mt-6 space-y-2"></div></div>
-             </div>
-        </section>
-    </main>
+            <section id="contact-settings" class="tab-content">
+                 <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-[#322C2B]">Social Media & Contact</h2></div>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><h3 class="text-xs font-bold uppercase mb-4 text-[#B36A5E] tracking-widest">Contact Info</h3><form id="contactInfoForm" class="space-y-4"><input type="text" id="con_phone" class="w-full mt-1 border-b p-2 outline-none" placeholder="Phone"><input type="email" id="con_email" class="w-full mt-1 border-b p-2 outline-none" placeholder="Email"><input type="text" id="con_address" class="w-full mt-1 border-b p-2 outline-none" placeholder="Address"><button type="submit" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px]">Update</button></form></div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><h3 class="text-xs font-bold uppercase mb-4 text-[#B36A5E] tracking-widest">Social Media</h3><form id="socialLinkForm" class="space-y-4"><div class="flex gap-2"><select id="soc_platform" class="border p-2 rounded-lg text-xs outline-none"><option value="Instagram">Instagram</option><option value="Facebook">Facebook</option><option value="WhatsApp">WhatsApp</option></select><input type="text" id="soc_url" placeholder="URL..." class="flex-1 border p-2 rounded-lg text-xs outline-none"></div><button type="submit" class="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold uppercase text-[10px]">Save</button></form><div id="social-link-list" class="mt-6 space-y-2"></div></div>
+                 </div>
+            </section>
+        </main>
+    </div> 
+
+    <div id="superAdminConfirmModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[9999] backdrop-blur-sm p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b bg-gray-50 flex justify-between items-center">
+                <h2 class="font-bold text-[#322C2B]">Confirm Update Request</h2>
+                <button onclick="closeApproveModal()" class="text-gray-400 text-2xl hover:text-black transition">&times;</button>
+            </div>
+            <div class="p-6">
+                <p id="confirm-req-details" class="text-xs text-gray-600 mb-4 font-medium"></p>
+                <form id="super-admin-confirm-form" class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Your Password (Super Admin)</label>
+                        <input type="password" id="super-admin-pass" required class="w-full border p-2 text-xs rounded-lg outline-none focus:border-[#B36A5E]">
+                    </div>
+                    <button type="submit" id="btn-confirm-approve" class="w-full bg-[#10B981] text-white py-3 rounded-xl font-bold uppercase text-[10px] shadow-lg hover:bg-green-600 transition">Confirm & Approve</button>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <div id="productModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[200] backdrop-blur-sm p-4">
         <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh]">
@@ -452,12 +604,13 @@
     </div>
 
     <div id="categoryModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[200] backdrop-blur-sm p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6">
-            <h3 class="text-xl font-bold mb-4">Manage Categories</h3>
-            <form id="categoryForm" class="space-y-4 mb-4"><input type="text" id="cat_name" list="existing-cats" placeholder="Category Name" class="w-full border p-3 rounded-lg text-sm font-bold" required autocomplete="off"><datalist id="existing-cats"></datalist><input type="text" id="sub_name" placeholder="Sub-Category" class="w-full border p-3 rounded-lg text-sm"><button type="submit" class="w-full bg-[#322C2B] text-white py-3 rounded-lg font-bold uppercase text-xs">+ Add / Append</button></form>
-            <div id="category-list" class="max-h-48 overflow-y-auto"></div><button onclick="document.getElementById('categoryModal').classList.add('hidden')" class="mt-4 w-full text-gray-500 text-xs font-bold uppercase">Close</button>
-        </div>
-    </div>
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6">
+            <h3 class="text-xl font-bold mb-4">Manage Categories</h3>
+            <form id="categoryForm" class="space-y-4 mb-4"><input type="text" id="cat_name" list="existing-cats" placeholder="Category Name" class="w-full border p-3 rounded-lg text-sm font-bold" required autocomplete="off"><datalist id="existing-cats"></datalist><input type="text" id="sub_name" placeholder="Sub-Category" class="w-full border p-3 rounded-lg text-sm"><button type="submit" class="w-full bg-[#322C2B] text-white py-3 rounded-lg font-bold uppercase text-xs">+ Add / Append</button></form>
+            <div id="category-list" class="max-h-48 overflow-y-auto"></div>
+            <button onclick="document.getElementById('categoryModal').classList.add('hidden'); document.getElementById('categoryModal').classList.remove('flex');" class="mt-4 w-full text-gray-500 text-xs font-bold uppercase">Close</button>
+        </div>
+    </div>
 
     <div id="crmDetailModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[250] p-4 backdrop-blur-sm">
         <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -583,20 +736,20 @@
         </div>
     </div>
 
-    <div id="requestModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[200] p-4 backdrop-blur-sm flex">
-        <div class="bg-white w-full max-w-lg rounded-2xl p-8 max-h-[80vh] overflow-y-auto flex flex-col">
-            <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-4">
-                <h2 class="text-xl font-bold text-[#322C2B]">Product Requests</h2>
-                <button onclick="exportRequestsCSV()" class="bg-[#10B981] text-white px-4 py-2 rounded-lg text-[9px] font-bold uppercase hover:bg-green-600 transition shadow-sm">Export to CSV</button>
-            </div>
-            <div class="flex gap-4 mb-4 border-b border-gray-100 pb-2">
-                <button id="tab-req-new" onclick="toggleRequestView('new')" class="text-xs font-bold uppercase tracking-widest text-[#B36A5E] underline">Active / New</button>
-                <button id="tab-req-res" onclick="toggleRequestView('resolved')" class="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-gray-600">Resolved History</button>
-            </div>
-            <div id="request-list" class="space-y-3 flex-1 overflow-y-auto pr-1"></div>
-            <button onclick="document.getElementById('requestModal').classList.add('hidden')" class="mt-4 bg-gray-100 w-full text-gray-600 py-3 rounded-xl text-xs font-bold uppercase hover:bg-gray-200 transition shrink-0">Close</button>
-        </div>
-    </div>
+    <div id="requestModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[200] p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-lg rounded-2xl p-8 max-h-[80vh] overflow-y-auto flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-4">
+                <h2 class="text-xl font-bold text-[#322C2B]">Product Requests</h2>
+                <button onclick="exportRequestsCSV()" class="bg-[#10B981] text-white px-4 py-2 rounded-lg text-[9px] font-bold uppercase hover:bg-green-600 transition shadow-sm">Export to CSV</button>
+            </div>
+            <div class="flex gap-4 mb-4 border-b border-gray-100 pb-2">
+                <button id="tab-req-new" onclick="toggleRequestView('new')" class="text-xs font-bold uppercase tracking-widest text-[#B36A5E] underline">Active / New</button>
+                <button id="tab-req-res" onclick="toggleRequestView('resolved')" class="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-gray-600">Resolved History</button>
+            </div>
+            <div id="request-list" class="space-y-3 flex-1 overflow-y-auto pr-1"></div>
+            <button onclick="document.getElementById('requestModal').classList.add('hidden'); document.getElementById('requestModal').classList.remove('flex');" class="mt-4 bg-gray-100 w-full text-gray-600 py-3 rounded-xl text-xs font-bold uppercase hover:bg-gray-200 transition shrink-0">Close</button>
+        </div>
+    </div>
 
     <script>
         // --- FIREBASE INIT ---
@@ -611,8 +764,12 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const storage = firebase.storage();
+        const auth = firebase.auth();
+
+        const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
 
         // --- GLOBAL VARIABLES ---
+        let currentUserRole = null; 
         let ordersCache = {};
         let editProductId = null;
         let activeRestockProductId = null; 
@@ -630,6 +787,248 @@
         let activeRequestView = 'new';
         let requestsDataCache = [];
         let isInventoryLoading = false; 
+
+        // ================= AUTH & RBAC LOGIC =================
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                try {
+                    const roleDoc = await db.collection("admin_users").doc(user.uid).get();
+                    if (roleDoc.exists) {
+                        const userData = roleDoc.data();
+                        currentUserRole = userData.role;
+                        
+                        window.currentAdminUser = userData;
+                        window.currentAdminUser.uid = user.uid;
+
+                        // Force profile setup for newly created admin users
+                        if (!userData.fullName || !userData.phone) {
+                            document.getElementById('profileSetupModal').classList.remove('hidden');
+                            document.getElementById('profileSetupModal').classList.add('flex');
+                        }
+
+                        document.getElementById('nav-user-role').innerText = "Logged in as: " + currentUserRole;
+                        applyPermissions(currentUserRole);
+                        
+                        document.getElementById('login-screen').classList.add('hidden');
+                        document.getElementById('app-container').classList.remove('hidden');
+
+                        // Initialize Data AFTER Login
+                        if (typeof loadOrders === 'function') loadOrders();
+                        if (typeof loadCRMUsers === 'function') loadCRMUsers();
+                        if (typeof loadInventory === 'function') loadInventory(); 
+                        if (typeof renderProfilePage === 'function') renderProfilePage(user, window.currentAdminUser);
+
+                        // Handle Hash routing
+                        const currentHash = window.location.hash.replace('#', '');
+                        if (currentHash) { window.switchTab(currentHash); } 
+                        else { window.switchTab('dashboard'); }
+                    } else {
+                        throw new Error("You do not have assigned access roles.");
+                    }
+                } catch (error) {
+                    auth.signOut();
+                    alert("Access Denied: " + error.message);
+                }
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('app-container').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('admin-login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const em = document.getElementById('login-email').value;
+            const pw = document.getElementById('login-password').value;
+            const btn = document.getElementById('btn-login');
+            btn.innerText = "AUTHENTICATING...";
+            auth.signInWithEmailAndPassword(em, pw).catch(err => {
+                const errEl = document.getElementById('login-error');
+                errEl.innerText = err.message;
+                errEl.classList.remove('hidden');
+                btn.innerText = "ACCESS PORTAL";
+            });
+        });
+        
+        // --- FIRST LOGIN PROFILE SETUP SUBMISSION ---
+        document.getElementById('profile-setup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-setup-profile');
+            btn.innerText = "SAVING..."; btn.disabled = true;
+            try {
+                const fullName = document.getElementById('setup-fullname').value;
+                const phone = document.getElementById('setup-phone').value;
+                await db.collection("admin_users").doc(auth.currentUser.uid).update({
+                    fullName: fullName,
+                    phone: phone
+                });
+                window.currentAdminUser.fullName = fullName;
+                window.currentAdminUser.phone = phone;
+                document.getElementById('profileSetupModal').classList.add('hidden');
+                document.getElementById('profileSetupModal').classList.remove('flex');
+                
+                renderProfilePage(auth.currentUser, window.currentAdminUser);
+                loadTeamMembers(); 
+            } catch(err) {
+                alert(err.message);
+                btn.innerText = "Complete Setup"; btn.disabled = false;
+            }
+        });
+
+        window.logoutAdmin = function() {
+            auth.signOut().then(() => { window.location.reload(); });
+        };
+
+        function applyPermissions(role) {
+            const r = role.toLowerCase();
+            const els = {
+                dashboard: document.getElementById('nav-dashboard'),
+                orders: document.getElementById('nav-orders'),
+                crm: document.getElementById('nav-crm'),
+                inventory: document.getElementById('nav-inventory'),
+                logistics: document.getElementById('nav-logistics'),
+                support: document.getElementById('nav-support'),
+                queries: document.getElementById('nav-queries'),
+                contact: document.getElementById('nav-contact'),
+                team: document.getElementById('nav-team'),
+                profile: document.getElementById('nav-profile') 
+            };
+
+            Object.values(els).forEach(el => { if(el) el.classList.add('hidden'); });
+
+            if (r === 'super_admin') {
+                Object.values(els).forEach(el => { if(el) el.classList.remove('hidden'); });
+            } else if (r === 'admin') {
+                Object.values(els).forEach(el => { if(el && el !== els.team) el.classList.remove('hidden'); });
+            } else if (r === 'sales') {
+                [els.dashboard, els.orders, els.crm, els.queries, els.profile].forEach(el => { if(el) el.classList.remove('hidden'); });
+            } else if (r === 'operations') {
+                [els.dashboard, els.orders, els.inventory, els.logistics, els.profile].forEach(el => { if(el) el.classList.remove('hidden'); });
+            }
+        }
+
+        // --- TEAM MANAGEMENT (SUPER ADMIN) ---
+    window.loadTeamMembers = async function() {
+            const tbody = document.getElementById('team-list-body');
+            try {
+                const snap = await db.collection("admin_users").get();
+                let html = '';
+                let reqHtml = '';
+                
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const uid = doc.id;
+                    const fullName = d.fullName || 'Pending Setup';
+                    const phone = d.phone || 'N/A'; // Added fetching the phone number
+                    
+                    html += `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="p-3 font-bold text-gray-700">${fullName}</td>
+                            <td class="font-mono text-gray-500">${d.email}</td>
+                            <td class="font-mono text-gray-500">${phone}</td>
+                            <td><span class="bg-gray-200 px-2 py-1 rounded text-[10px] uppercase font-bold text-gray-600">${d.role}</span></td>
+                            <td><button onclick="removeStaff('${uid}')" class="text-red-500 font-bold uppercase text-[9px] hover:underline">Revoke Access</button></td>
+                        </tr>
+                    `;
+
+                    if (d.pendingUpdate) {
+                        reqHtml += `
+                            <div class="bg-orange-50 p-3 rounded-lg border border-orange-100 flex justify-between items-center mb-2 text-xs">
+                                <div>
+                                    <p class="font-bold text-[#322C2B]">${fullName} <span class="text-gray-500 font-normal">(${d.email})</span></p>
+                                    <p class="text-[10px] text-gray-600 mt-1">Requested Change: <br>
+                                    Email: <span class="font-mono text-blue-600">${d.pendingUpdate.email}</span> | Phone: <span class="font-mono text-blue-600">${d.pendingUpdate.phone}</span></p>
+                                </div>
+                                <button onclick="openApproveModal('${uid}', '${d.email}', '${d.pendingUpdate.email}', '${d.pendingUpdate.phone}')" class="bg-[#10B981] text-white px-3 py-1.5 rounded-lg font-bold uppercase text-[9px] shadow-sm">Approve</button>
+                            </div>
+                        `;
+                    }
+                });
+                
+                tbody.innerHTML = html;
+                const reqList = document.getElementById('profile-requests-list');
+                if(reqList) reqList.innerHTML = reqHtml || '<p class="text-[10px] text-gray-400 p-2">No pending update requests.</p>';
+            } catch (e) { tbody.innerHTML = `<tr><td colspan="5" class="text-red-500 text-center p-4">Error loading team.</td></tr>`; } // Updated colspan from 4 to 5
+        };
+
+        document.getElementById('add-team-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-add-staff');
+            const em = document.getElementById('new_staff_email').value;
+            const pw = document.getElementById('new_staff_pass').value;
+            const role = document.getElementById('new_staff_role').value;
+            btn.innerText = "Creating..."; btn.disabled = true;
+
+            try {
+                const res = await secondaryApp.auth().createUserWithEmailAndPassword(em, pw);
+                await db.collection("admin_users").doc(res.user.uid).set({
+                    email: em,
+                    role: role,
+                    created_at: new Date().toISOString()
+                });
+                await secondaryApp.auth().signOut();
+                
+                alert(`Account created for ${em} as ${role}.`);
+                e.target.reset();
+                window.loadTeamMembers();
+            } catch (err) {
+                alert("Error: " + err.message);
+            } finally {
+                btn.innerText = "Create Account"; btn.disabled = false;
+            }
+        });
+
+        window.removeStaff = async function(uid) {
+            if(confirm("Are you sure you want to revoke this user's dashboard access?")) {
+                await db.collection("admin_users").doc(uid).delete();
+                window.loadTeamMembers();
+            }
+        };
+
+        // --- PROFILE APPROVAL MODAL ---
+        window.openApproveModal = function(uid, oldEmail, newEmail, newPhone) {
+            window.pendingApproveData = {uid, oldEmail, newEmail, newPhone};
+            document.getElementById('superAdminConfirmModal').classList.remove('hidden');
+            document.getElementById('superAdminConfirmModal').classList.add('flex');
+            document.getElementById('confirm-req-details').innerText = `Update ${oldEmail} to ${newEmail} / ${newPhone}?`;
+        };
+
+        window.closeApproveModal = function() {
+            document.getElementById('superAdminConfirmModal').classList.add('hidden');
+            document.getElementById('superAdminConfirmModal').classList.remove('flex');
+        };
+
+        document.getElementById('super-admin-confirm-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const pass = document.getElementById('super-admin-pass').value;
+            if(!pass) return;
+
+            const btn = document.getElementById('btn-confirm-approve');
+            btn.innerText = "APPROVING..."; btn.disabled = true;
+
+            try {
+                const cred = firebase.auth.EmailAuthProvider.credential(auth.currentUser.email, pass);
+                await auth.currentUser.reauthenticateWithCredential(cred);
+
+                const data = window.pendingApproveData;
+                await db.collection("admin_users").doc(data.uid).update({
+                    email: data.newEmail,
+                    phone: data.newPhone,
+                    pendingUpdate: firebase.firestore.FieldValue.delete()
+                });
+
+                alert(`Approved! User database record has been updated.`);
+                closeApproveModal();
+                loadTeamMembers();
+            } catch(err) {
+                alert(err.message);
+            } finally {
+                btn.innerText = "Confirm & Approve"; btn.disabled = false;
+                document.getElementById('super-admin-pass').value = '';
+            }
+        });
+
+        // ==============================================================
+
 
         // --- HELPER FOR ROBUST ADDRESS DISPLAY ---
         window.getAddressDisplay = function(addr) {
@@ -651,7 +1050,6 @@
             
             if (parts.length > 0) return [...new Set(parts)].filter(Boolean).join(', ');
             
-            // Ultimate fallback for custom structures that might not match standard keys
             try {
                 let cleanObj = Object.assign({}, addr);
                 delete cleanObj.phone;
@@ -711,7 +1109,6 @@
         };
 
 window.sortOrders = function(stage, key) {
-            // Apply sorting rules only to the specific table that was clicked
             if (!window.orderSorts[stage]) return;
             if (window.orderSorts[stage].key === key) { 
                 window.orderSorts[stage].desc = !window.orderSorts[stage].desc; 
@@ -856,13 +1253,11 @@ window.sortOrders = function(stage, key) {
                         '<td class="font-bold">৳' + amount.toLocaleString() + '<\/td>' +
                         '<td><span class="text-orange-500 font-bold text-[10px] bg-orange-50 px-2 py-1 rounded border border-orange-100">Pending Call<\/span><\/td>' +
                         
-                        // --- UPDATED CELL (Wrapped flex inside a div) ---
                         '<td class="p-4">' +
                             '<div class="flex gap-2 items-center">' +
                                 '<button onclick="openShipModal(\'' + oid + '\')" class="bg-[#1F2937] text-white px-3 py-1.5 rounded-lg font-bold uppercase text-[9px] hover:bg-black transition shadow-sm">Verify<\/button>' +
                             '<\/div>' +
                         '<\/td>' +
-                        // ------------------------------------------------
                         
                     '<\/tr>';
                 }
@@ -1117,8 +1512,7 @@ window.sortOrders = function(stage, key) {
             alert("Invoice terms saved successfully.");
         };
 
-// --- CORRECTED INVOICE GENERATION LOGIC ---
-window.generateInvoice = async function(oid) {
+        window.generateInvoice = async function(oid) {
             const order = ordersCache[oid];
             if(!order) return;
             
@@ -1264,7 +1658,7 @@ window.generateInvoice = async function(oid) {
 
             let actualShipping = 0;
             if (order.customerShippingFee !== undefined) actualShipping = Number(order.customerShippingFee);
-            else if (order.shippingFee !== undefined) actualShipping = Number(order.shippingFee);
+            else if (order.shippingFee !== undefined) actualShipping = Number(order.shippingCost);
             else if (order.shippingCost !== undefined) actualShipping = Number(order.shippingCost);
             else if (order.deliveryFee !== undefined) actualShipping = Number(order.deliveryFee);
             else if (order.totalAmount) {
@@ -1283,7 +1677,6 @@ window.generateInvoice = async function(oid) {
             inv += '<div class="star-line">YOU ARE THE STAR<\/div>';
             inv += '<\/body><\/html>';
             
-            // Re-open before writing new full HTML to overwrite the initial loading text
             win.document.open();
             win.document.write(inv);
             win.document.close();
@@ -1326,10 +1719,7 @@ window.generateInvoice = async function(oid) {
                         <span class="font-bold text-[#322C2B]">৳${(i.price * i.quantity).toLocaleString()}<\/span>
                     <\/div>
                 `).join('');
-
-// --- REPLACE THIS SECTION IN openShipModal ---
                 
-                // 1. Calculate the dynamic shipping fee for the modal
                 let itemTotalSum = (order.items || []).reduce((acc, i) => acc + (i.price * (i.quantity || 1)), 0);
                 let modalShipping = 0;
                 if (order.shippingFee !== undefined) modalShipping = order.shippingFee;
@@ -1686,6 +2076,110 @@ window.generateInvoice = async function(oid) {
             list.innerHTML = html;
         };
 
+window.viewRequests = async function(productId) {
+            activeRequestProductId = productId;
+            window.toggleRequestView('new');
+            
+            const list = document.getElementById('request-list');
+            list.innerHTML = '<p class="text-center text-xs text-gray-500">Loading requests...</p>';
+            
+            // Updated modal display logic
+            document.getElementById('requestModal').classList.remove('hidden');
+            document.getElementById('requestModal').classList.add('flex');
+            
+            try {
+                const snap = await db.collection("product_requests").where("productId", "==", productId).get();
+                requestsDataCache = [];
+                snap.forEach(doc => {
+                    requestsDataCache.push(Object.assign({ id: doc.id }, doc.data()));
+                });
+                
+                window.renderRequestsList();
+            } catch(e) { 
+                console.error("View Requests Error:", e);
+                list.innerHTML = '<p class="text-center text-red-500">Error loading requests. Check console.</p>'; 
+            }
+        };
+
+        // KEEPS YOUR RENDERING LOGIC
+        window.renderRequestsList = function() {
+            const list = document.getElementById('request-list');
+            let html = '';
+            
+            const filtered = requestsDataCache.filter(r => {
+                const status = r.status ? r.status.toLowerCase() : 'new';
+                if (activeRequestView === 'new') return status !== 'resolved';
+                return status === 'resolved';
+            });
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<p class="text-center text-xs text-gray-500 mt-6">No ' + activeRequestView + ' requests found.</p>';
+                return;
+            }
+
+            const grouped = {};
+            filtered.forEach(r => {
+                const phone = r.userPhone || 'No Phone';
+                if(!grouped[phone]) {
+                    grouped[phone] = {
+                        userName: r.userName,
+                        userPhone: phone,
+                        status: r.status,
+                        dates: [],
+                        ids: [] 
+                    };
+                }
+                grouped[phone].dates.push(r.requestDate);
+                grouped[phone].ids.push(r.id);
+            });
+
+            const groupedArray = Object.values(grouped).map(g => {
+                g.dates.sort((a,b) => new Date(b||0) - new Date(a||0)); 
+                g.latestDate = g.dates[0];
+                return g;
+            });
+
+            groupedArray.sort((a,b) => new Date(b.latestDate || 0) - new Date(a.latestDate || 0));
+
+            groupedArray.forEach((g, index) => {
+                const nameDisplay = g.userName || 'Unknown';
+                const phoneDisplay = g.userPhone;
+                const dateDisplay = g.latestDate ? new Date(g.latestDate).toLocaleDateString() : 'No Date';
+                const count = g.dates.length;
+                
+                let countBadge = count > 1 ? '<span onclick="document.getElementById(\'req-hist-' + index + '\').classList.toggle(\'hidden\')" class="ml-2 bg-[#B36A5E] text-white px-2 py-0.5 rounded-full text-[9px] cursor-pointer hover:bg-orange-700 transition" title="Click to view history">' + count + ' Requests ▾</span>' : '';
+
+                let historyHtml = '';
+                if(count > 1) {
+                    const datesList = g.dates.map(d => '<li class="text-[10px] text-gray-500 py-1 border-b last:border-0">' + (d ? new Date(d).toLocaleString() : 'N/A') + '</li>').join('');
+                    historyHtml = '<div id="req-hist-' + index + '" class="hidden w-full mt-2 p-2 bg-gray-100 rounded border border-gray-200">' +
+                        '<p class="text-[9px] font-bold text-gray-400 uppercase mb-1">Request History</p>' +
+                        '<ul class="list-disc pl-4">' + datesList + '</ul>' +
+                    '</div>';
+                }
+
+                const idsString = g.ids.join(',');
+
+                let actionHtml = '';
+                if (activeRequestView === 'new') {
+                    actionHtml = '<button onclick="resolveMultipleRequests(\'' + idsString + '\')" class="bg-[#10B981] text-white px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase hover:bg-green-600 transition shadow-sm shrink-0">Mark Resolved</button>';
+                } else {
+                    actionHtml = '<span class="text-green-600 font-bold text-[9px] uppercase tracking-widest bg-green-50 px-2 py-1 rounded shrink-0">Resolved</span>';
+                }
+
+                html += '<div class="bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-col items-start">' +
+                            '<div class="flex justify-between w-full items-center">' +
+                                '<div><p class="font-bold text-sm text-[#322C2B] flex items-center">' + nameDisplay + ' - ' + phoneDisplay + countBadge + '</p><p class="text-[10px] text-gray-500 mt-0.5">Latest: ' + dateDisplay + '</p></div>' +
+                                actionHtml +
+                            '</div>' +
+                            historyHtml +
+                        '</div>';
+            });
+            
+            list.innerHTML = html;
+        };
+
+        // KEEPS YOUR RESOLVE LOGIC
         window.resolveMultipleRequests = async function(idsString) {
             try {
                 const ids = idsString.split(',');
@@ -1701,6 +2195,44 @@ window.generateInvoice = async function(oid) {
             } catch(e) { alert("Error: " + e.message); }
         };
 
+        // ADDS YOUR NEW MODAL CLOSING FUNCTIONS
+        window.closeProductModal = function() { 
+            document.getElementById('productModal').classList.add('hidden'); 
+            document.getElementById('productModal').classList.remove('flex'); 
+        };
+        
+        window.closeRestockModal = function() { 
+            document.getElementById('restockModal').classList.add('hidden'); 
+            document.getElementById('restockModal').classList.remove('flex'); 
+            activeRestockProductId = null; 
+        };
+
+        window.closeCRMModal = function() { 
+            document.getElementById('crmDetailModal').classList.add('hidden'); 
+            document.getElementById('crmDetailModal').classList.remove('flex'); 
+        };
+
+        window.closeShipModal = function() { 
+            document.getElementById('shipModal').classList.add('hidden'); 
+            document.getElementById('shipModal').classList.remove('flex'); 
+        };
+
+        window.closeReturnModal = function() { 
+            document.getElementById('returnModal').classList.add('hidden'); 
+            document.getElementById('returnModal').classList.remove('flex'); 
+            activeReturnOrderId = null; 
+        };
+
+        window.closeReceiveReturnModal = function() { 
+            document.getElementById('receiveReturnModal').classList.add('hidden'); 
+            document.getElementById('receiveReturnModal').classList.remove('flex'); 
+            activeReceiveOrderId = null; 
+        };
+
+        window.closeDamagedListModal = function() { 
+            document.getElementById('damagedListModal').classList.add('hidden'); 
+            document.getElementById('damagedListModal').classList.remove('flex'); 
+        };
         window.exportRequestsCSV = function() {
             if (requestsDataCache.length === 0) return alert("No requests found to export.");
             
@@ -1815,7 +2347,6 @@ window.generateInvoice = async function(oid) {
                 let currentStock = Number(pData.stock) || 0;
                 let lots = pData.stockLots || [];
 
-                // Create new FIFO batch record
                 const newLot = {
                     qty: qty,
                     purchasePrice: price,
@@ -1828,8 +2359,8 @@ window.generateInvoice = async function(oid) {
                 await pRef.update({
                     stock: currentStock + qty,
                     stockLots: lots,
-                    purchasePrice: price,          // Update current active unit cost
-                    supplierShippingCost: shipping // Update current active supplier shipping
+                    purchasePrice: price,
+                    supplierShippingCost: shipping 
                 });
 
                 alert("Stock successfully added via FIFO Lot!");
@@ -1981,7 +2512,6 @@ window.generateInvoice = async function(oid) {
                 if (editProductId) {
                     await db.collection("products").doc(editProductId).update(productData); 
                 } else {
-                    // Create initial FIFO Lot if brand new product
                     productData.stockLots = [{
                         qty: currentStock,
                         purchasePrice: purchasePrice,
@@ -2011,7 +2541,6 @@ window.generateInvoice = async function(oid) {
             document.getElementById('p_price').value = p.price || ''; 
             document.getElementById('p_originalPrice').value = p.originalPrice || ''; 
             
-            // Populate New Fields
             document.getElementById('p_purchasePrice').value = p.purchasePrice || ''; 
             document.getElementById('p_supplierShipping').value = p.supplierShippingCost || ''; 
             document.getElementById('p_weight').value = p.weightKg || ''; 
@@ -2376,10 +2905,9 @@ window.generateInvoice = async function(oid) {
             loadCategories(); 
         });
 
-        // --- NEW: LOGISTICS SETTINGS LOGIC ---
+        // --- LOGISTICS SETTINGS LOGIC ---
         window.loadLogisticsSettings = async function() {
             try {
-                // 1. Load Customer Facing Rates
                 const custDoc = await db.collection("customerShippingRules").doc("standard_rates").get();
                 if (custDoc.exists) {
                     const d = custDoc.data();
@@ -2399,7 +2927,6 @@ window.generateInvoice = async function(oid) {
                     document.getElementById('cust_sub_extra').value = d.sub_extra || 0;
                 }
 
-                // 2. Load Logistics Partner Rates
                 const snap = await db.collection("logisticsRates").get();
                 const list = document.getElementById('partner-rates-list');
                 let html = '';
@@ -2620,57 +3147,267 @@ window.generateInvoice = async function(oid) {
             window.switchTabWrapped = true;
         }
 
-        window.onload = function() { 
-            if (typeof loadProducts === 'function') loadProducts();
-            if (typeof loadInventory === 'function') loadInventory(); 
+        // Forgot Password Logic
+        document.getElementById('forgot-password-btn').addEventListener('click', (e) => {
+            e.preventDefault();
             
-            if (typeof loadCRMUsers === 'function') loadCRMUsers().then(() => {
-                if (typeof loadOrders === 'function') loadOrders();
-            }).catch(() => {
-                if (typeof loadOrders === 'function') loadOrders();
-            });
+            const emailInput = document.getElementById('login-email').value; 
+            
+            if (!emailInput) {
+                alert('Please enter your email address in the email field first.');
+                return;
+            }
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const orderIdParam = urlParams.get('orderId');
-            const currentHash = window.location.hash.replace('#', '');
-            
-            if (orderIdParam) {
-                window.switchTab('orders');
-                
-                let attempts = 0;
-                const scrollInterval = setInterval(function() {
-                    attempts++;
-                    const orderCells = document.querySelectorAll('td.font-mono');
-                    let targetCell = null;
-                    
-                    for (let i = 0; i < orderCells.length; i++) {
-                        if (orderCells[i].innerText.includes(orderIdParam)) {
-                            targetCell = orderCells[i];
-                            break;
-                        }
-                    }
-                    
-                    if (targetCell) {
-                        clearInterval(scrollInterval);
-                        const row = targetCell.closest('tr');
-                        if (row) {
-                            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            row.classList.add('bg-yellow-100', 'transition-colors', 'duration-500');
-                            setTimeout(function() { 
-                                row.classList.remove('bg-yellow-100'); 
-                            }, 2500);
-                        }
-                    } else if (attempts > 20) { 
-                        clearInterval(scrollInterval);
-                    }
-                }, 500);
-            } else if (currentHash) {
-                window.switchTab(currentHash);
-            } else {
-                window.switchTab('dashboard'); 
+            firebase.auth().sendPasswordResetEmail(emailInput)
+                .then(() => {
+                    alert('Password reset link has been sent to your email.');
+                })
+                .catch((error) => {
+                    alert('Error sending reset email: ' + error.message);
+                });
+        });
+
+window.renderProfilePage = function(user, userData) {
+            const profileContainer = document.getElementById('profile-content');
+            const role = userData.role || 'Unknown';
+
+            let profileHTML = `
+                <h3 class="text-xs font-bold uppercase mb-6 text-[#B36A5E] tracking-widest border-b pb-2">Account Details</h3>
+                <table class="w-full text-left text-sm mb-8">
+                    <tr class="border-b border-gray-100">
+                        <td class="py-4 text-gray-500 font-bold uppercase tracking-widest text-[10px] w-1/3">Full Name</td>
+                        <td class="py-4 font-bold text-gray-800">${userData.fullName || 'Not Set'}</td>
+                    </tr>
+                    <tr class="border-b border-gray-100">
+                        <td class="py-4 text-gray-500 font-bold uppercase tracking-widest text-[10px]">Registered Email</td>
+                        <td class="py-4 font-bold text-gray-800">
+                            <span id="current-user-email">${user.email || 'N/A'}</span>
+                            <button type="button" class="ml-2 text-blue-500 hover:text-blue-700" onclick="openApprovalModal('Email', 'current-user-email')" title="Request Email Change">&#9998;</button>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-gray-100">
+                        <td class="py-4 text-gray-500 font-bold uppercase tracking-widest text-[10px]">Registered Phone</td>
+                        <td class="py-4 font-bold text-gray-800">
+                            <span id="current-user-phone">${userData.phone || 'N/A'}</span>
+                            <button type="button" class="ml-2 text-blue-500 hover:text-blue-700" onclick="openApprovalModal('Phone', 'current-user-phone')" title="Request Phone Change">&#9998;</button>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-gray-100">
+                        <td class="py-4 text-gray-500 font-bold uppercase tracking-widest text-[10px]">Assigned Role</td>
+                        <td class="py-4">
+                            <span class="bg-[#10B981] text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase shadow-sm">${role}</span>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-gray-100">
+                        <td class="py-4 text-gray-500 font-bold uppercase tracking-widest text-[10px]">System Access</td>
+                        <td class="py-4 text-xs font-medium text-gray-600">
+                            ${(role === 'super_admin' || role === 'admin') ? 'Full System Access Granted' : 'Restricted Module Access'}
+                        </td>
+                    </tr>
+                </table>
+            `;
+
+            if (role !== 'super_admin') {
+                let pendingMsg = userData.pendingUpdate ? '<span class="text-orange-500 font-bold text-[9px] ml-2">(Pending Approval)</span>' : '';
+                profileHTML += `
+                    <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 mt-4">
+                        <h3 class="text-xs font-bold uppercase mb-4 text-[#B36A5E] tracking-widest border-b border-gray-200 pb-2">Request Email/Phone Change ${pendingMsg}</h3>
+                        <form id="request-update-form" class="space-y-4">
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">New Contact Number</label>
+                                <input type="tel" id="req-phone" required class="w-full border border-gray-200 p-3 text-xs rounded-lg outline-none focus:border-[#B36A5E]" value="${userData.phone || ''}">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">New Email Address</label>
+                                <input type="email" id="req-email" required class="w-full border border-gray-200 p-3 text-xs rounded-lg outline-none focus:border-[#B36A5E]" value="${user.email}">
+                            </div>
+                            <button type="submit" class="w-full bg-[#322C2B] text-white py-3 rounded-lg text-[10px] font-bold uppercase hover:bg-[#B36A5E] transition shadow-md">Submit Request</button>
+                        </form>
+                    </div>
+                `;
+            }
+
+            profileContainer.innerHTML = profileHTML;
+
+            if (role !== 'super_admin') {
+                document.getElementById('request-update-form')?.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const newPhone = document.getElementById('req-phone').value;
+                    const newEmail = document.getElementById('req-email').value;
+                    try {
+                        await db.collection("admin_users").doc(user.uid).update({
+                            pendingUpdate: { phone: newPhone, email: newEmail, date: new Date().toISOString() }
+                        });
+                        alert("Update request submitted to Super Admin.");
+                        userData.pendingUpdate = { phone: newPhone, email: newEmail };
+                        renderProfilePage(user, userData);
+                    } catch(err) { alert(err.message); }
+                });
             }
         };
-        console.log("✅ Admin Panel Loaded Successfully");
+
+        console.log("✅ Admin Panel Loaded Successfully (Auth Secured)");
+        
     </script>
+
+    <div id="approvalRequestModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[9999] backdrop-blur-sm p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b bg-gray-50 flex justify-between items-center">
+                <h3 id="modal-title" class="font-bold text-[#322C2B]">Request Update</h3>
+                <button class="text-gray-400 text-2xl hover:text-black transition" onclick="closeApprovalModal()">&times;</button>
+            </div>
+            <div class="p-6">
+                <form id="approvalRequestForm" class="space-y-4">
+                    <input type="hidden" id="update-type" name="updateType">
+                    <div>
+                        <label id="new-value-label" for="new-value-input" class="block text-[10px] font-bold uppercase text-gray-500 mb-1">New Value</label>
+                        <input type="text" id="new-value-input" required class="w-full border p-2 text-xs rounded-lg outline-none focus:border-[#B36A5E]" placeholder="Enter new details here...">
+                    </div>
+                    <button type="submit" class="w-full bg-[#10B981] text-white py-3 rounded-xl font-bold uppercase text-[10px] shadow-lg hover:bg-green-600 transition">Request Super Admin Approval</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-manual-order-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[500] p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-2xl p-8">
+        <h2 class="text-xl font-bold mb-2">Create Manual Order</h2>
+        <p class="text-xs text-gray-400 mb-6">Enter customer phone number to begin.</p>
+        
+        <div id="manual-step-1" class="space-y-4">
+            <input type="tel" id="manual-phone" placeholder="Phone Number" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E]" required>
+            <p id="manual-error" class="hidden text-red-500 text-[10px] font-bold"></p>
+            <div class="flex gap-4 pt-4">
+                <button type="button" onclick="closeManualModal()" class="flex-1 text-xs font-bold uppercase text-gray-400">Cancel</button>
+                <button type="button" onclick="checkCustomerPhone()" class="flex-1 bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px]">Lookup</button>
+            </div>
+        </div>
+
+        <div id="manual-step-2" class="hidden space-y-4">
+            <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
+                <p class="text-[10px] text-yellow-700 font-bold uppercase">Customer not found. Create profile.</p>
+            </div>
+            <input type="text" id="manual-name" placeholder="Full Name" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E]" required>
+            <div class="flex gap-4 pt-4">
+                <button type="button" onclick="resetManualModal()" class="flex-1 text-xs font-bold uppercase text-gray-400">Back</button>
+                <button type="button" onclick="createManualCustomer()" class="flex-1 bg-[#B36A5E] text-white py-3 rounded-xl font-bold uppercase text-[10px]">Create & Shop</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+        window.openManualModal = () => {
+            const m = document.getElementById('admin-manual-order-modal');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        };
+        
+        window.closeManualModal = () => {
+            const m = document.getElementById('admin-manual-order-modal');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        };
+        
+        window.resetManualModal = () => {
+            document.getElementById('manual-step-1').classList.remove('hidden');
+            document.getElementById('manual-step-2').classList.add('hidden');
+            document.getElementById('manual-error').classList.add('hidden');
+        };
+
+        window.checkCustomerPhone = async () => {
+            const phone = document.getElementById('manual-phone').value.trim();
+            if (!phone) return;
+            
+            const lookup = await db.collection("phone_lookups").doc(phone).get();
+            
+            if (lookup.exists) {
+                // Customer exists, start session immediately
+                const uid = lookup.data().uid;
+                const userDoc = await db.collection("users").doc(uid).get();
+                const fullName = userDoc.exists && userDoc.data().fullName ? userDoc.data().fullName : "Unknown";
+                window.startSurrogateSession(uid, fullName, phone);
+            } else {
+                // Customer doesn't exist, prompt for name
+                document.getElementById('manual-step-1').classList.add('hidden');
+                document.getElementById('manual-step-2').classList.remove('hidden');
+            }
+        };
+
+        window.createManualCustomer = async () => {
+            const phone = document.getElementById('manual-phone').value.trim();
+            const name = document.getElementById('manual-name').value.trim();
+            if (!name) return;
+
+            // Generate a secure ID without using Auth (so Admin stays logged in)
+            const newUid = "man_" + db.collection("users").doc().id; 
+            
+            await db.collection("users").doc(newUid).set({ 
+                fullName: name, 
+                phone: phone, 
+                email: `${phone}@manual.sterling.com`, 
+                crmTags: "Manual Order", 
+                isBlocked: false, 
+                addresses: [], 
+                paymentMethods: [], 
+                totalSpend: 0, 
+                isManualAccount: true,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp() 
+            });
+            
+            await db.collection("phone_lookups").doc(phone).set({ uid: newUid });
+            window.startSurrogateSession(newUid, name, phone);
+        };
+
+        window.startSurrogateSession = (uid, name, phone) => {
+            // Store target customer in session
+            sessionStorage.setItem('surrogate_session', JSON.stringify({ uid, name, phone }));
+            localStorage.removeItem('cart'); // Clear any existing admin cart items
+            window.location.href = 'category.html'; // Redirect to shop
+        };
+
+        // Function to open the modal and set the dynamic text based on whether Email or Phone is clicked
+        function openApprovalModal(type, currentElementId) {
+            const modal = document.getElementById('approvalRequestModal');
+            const modalTitle = document.getElementById('modal-title');
+            const inputLabel = document.getElementById('new-value-label');
+            const updateTypeInput = document.getElementById('update-type');
+            const newValueInput = document.getElementById('new-value-input');
+            
+            // Set dynamic content based on field clicked
+            modalTitle.textContent = 'REQUEST ' + type.toUpperCase() + ' UPDATE';
+            inputLabel.textContent = 'New ' + type;
+            updateTypeInput.value = type;
+            
+            // Adjust input type for basic validation
+            newValueInput.type = (type === 'Email') ? 'email' : 'text';
+            newValueInput.value = ''; // Clear previous input
+            
+            // Show modal using Tailwind classes
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeApprovalModal() {
+            const modal = document.getElementById('approvalRequestModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Handle the form submission
+        document.getElementById('approvalRequestForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fieldType = document.getElementById('update-type').value;
+            const newValue = document.getElementById('new-value-input').value;
+            
+            // Feedback to user
+            alert(`Update request for ${fieldType} sent to Super Admin for approval.`);
+            
+            // Close modal after submission
+            closeApprovalModal();
+        });
+    </script>
+
 </body>
 </html>

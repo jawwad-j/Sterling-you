@@ -147,7 +147,7 @@
 
     <script src="cart.js"></script>
 
-    <script>
+<script>
         const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
@@ -156,12 +156,62 @@
         let userAddresses = [];
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
+        let currentCheckoutUser = null; 
+        let isSurrogateActive = false;
+
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                const userDoc = await db.collection("users").doc(user.uid).get();
-                userAddresses = userDoc.data().addresses || [];
-                renderAddressSelection();
-                updateShippingAndTotals(); 
+                const surrogateData = sessionStorage.getItem('surrogate_session');
+                const targetUid = surrogateData ? JSON.parse(surrogateData).uid : user.uid;
+                if (surrogateData) isSurrogateActive = true;
+
+                try {
+                    const userDoc = await db.collection("users").doc(targetUid).get();
+
+                    if (userDoc.exists) {
+                        currentCheckoutUser = userDoc.data();
+                        currentCheckoutUser.uid = targetUid; 
+                        
+                        // FIX: Extract addresses from ALL possible fields (shippingAddress, billingAddress, and addresses array)
+                        let rawAddresses = [];
+                        
+                        if (currentCheckoutUser.shippingAddress) {
+                            let s = typeof currentCheckoutUser.shippingAddress === 'string' ? { detail: currentCheckoutUser.shippingAddress } : { ...currentCheckoutUser.shippingAddress };
+                            s.tag = s.tag || 'Shipping Address';
+                            rawAddresses.push(s);
+                        }
+                        if (currentCheckoutUser.billingAddress) {
+                            let b = typeof currentCheckoutUser.billingAddress === 'string' ? { detail: currentCheckoutUser.billingAddress } : { ...currentCheckoutUser.billingAddress };
+                            b.tag = b.tag || 'Billing Address';
+                            rawAddresses.push(b);
+                        }
+                        if (Array.isArray(currentCheckoutUser.addresses)) {
+                            currentCheckoutUser.addresses.forEach(a => rawAddresses.push({...a}));
+                        }
+
+                        // FIX: Deduplicate addresses so the user doesn't see repeating options
+                        userAddresses = [];
+                        rawAddresses.forEach(ra => {
+                            let dText = (ra.fullDisplay || ra.detail || "").trim().toLowerCase();
+                            if (dText && !userAddresses.some(ua => (ua.fullDisplay || ua.detail || "").trim().toLowerCase() === dText)) {
+                                userAddresses.push(ra);
+                            }
+                        });
+
+                        // GUARANTEE every address has a unique ID so the Select match never fails
+                        userAddresses.forEach((a, i) => {
+                            if (!a.id) a.id = 'temp_addr_' + i;
+                        });
+
+                        renderAddressSelection();
+                        updateShippingAndTotals();
+                    } else {
+                        alert("Customer profile missing. Please restart the order.");
+                    }
+                } catch (err) {
+                    console.error("Error loading checkout data:", err);
+                    document.getElementById('address-container').innerHTML = `<p class="text-sm text-red-500">Error loading addresses.</p>`;
+                }
             } else {
                 window.location.href = "account.html?msg=login_required";
             }
@@ -202,9 +252,10 @@
             let selectedDistrict = 'Dhaka'; 
             
             if (shippingSelect && shippingSelect.value) {
-                // FIX: Added String() to ensure finding address succeeds
                 const selectedAddr = userAddresses.find(a => String(a.id) === String(shippingSelect.value));
-                if (selectedAddr) selectedDistrict = selectedAddr.district || selectedAddr.city;
+                if (selectedAddr) {
+                    selectedDistrict = selectedAddr.district || selectedAddr.city || 'Dhaka';
+                }
             }
             
             document.getElementById('shipping-display').innerText = `...`;
@@ -217,7 +268,6 @@
                 let itemWeight = Number(item.weight) || 1;
 
                 try {
-                    // FIX: Wrapped item.id in String()
                     const pDoc = await db.collection("products").doc(String(item.id)).get();
                     if (pDoc.exists) {
                         const pData = pDoc.data();
@@ -241,7 +291,7 @@
                     const rulesDoc = await db.collection("customerShippingRules").doc("standard_rates").get();
                     if (rulesDoc.exists) {
                         const rules = rulesDoc.data();
-                        const isInsideDhaka = selectedDistrict.toLowerCase().includes('dhaka');
+                        const isInsideDhaka = (selectedDistrict || 'Dhaka').toLowerCase().includes('dhaka');
                         
                         const prefix = isInsideDhaka ? 'in_' : 'out_';
                         
@@ -272,51 +322,39 @@
             renderCartSummary(customerShippingFee);
         }
         
-function renderAddressSelection() {
+        function renderAddressSelection() {
             const container = document.getElementById('address-container');
             if (!userAddresses || userAddresses.length === 0) {
-                container.innerHTML = `<p class="text-sm text-red-400">No addresses saved. <a href="account.html?tab=addresses&from=checkout" class="underline">Add one now.</a></p>`;
+                container.innerHTML = `<p class="text-sm text-red-400">No addresses saved. <a href="account.html?tab=addresses&from=checkout" class="underline font-bold text-[#B36A5E]">Add one now.</a></p>`;
                 return;
             }
 
-            const shippingAddrs = userAddresses.filter(a => a.tag === 'Shipping Address');
-            const billingAddrs = userAddresses.filter(a => a.tag === 'Billing Address');
-
+            // FIX: Supply ALL user addresses to both dropdowns instead of strict filtering.
             let html = '';
 
             html += `<div class="space-y-2">
-                        <label class="block text-[10px] font-bold uppercase text-[#322C2B] tracking-widest">Shipping Address <span class="text-red-500">*</span></label>`;
-            if (shippingAddrs.length > 0) {
-                // The 'truncate' class handles the "..." when closed
-                html += `<select id="shipping_address" onchange="updateShippingAndTotals()" class="w-full border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-[#B36A5E] bg-white text-[#322C2B] truncate">`;
-                shippingAddrs.forEach(a => {
-                    const isSelected = a.isDefault ? 'selected' : '';
-                    const displayTxt = a.fullDisplay || a.detail || "";
-                    // We pass the full text here so it expands completely when clicked
-                    html += `<option value="${a.id}" ${isSelected}>${displayTxt}</option>`;
-                });
-                html += `</select>`;
-            } else {
-                html += `<p class="text-xs text-red-400">No shipping address found. Please add one in Manage.</p>`;
-            }
-            html += `</div>`;
+                        <label class="block text-[10px] font-bold uppercase text-[#322C2B] tracking-widest">Shipping Address <span class="text-red-500">*</span></label>
+                        <select id="shipping_address" onchange="updateShippingAndTotals()" class="w-full border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-[#B36A5E] bg-white text-[#322C2B] truncate">`;
+            
+            userAddresses.forEach((a, index) => {
+                const isSelected = (a.tag === 'Shipping Address' || a.isDefault || index === 0) ? 'selected' : '';
+                const displayTxt = a.fullDisplay || a.detail || `Address ${index + 1}`;
+                html += `<option value="${a.id}" ${isSelected}>${displayTxt}</option>`;
+            });
+            html += `   </select>
+                     </div>`;
 
-            html += `<div class="space-y-2 pt-2 border-t border-gray-50">
-                        <label class="block text-[10px] font-bold uppercase text-[#322C2B] tracking-widest">Billing Address <span class="text-red-500">*</span></label>`;
-            if (billingAddrs.length > 0) {
-                // The 'truncate' class handles the "..." when closed
-                html += `<select id="billing_address" class="w-full border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-[#B36A5E] bg-white text-[#322C2B] truncate">`;
-                billingAddrs.forEach(a => {
-                    const isSelected = a.isDefault ? 'selected' : '';
-                    const displayTxt = a.fullDisplay || a.detail || "";
-                    // We pass the full text here so it expands completely when clicked
-                    html += `<option value="${a.id}" ${isSelected}>${displayTxt}</option>`;
-                });
-                html += `</select>`;
-            } else {
-                html += `<p class="text-xs text-red-400">No billing address found. Please add one in Manage.</p>`;
-            }
-            html += `</div>`;
+            html += `<div class="space-y-2 pt-4 border-t border-gray-50 mt-4">
+                        <label class="block text-[10px] font-bold uppercase text-[#322C2B] tracking-widest">Billing Address <span class="text-red-500">*</span></label>
+                        <select id="billing_address" class="w-full border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-[#B36A5E] bg-white text-[#322C2B] truncate">`;
+            
+            userAddresses.forEach((a, index) => {
+                const isSelected = (a.tag === 'Billing Address' || a.isDefault || index === 0) ? 'selected' : '';
+                const displayTxt = a.fullDisplay || a.detail || `Address ${index + 1}`;
+                html += `<option value="${a.id}" ${isSelected}>${displayTxt}</option>`;
+            });
+            html += `   </select>
+                     </div>`;
 
             container.innerHTML = html;
         }
@@ -364,7 +402,6 @@ function renderAddressSelection() {
                 `;
             }).join('');
             
-            // Render Total Discount outside the list
             if (discountContainer) {
                 if (discount > 0) {
                     discountContainer.innerHTML = `
@@ -382,7 +419,6 @@ function renderAddressSelection() {
             
             document.getElementById('subtotal').innerText = `৳${subtotal.toLocaleString()}`;
             
-            // Hide the old confusing discount row
             const oldDiscountRow = document.getElementById('discount-row');
             if (oldDiscountRow) oldDiscountRow.classList.add('hidden');
 
@@ -428,7 +464,6 @@ function renderAddressSelection() {
                 let validCart = [];
 
                 for (const item of cart) {
-                    // FIX: Wrapped item.id in String()
                     const productDoc = await db.collection("products").doc(String(item.id)).get();
                     
                     if (!productDoc.exists) {
@@ -467,16 +502,13 @@ function renderAddressSelection() {
 
                 btn.innerText = "Processing...";
 
-                const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
-                if (userDoc.data().isBlocked) throw new Error("Your account is suspended.");
+                if (currentCheckoutUser.isBlocked) throw new Error("This account is suspended.");
 
-                // FIX: Wrapped ID in String() for finding address securely
                 const selectedShippingAddr = userAddresses.find(a => String(a.id) === String(shippingSelect.value));
                 const selectedBillingAddr = userAddresses.find(a => String(a.id) === String(billingSelect.value));
 
                 const total = parseInt(document.getElementById('final-total').dataset.value || 0);
                 const shippingFeeCharged = parseInt(document.getElementById('shipping-display').dataset.value || 0);
-                
                 const platformCodCharge = total * 0.01; 
 
                 const extras = window.getCheckoutExtras(); 
@@ -486,8 +518,9 @@ function renderAddressSelection() {
                 
                 const orderData = {
                     orderId: "ORD-" + Math.floor(100000 + Math.random() * 900000),
-                    userId: auth.currentUser.uid,
-                    userName: userDoc.data().fullName,
+                    userId: currentCheckoutUser.uid,
+                    userName: currentCheckoutUser.fullName,
+                    placedByAdmin: isSurrogateActive ? auth.currentUser.uid : false,
                     status: "Pending",
                     totalAmount: total,
                     customerShippingFee: shippingFeeCharged,
@@ -535,17 +568,19 @@ function renderAddressSelection() {
                 batch.set(newOrderRef, orderData);
 
                 validCart.forEach(item => {
-                    // FIX: Wrapped item.id in String()
                     const productRef = db.collection("products").doc(String(item.id));
                     batch.update(productRef, { stock: firebase.firestore.FieldValue.increment(-(item.quantity || 1)) });
                 });
 
-                const userRef = db.collection("users").doc(auth.currentUser.uid);
+                const userRef = db.collection("users").doc(currentCheckoutUser.uid);
                 batch.update(userRef, { totalSpend: firebase.firestore.FieldValue.increment(total), lastOrderDate: new Date().toISOString() });
-
+                
                 await batch.commit();
 
+                // FIX: Clear both the cart AND the surrogate session to prevent the "same address" bug on next manual order
                 localStorage.removeItem('cart');
+                sessionStorage.removeItem('surrogate_session');
+                
                 document.getElementById('success-modal').classList.remove('hidden');
                 btn.innerText = "Order Placed";
                 btn.classList.remove('bg-[#322C2B]');
