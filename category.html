@@ -21,7 +21,11 @@
         .product-card:hover .add-to-cart-container { transform: translateY(0); }
         #cart-drawer { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000 !important; }
         #cart-overlay { z-index: 999 !important; }
-        #top-bar { transition: height 0.3s ease, padding 0.3s ease, opacity 0.3s ease; }
+        #top-bar { 
+    max-height: 50px; 
+    overflow: hidden; 
+    transition: max-height 0.4s ease, padding 0.4s ease, opacity 0.3s ease; 
+}
     </style>
 </head>
 <body class="bg-white flex flex-col min-h-screen">
@@ -181,11 +185,31 @@
         window.toggleSearch = () => document.getElementById('nav-search-input').focus();
         window.toggleUserDropdown = () => document.getElementById('user-dropdown').classList.toggle('hidden');
         
-        window.addEventListener('scroll', () => { 
-            const t = document.getElementById('top-bar'); 
-            if(window.scrollY > 50) { t.style.height='0px'; t.style.padding='0px'; t.style.opacity='0'; } 
-            else { t.style.height='auto'; t.style.padding='8px 0'; t.style.opacity='1'; } 
-        });
+let lastScrollY = 0;
+let topBarHidden = false;
+
+window.addEventListener('scroll', () => {
+    const t = document.getElementById('top-bar');
+    const currentY = window.scrollY;
+
+    if (!topBarHidden && currentY > 60) {
+        topBarHidden = true;
+        t.style.maxHeight = '0px';
+        t.style.paddingTop = '0px';
+        t.style.paddingBottom = '0px';
+        t.style.opacity = '0';
+        document.getElementById('main-header').classList.add('shadow-sm');
+    } else if (topBarHidden && currentY < 10) {
+        topBarHidden = false;
+        t.style.maxHeight = '50px';
+        t.style.paddingTop = '8px';
+        t.style.paddingBottom = '8px';
+        t.style.opacity = '1';
+        document.getElementById('main-header').classList.remove('shadow-sm');
+    }
+
+    lastScrollY = currentY;
+}, { passive: true });
 
         document.addEventListener('click', (e) => {
             const searchContainer = document.querySelector('.relative.flex.items-center'); 
@@ -202,6 +226,96 @@
         });
         window.logout = () => auth.signOut().then(()=>location.reload());
 
+(function() {
+    try {
+        const raw = sessionStorage.getItem('surrogate_session');
+        if (!raw) return; // Normal customer — do nothing
+ 
+        const s = JSON.parse(raw);
+        if (!s || !s.isManual) return;
+ 
+        // Inject banner CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            #surrogate-banner {
+                position: fixed; bottom: 0; left: 0; right: 0;
+                background: #322C2B; color: white;
+                padding: 8px 20px;
+                display: flex; align-items: center; justify-content: space-between;
+                z-index: 99999; font-family: sans-serif;
+                border-top: 3px solid #B36A5E;
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+            }
+            #surrogate-banner .sb-left { font-size: 11px; }
+            #surrogate-banner .sb-label {
+                font-size: 9px; font-weight: 800; letter-spacing: 2px;
+                text-transform: uppercase; color: #B36A5E; display: block; margin-bottom: 2px;
+            }
+            #surrogate-banner .sb-name { font-weight: 700; font-size: 13px; }
+            #surrogate-banner .sb-phone { color: #9CA3AF; font-size: 11px; margin-left: 6px; }
+            #surrogate-banner .sb-cancel {
+                background: #B36A5E; color: white; border: none; cursor: pointer;
+                padding: 8px 16px; border-radius: 8px;
+                font-size: 10px; font-weight: 800; text-transform: uppercase;
+                letter-spacing: 1px; transition: background 0.2s;
+            }
+            #surrogate-banner .sb-cancel:hover { background: #8B4F46; }
+        `;
+        document.head.appendChild(style);
+ 
+        // Create banner element
+        const banner = document.createElement('div');
+        banner.id = 'surrogate-banner';
+        banner.innerHTML = `
+            <div class="sb-left">
+                <span class="sb-label">🛒 Admin Manual Order Session</span>
+                <span>
+                    Shopping as: <span class="sb-name">${s.name}</span>
+                    <span class="sb-phone">${s.phone}</span>
+                </span>
+            </div>
+            <button class="sb-cancel" onclick="cancelSurrogateSession()">✕ Cancel Session</button>
+        `;
+ 
+        // Append after body loads
+        if (document.body) {
+document.body.appendChild(banner);
+document.body.style.paddingBottom = '64px';
+
+// Push up cart drawer checkout button specifically
+const cartDrawer = document.getElementById('cart-drawer');
+if (cartDrawer) cartDrawer.style.paddingBottom = '60px';
+
+// Also handle dynamically rendered cart drawers (in case cart loads after banner)
+const observer = new MutationObserver(() => {
+    const drawer = document.getElementById('cart-drawer');
+    if (drawer && !drawer.dataset.bannerPadded) {
+        drawer.style.paddingBottom = '60px';
+        drawer.dataset.bannerPadded = 'true';
+    }
+});
+observer.observe(document.body, { childList: true, subtree: false });
+        } else {
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.appendChild(banner);
+                document.body.style.paddingBottom = '60px';
+            });
+        }
+ 
+        // Cancel button clears session and returns admin to admin panel
+        window.cancelSurrogateSession = function() {
+            if (confirm('Cancel this manual order session and return to Admin Panel?')) {
+                sessionStorage.removeItem('surrogate_session');
+                window.location.href = 'admin.html#orders';
+            }
+        };
+ 
+        console.log('🔵 Surrogate session active for:', s.name, '(' + s.phone + ')');
+ 
+    } catch(e) {
+        console.error('Surrogate session init error:', e);
+    }
+})();
 
         // --- CATEGORY LOGIC ---
         async function loadCategoryProducts() {

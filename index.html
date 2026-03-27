@@ -41,9 +41,11 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
         
         /* Smooth height transition for top bar */
-        #top-bar {
-            transition: height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
-        }
+#top-bar {
+    max-height: 50px;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.4s ease, opacity 0.3s ease;
+}
     </style>
 </head>
 <body class="bg-white">
@@ -125,32 +127,9 @@
             <p class="text-xs font-bold tracking-[0.3em] uppercase text-gray-400">Elevate Your Everyday</p>
         </header>
 
-        <section class="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 px-6 pb-12">
-            <a href="category.html?type=Handbags" class="group cursor-pointer block">
-                <div class="relative overflow-hidden rounded-lg bg-gray-50 shadow-sm border border-[#E5E4E2]">
-                    <img src="bag.png" alt="Handbags" class="w-full aspect-[4/5] object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://via.placeholder.com/300x400?text=Handbags'">
-                </div>
-                <h3 class="mt-4 text-center font-bold tracking-widest text-[10px] md:text-[11px] text-[#322C2B] uppercase">Handbags</h3>
-            </a>
-            <a href="category.html?type=Footwear" class="group cursor-pointer block">
-                <div class="relative overflow-hidden rounded-lg bg-gray-50 shadow-sm border border-[#E5E4E2]">
-                    <img src="shoes.png" alt="Footwear" class="w-full aspect-[4/5] object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://via.placeholder.com/300x400?text=Shoes'">
-                </div>
-                <h3 class="mt-4 text-center font-bold tracking-widest text-[10px] md:text-[11px] text-[#322C2B] uppercase">Footwear</h3>
-            </a>
-            <a href="category.html?type=Beauty" class="group cursor-pointer block">
-                <div class="relative overflow-hidden rounded-lg bg-gray-50 shadow-sm border border-[#E5E4E2]">
-                    <img src="beauty-makeup-items.png" alt="Beauty" class="w-full aspect-[4/5] object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://via.placeholder.com/300x400?text=Beauty'">
-                </div>
-                <h3 class="mt-4 text-center font-bold tracking-widest text-[10px] md:text-[11px] text-[#322C2B] uppercase">Beauty</h3>
-            </a>
-            <a href="category.html?type=Accessories" class="group cursor-pointer block">
-                <div class="relative overflow-hidden rounded-lg bg-gray-50 shadow-sm border border-[#E5E4E2]">
-                    <img src="accessories.png" alt="Accessories" class="w-full aspect-[4/5] object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://via.placeholder.com/300x400?text=Accessories'">
-                </div>
-                <h3 class="mt-4 text-center font-bold tracking-widest text-[10px] md:text-[11px] text-[#322C2B] uppercase">Accessories</h3>
-            </a>
-        </section>
+        <section class="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 px-6 pb-12" id="category-banner-grid">
+    <!-- Loaded dynamically -->
+</section>
 
         <section id="new-arrivals" class="max-w-7xl mx-auto py-12 px-6">
             <div class="text-center mb-12">
@@ -362,22 +341,31 @@
     }
 
     // --- 3. UI & AUTH LOGIC ---
-    window.addEventListener('scroll', () => {
-        const header = document.getElementById('main-header');
-        const topBar = document.getElementById('top-bar');
-        
-        if (window.scrollY > 50) {
-            header.classList.add('shadow-sm');
-            topBar.style.height = '0px'; 
-            topBar.style.padding = '0px';
-            topBar.style.opacity = '0';
-        } else {
-            header.classList.remove('shadow-sm');
-            topBar.style.height = 'auto';
-            topBar.style.padding = '8px 0';
-            topBar.style.opacity = '1';
-        }
-    });
+let lastScrollY = 0;
+let topBarHidden = false;
+
+window.addEventListener('scroll', () => {
+    const t = document.getElementById('top-bar');
+    const currentY = window.scrollY;
+
+    if (!topBarHidden && currentY > 60) {
+        topBarHidden = true;
+        t.style.maxHeight = '0px';
+        t.style.paddingTop = '0px';
+        t.style.paddingBottom = '0px';
+        t.style.opacity = '0';
+        document.getElementById('main-header').classList.add('shadow-sm');
+    } else if (topBarHidden && currentY < 10) {
+        topBarHidden = false;
+        t.style.maxHeight = '50px';
+        t.style.paddingTop = '8px';
+        t.style.paddingBottom = '8px';
+        t.style.opacity = '1';
+        document.getElementById('main-header').classList.remove('shadow-sm');
+    }
+
+    lastScrollY = currentY;
+}, { passive: true });
 
     window.toggleUserDropdown = () => document.getElementById('user-dropdown').classList.toggle('hidden');
 
@@ -422,6 +410,53 @@
             }
         }
     }
+
+    async function loadCategoryBanners() {
+    const grid = document.getElementById('category-banner-grid');
+    if (!grid) return;
+    try {
+        const snap = await db.collection("category_banners").orderBy("order").get();
+        if (snap.empty) {
+            // Fallback to hardcoded if no banners set
+            grid.innerHTML = `
+                <a href="category.html?type=Handbags" class="group cursor-pointer block">
+                    <div class="relative overflow-hidden rounded-lg bg-gray-50 shadow-sm border border-[#E5E4E2]">
+                        <img src="bag.png" alt="Handbags" class="w-full aspect-[4/5] object-cover group-hover:scale-105 transition duration-500">
+                    </div>
+                    <h3 class="mt-4 text-center font-bold tracking-widest text-[10px] md:text-[11px] text-[#322C2B] uppercase">Handbags</h3>
+                </a>
+                <a href="category.html?type=Footwear" class="group cursor-pointer block">
+                    <div class="relative overflow-hidden rounded-lg bg-gray-50 shadow-sm border border-[#E5E4E2]">
+                        <img src="shoes.png" alt="Footwear" class="w-full aspect-[4/5] object-cover group-hover:scale-105 transition duration-500">
+                    </div>
+                    <h3 class="mt-4 text-center font-bold tracking-widest text-[10px] md:text-[11px] text-[#322C2B] uppercase">Footwear</h3>
+                </a>
+                <a href="category.html?type=Beauty" class="group cursor-pointer block">
+                    <div class="relative overflow-hidden rounded-lg bg-gray-50 shadow-sm border border-[#E5E4E2]">
+                        <img src="beauty-makeup-items.png" alt="Beauty" class="w-full aspect-[4/5] object-cover group-hover:scale-105 transition duration-500">
+                    </div>
+                    <h3 class="mt-4 text-center font-bold tracking-widest text-[10px] md:text-[11px] text-[#322C2B] uppercase">Beauty</h3>
+                </a>
+                <a href="category.html?type=Accessories" class="group cursor-pointer block">
+                    <div class="relative overflow-hidden rounded-lg bg-gray-50 shadow-sm border border-[#E5E4E2]">
+                        <img src="accessories.png" alt="Accessories" class="w-full aspect-[4/5] object-cover group-hover:scale-105 transition duration-500">
+                    </div>
+                    <h3 class="mt-4 text-center font-bold tracking-widest text-[10px] md:text-[11px] text-[#322C2B] uppercase">Accessories</h3>
+                </a>`;
+            return;
+        }
+        grid.innerHTML = snap.docs.map(doc => {
+            const d = doc.data();
+            return `
+                <a href="category.html?type=${encodeURIComponent(d.category)}" class="group cursor-pointer block">
+                    <div class="relative overflow-hidden rounded-lg bg-gray-50 shadow-sm border border-[#E5E4E2]">
+                        <img src="${d.image}" alt="${d.label || d.category}" class="w-full aspect-[4/5] object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://via.placeholder.com/300x400?text=${d.category}'">
+                    </div>
+                    <h3 class="mt-4 text-center font-bold tracking-widest text-[10px] md:text-[11px] text-[#322C2B] uppercase">${d.label || d.category}</h3>
+                </a>`;
+        }).join('');
+    } catch(e) { console.error("Category banners error:", e); }
+}
 
     async function loadSocialLinks() {
         const div = document.getElementById('dynamic-socials');
@@ -552,14 +587,15 @@ function renderGrid(data) {
         }
     }
 
-    window.onload = () => {
-        connectStorefrontToCloud();
-        loadNavbar(); // Calls local function which is consistent with Homepage
-        loadFooterCategories();
-        loadSupportLinks();
-        loadSocialLinks();
-        loadDynamicContact();
-    };
+window.onload = () => {
+    connectStorefrontToCloud();
+    loadNavbar();
+    loadFooterCategories();
+    loadSupportLinks();
+    loadSocialLinks();
+    loadDynamicContact();
+    loadCategoryBanners();
+};
 
     window.logout = () => auth.signOut().then(() => location.reload());
 </script>

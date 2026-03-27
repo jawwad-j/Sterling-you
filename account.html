@@ -1054,23 +1054,43 @@
         }
 
         // --- CONTACT US & ORDERS ---
-        async function populateOrderDropdown(uid) {
-            const snap = await db.collection("orders").where("userId", "==", uid).orderBy("orderDate", "desc").get();
-            const sel = document.getElementById('contact-order-id');
-            sel.innerHTML = '<option value="">Select Order (Optional)</option>';
-            snap.forEach(doc => sel.add(new Option(`#${doc.data().orderId} - ${doc.data().status}`, doc.data().orderId)));
-        }
+async function populateOrderDropdown(uid) {
+    try {
+        const snap = await db.collection("orders").where("userId", "==", uid).get();
+        const sel = document.getElementById('contact-order-id');
+        sel.innerHTML = '<option value="">Select Order (Optional)</option>';
+
+        if (snap.empty) return;
+
+        // Sort client-side to avoid needing a Firestore composite index
+        const orders = snap.docs.map(d => d.data()).sort((a, b) => {
+            const dateA = a.orderDate ? (a.orderDate.toDate ? a.orderDate.toDate() : new Date(a.orderDate)) : 0;
+            const dateB = b.orderDate ? (b.orderDate.toDate ? b.orderDate.toDate() : new Date(b.orderDate)) : 0;
+            return dateB - dateA;
+        });
+
+        orders.forEach(o => {
+            const label = `#${o.orderId} — ${o.status} — ৳${(o.totalAmount || 0).toLocaleString()}`;
+            sel.add(new Option(label, o.orderId));
+        });
+    } catch (e) {
+        console.error("Could not load orders for dropdown:", e);
+    }
+}
         
         document.getElementById('contact-us-form').onsubmit = async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button'); btn.disabled = true; btn.innerText = "Sending...";
-            await db.collection("customer_queries").add({
-                userId: currentUserData.uid, userName: currentUserData.fullName, userPhone: currentUserData.phone,
-                orderId: document.getElementById('contact-order-id').value || null,
-                subject: document.getElementById('contact-subject').value,
-                message: document.getElementById('contact-message').value,
-                status: "Pending", date: new Date().toISOString()
-            });
+await db.collection("contact_messages").add({
+    userId:    currentUserData.uid,
+    name:      currentUserData.fullName,
+    phone:     currentUserData.phone,
+    orderId:   document.getElementById('contact-order-id').value || null,
+    subject:   document.getElementById('contact-subject').value,
+    message:   document.getElementById('contact-message').value,
+    status:    "Pending",
+    date:      new Date().toISOString()
+});
             document.getElementById('successModal').classList.remove('hidden');
             e.target.reset(); btn.disabled = false; btn.innerText = "Send Message";
         };

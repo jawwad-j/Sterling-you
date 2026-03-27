@@ -14,29 +14,33 @@ let products = []; // Now controlled by Firebase
 let customers = [{ id: 101, name: "Tanvir Hasan", phone: "01700000000", address: "Dhaka", totalSpent: 15000, risk: "Active" }];
 let orders = [{ id: 2001, userId: 101, productId: 1, amount: 7999, status: "Pending", date: "2026-02-05", payType: "COD" }];
 
-// 2. FIREBASE CORE LOGIC
+// 2. FIREBASE CORE LOGIC (REAL-TIME)
 function fetchProductsFromCloud() {
-    console.log("📡 Connecting to Firestore Live Stream...");
     db.collection("products").onSnapshot((snapshot) => {
-        products = snapshot.docs.map(doc => ({
-            fireId: doc.id,
-            ...doc.data()
-        }));
-        console.log("✅ Cloud Sync:", products.length, "items");
-        
-        // Auto-refresh UI
+        products = snapshot.docs.map(doc => ({ fireId: doc.id, ...doc.data() }));
         renderInventory();
         renderPipeline();
         calculatePL(); 
-    }, (error) => {
-        console.error("Cloud Sync Error:", error);
     });
 }
 
-// 3. INITIALIZATION (One single onload)
+// THIS IS THE MISSING PIECE FOR INSTANT UPDATES
+function listenToOrders() {
+    db.collection("orders").onSnapshot((snapshot) => {
+        // This updates the 'orders' variable every time something changes in Firebase
+        orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // These refresh your UI automatically without a page reload
+        renderPipeline();
+        calculatePL();
+        console.log("⚡ Order Pipeline Synced Instantly");
+    });
+}
+
+// 3. INITIALIZATION
 window.onload = () => {
     fetchProductsFromCloud();
-    // Orders and CRM still use local arrays for now until you migrate them too
+    listenToOrders(); // Start the live order stream
     renderCRM();
 };
 
@@ -195,3 +199,7 @@ window.sortQueries = (type) => {
     }
     renderQueries(currentQueries);
 };
+
+
+
+        console.log("✅ Admin Panel Loaded Successfully (Auth Secured)");
