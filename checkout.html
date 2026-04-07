@@ -15,6 +15,48 @@
         .modal-enter { animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes modalPop { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
     </style>
+
+    <!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1307429974563033');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+
+<!-- Primary SEO -->
+<meta name="description" content="Sterling You — curated luxury handbags, footwear, beauty & accessories. Shop the finest collection in Bangladesh.">
+<meta name="keywords" content="handbags bangladesh, luxury bags dhaka, sterling you, footwear bangladesh, beauty accessories">
+<meta name="author" content="Sterling You">
+<link rel="canonical" href="https://sterlingyou.com/">
+
+<!-- Open Graph (Facebook/WhatsApp previews) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Sterling You | Curated Luxury">
+<meta property="og:description" content="Curated luxury handbags, footwear, beauty & accessories in Bangladesh.">
+<meta property="og:image" content="https://sterlingyou.com/web-logo2.png">
+<meta property="og:url" content="https://sterlingyou.com/">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Sterling You | Curated Luxury">
+<meta name="twitter:description" content="Curated luxury in Bangladesh.">
+<meta name="twitter:image" content="https://sterlingyou.com/web-logo2.png">
+
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<link rel="shortcut icon" href="favicon.png">
+
 </head>
 <body class="bg-gray-50 min-h-screen pb-20">
 
@@ -37,8 +79,7 @@
                 <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400">Delivery Addresses</h3>
-                        <a href="account.html?tab=addresses&from=checkout" class="text-[10px] font-bold text-[#B36A5E] uppercase hover:underline">+ Manage</a>
-                    </div>
+                        <a href="account.html?tab=addresses&from=checkout&action=add" class="text-[10px] font-bold text-[#B36A5E] uppercase hover:underline">+ Add Address</a>                    </div>
                     <div id="address-container" class="space-y-5">
                         <p class="text-sm italic text-gray-400">Loading addresses...</p>
                     </div>
@@ -169,8 +210,14 @@
                     const userDoc = await db.collection("users").doc(targetUid).get();
 
                     if (userDoc.exists) {
-                        currentCheckoutUser = userDoc.data();
-                        currentCheckoutUser.uid = targetUid; 
+currentCheckoutUser = userDoc.data();
+currentCheckoutUser.uid = targetUid;
+
+// Phone check for Google login users
+if (!currentCheckoutUser.phone) {
+    window.location.href = 'login.html?redirect=checkout.html';
+    return;
+}
                         
                         // FIX: Extract addresses from ALL possible fields (shippingAddress, billingAddress, and addresses array)
                         let rawAddresses = [];
@@ -521,6 +568,7 @@ observer.observe(document.body, { childList: true, subtree: false });
             document.getElementById('final-total').dataset.value = finalTotal;
         }
 
+
         async function placeOrder() {
             if (!document.getElementById('agree-terms').checked) {
                 alert("Please agree to the Terms & Conditions to proceed.");
@@ -668,6 +716,15 @@ items: validCart.map(i => ({
                 batch.update(userRef, { totalSpend: firebase.firestore.FieldValue.increment(total), lastOrderDate: new Date().toISOString() });
                 
                 await batch.commit();
+
+                // ✅ ADD META PIXEL PURCHASE TRACKING HERE
+        fbq('track', 'Purchase', {
+            value: total, 
+            currency: 'BDT',
+            content_name: 'Sterling Order',
+            content_ids: validCart.map(item => item.id),
+            content_type: 'product'
+        });
 
                 // FIX: Clear both the cart AND the surrogate session to prevent the "same address" bug on next manual order
                 localStorage.removeItem('cart');

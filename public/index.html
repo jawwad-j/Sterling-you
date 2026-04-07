@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-site-verification" content="3qMtXNlWhNbqpHGp3rGgAXcGtPuuiHYTa6UKEZX0gwk" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <title>Launching Soon | Sterling You</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Montserrat:wght@300;400;600;700&display=swap');
+        body { font-family: 'Montserrat', sans-serif; background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px 0; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1); }
+        .float { animation: floating 4s ease-in-out infinite; }
+        @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
+        /* Responsive Countdown */
+        .countdown-item { position: relative; min-width: 65px; }
+        @media (min-width: 768px) { .countdown-item { min-width: 80px; } }
+        .countdown-item::after { content: ':'; position: absolute; right: -6px; top: 15%; font-size: 1.2rem; color: #B36A5E; }
+        .countdown-item:last-child::after { content: ''; }
+    </style>
+
+    
+</head>
+<body>
+    <div class="max-w-3xl w-full px-4 text-center">
+        <div class="mb-8 float"><img src="web-logo2.png" alt="Sterling You" class="h-16 md:h-20 mx-auto"></div>
+        <div class="glass-card rounded-3xl p-6 md:p-12">
+            <p class="text-[9px] md:text-[12px] font-bold tracking-[0.3em] uppercase text-[#B36A5E] mb-4">A New Era of Curated Luxury</p>
+            <h1 class="text-3xl md:text-6xl font-serif text-[#322C2B] mb-6">Because <span class="italic font-normal">You Are The Star</span></h1>
+            <p class="text-xs md:text-base text-gray-500 mb-8 max-w-lg mx-auto">Our full collection is almost ready. We are curating the finest handbags and accessories to elevate your everyday.</p>
+            <div id="countdown" class="flex flex-wrap justify-center gap-1 md:gap-8 mb-10">
+                <div class="countdown-item"><span id="days" class="block text-2xl md:text-3xl font-bold">00</span><span class="text-[8px] uppercase">Days</span></div>
+                <div class="countdown-item"><span id="hours" class="block text-2xl md:text-3xl font-bold">00</span><span class="text-[8px] uppercase">Hours</span></div>
+                <div class="countdown-item"><span id="minutes" class="block text-2xl md:text-3xl font-bold">00</span><span class="text-[8px] uppercase">Mins</span></div>
+                <div class="countdown-item"><span id="seconds" class="block text-2xl md:text-3xl font-bold">00</span><span class="text-[8px] uppercase">Secs</span></div>
+            </div>
+            <form id="notify-form" class="max-w-md mx-auto relative">
+                <input type="email" id="email-input" required placeholder="ENTER YOUR EMAIL" class="w-full bg-white/50 border border-gray-200 rounded-full py-4 px-6 text-[10px] tracking-widest outline-none uppercase">
+                <button type="submit" class="w-full mt-4 md:mt-0 md:absolute md:right-2 md:top-2 md:w-auto bg-[#322C2B] text-white py-2.5 px-6 rounded-full text-[10px] font-bold uppercase shadow-md">Notify Me</button>
+            </form>
+            <p id="form-msg" class="mt-4 text-[10px] font-bold text-green-600 hidden">You're on the list!</p>
+        </div>
+        <div class="mt-10 flex flex-wrap justify-center gap-6 text-[#322C2B] text-xs font-semibold uppercase tracking-widest">
+            <a href="https://www.instagram.com/sterlingyoubd/" target="_blank">Instagram</a>
+            <a href="https://www.facebook.com/profile.php?id=61588497843328" target="_blank">Facebook</a>
+            <a href="https://wa.me/8801800000775" target="_blank">WhatsApp</a>
+        </div>
+    </div>
+    <script>
+        const targetDate = new Date("March 29, 2026 00:00:00").getTime();
+        setInterval(() => {
+            const gap = targetDate - new Date().getTime();
+            const d=1000*60*60*24, h=d/24, m=h/60, s=m/60;
+            if(gap>0){
+                document.getElementById("days").innerText = Math.floor(gap/d);
+                document.getElementById("hours").innerText = Math.floor((gap%d)/h);
+                document.getElementById("minutes").innerText = Math.floor((gap%h)/m);
+                document.getElementById("seconds").innerText = Math.floor((gap%m)/1000);
+            }
+        }, 1000);
+        const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        document.getElementById('notify-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.innerText = "SAVING...";
+            try {
+                await db.collection("newsletter_subscribers").add({ email: document.getElementById('email-input').value, date: new Date().toISOString() });
+                document.getElementById('form-msg').classList.remove('hidden');
+                btn.innerText = "THANK YOU";
+            } catch (err) { alert("Error saving email."); btn.innerText = "NOTIFY ME"; }
+        };
+    </script>
+</body>
+</html>

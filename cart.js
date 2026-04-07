@@ -3,6 +3,19 @@
 /* Centralized Cart, Badges & Navbar Logic                                    */
 /* -------------------------------------------------------------------------- */
 
+// --- GA4 ---
+(function() {
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=G-EPT9FZHCYL';
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    window.gtag = gtag;
+    gtag('js', new Date());
+    gtag('config', 'G-EPT9FZHCYL');
+})();
+
 // --- 1. SHARED NAVBAR LOGIC ---
 async function loadNavbar() {
     const nav = document.getElementById('dynamic-nav');
@@ -10,22 +23,52 @@ async function loadNavbar() {
 
     const baseClass = "hover:text-[#B36A5E] transition pb-1 font-medium"; 
     const boldClass = "hover:text-[#B36A5E] transition pb-1 font-bold";
-    const ordered = ["Handbags", "Footwear", "Beauty", "Accessories", "Fashion"];
+    const isHomePage = window.location.pathname.endsWith('index.html') || window.location.pathname === '/';
     
-    let dbCats = new Set();
     try {
+        // Fetch categories from DB
         const snap = await db.collection("categories").get();
-        dbCats = new Set(snap.docs.map(d => d.data().name));
-    } catch (e) { console.log("Nav load error", e); }
+        let dbCats = new Set(snap.docs.map(d => d.data().name).filter(Boolean));
 
-    let h = `<li><a href="index.html" class="${baseClass}">Home</a></li><li><a href="category.html?type=New" class="${boldClass}">NEW</a></li>`; 
-    ordered.forEach(c => {
-        if (dbCats.has(c)) { h += `<li><a href="category.html?type=${c}" class="${baseClass}">${c}</a></li>`; dbCats.delete(c); }
-        else { h += `<li><a href="category.html?type=${c}" class="${baseClass}">${c}</a></li>`; }
-    });
-    dbCats.forEach(c => h += `<li><a href="category.html?type=${c}" class="${baseClass}">${c}</a></li>`);
-    h += `<li><a href="category.html?type=Sale" class="text-[#B36A5E] italic font-bold hover:opacity-80 transition pb-1">Sale</a></li>`;
-    nav.innerHTML = h;
+        // Fetch banner order to determine nav order
+        let orderedList = [];
+        try {
+            const bannerSnap = await db.collection("category_banners").orderBy("order").get();
+            orderedList = bannerSnap.docs.map(d => d.data().category).filter(Boolean);
+        } catch(e) { console.error("Banner nav order error:", e); }
+
+        // Start nav
+        let h = '';
+        if (!isHomePage) {
+            h += `<li><a href="index.html" class="${baseClass}">Home</a></li>`;
+        }
+        h += `<li><a href="category.html?type=New" class="${boldClass}">NEW</a></li>`;
+
+        // Render banner-ordered categories first
+        orderedList.forEach(cat => {
+            if (dbCats.has(cat)) {
+                h += `<li><a href="category.html?type=${encodeURIComponent(cat)}" class="${baseClass}">${cat}</a></li>`;
+                dbCats.delete(cat);
+            }
+        });
+
+        // Render any remaining categories not in banners
+        dbCats.forEach(cat => {
+            h += `<li><a href="category.html?type=${encodeURIComponent(cat)}" class="${baseClass}">${cat}</a></li>`;
+        });
+
+        // Always end with Sale
+        h += `<li><a href="category.html?type=Sale" class="text-[#B36A5E] italic font-bold hover:opacity-80 transition pb-1">Sale</a></li>`;
+        
+nav.innerHTML = h;
+
+        // Also populate mobile nav
+        const mobileNav = document.getElementById('dynamic-nav-mobile');
+        if (mobileNav) mobileNav.innerHTML = h;
+
+    } catch (e) { 
+        console.error("Nav load error", e); 
+    }
 }
 
 // --- 2. CART LOGIC ---
@@ -39,22 +82,17 @@ window.toggleCart = () => {
 };
 
 window.addToCart = (p) => {
-    // 1. VALIDATION
     if (!p.id) { console.error("Product has no ID:", p); alert("Error adding to cart. Please refresh."); return; }
 
-    // 2. DETERMINE MAX STOCK (Safe check for empty strings)
     const maxStock = (p.stock !== undefined && p.stock !== null && p.stock !== "") ? Number(p.stock) : 999;
 
-    // 3. INITIAL STOCK CHECK
     if (maxStock <= 0) { 
         alert("Sorry, this item is out of stock."); return; 
     }
 
     let c = JSON.parse(localStorage.getItem('cart')) || [];
-    // ENSURE STRING COMPARISON FOR IDS
     let idx = c.findIndex(i => String(i.id).trim() === String(p.id).trim());
     
-    // 4. SANITIZE DATA
     const cleanProduct = {
         id: String(p.id).trim(),
         name: String(p.name).trim(),
@@ -66,20 +104,25 @@ window.addToCart = (p) => {
     };
 
     if (idx > -1) {
-        // STRICT STOCK CHECK
         if(c[idx].quantity >= cleanProduct.stock) { 
             alert(`Sorry, there is no more stock left. We only have ${cleanProduct.stock} units available.`); 
             return; 
         }
-        
         c[idx].quantity += 1;
-        // Update details
         c[idx].price = cleanProduct.price;
         c[idx].image = cleanProduct.image;
         c[idx].stock = cleanProduct.stock; 
     } else {
         c.push(cleanProduct);
     }
+
+    fbq('track', 'AddToCart', {
+        content_name: cleanProduct.name,
+        content_ids: [cleanProduct.id],
+        content_type: 'product',
+        value: cleanProduct.price,
+        currency: 'BDT'
+    });
     
     localStorage.setItem('cart', JSON.stringify(c));
     updateCartBadge();
@@ -90,7 +133,6 @@ window.changeQty = (i, d) => {
     let c = JSON.parse(localStorage.getItem('cart'));
     if (!c || !c[i]) return;
 
-    // STRICT CHECK FOR QTY INCREASE
     if (d > 0) {
         const stockLimit = (c[i].stock !== undefined && c[i].stock !== null && c[i].stock !== "") ? Number(c[i].stock) : 999;
         if (c[i].quantity >= stockLimit) {
@@ -127,8 +169,6 @@ function renderSidebarCart() {
 
     if (!c.length) {
         l.innerHTML = '<div class="h-full flex justify-center items-center text-xs text-gray-400 uppercase tracking-widest">Your bag is empty</div>';
-        
-        // Reset footer if empty
         const footer = document.querySelector('#cart-drawer .border-t');
         if(footer) {
              const btn = footer.querySelector('button');
@@ -138,11 +178,10 @@ function renderSidebarCart() {
         return;
     }
 
-    // Render Items
     l.innerHTML = c.map((i, x) => {
         const tot = i.price * i.quantity;
         const org = (i.originalPrice || i.price) * i.quantity;
-        const itemSavings = org - tot; // Calculate savings for this specific item
+        const itemSavings = org - tot;
         savings += itemSavings; 
         subtotal += tot;
 
@@ -177,7 +216,6 @@ function renderSidebarCart() {
         </div>`;
     }).join('');
 
-    // --- FOOTER RENDERING ---
     const footer = document.querySelector('#cart-drawer .border-t');
     if (footer) {
         let btn = footer.querySelector('button');
@@ -189,11 +227,9 @@ function renderSidebarCart() {
         }
 
         let html = '';
-
         if (savings > 0) {
             html += `<div class="flex justify-between text-[11px] text-green-600 font-bold mb-2"><span>Total Savings</span><span>-৳${savings.toLocaleString()}</span></div>`;
         }
-
         html += `<div class="flex justify-between font-bold text-[#322C2B] text-sm mb-2"><span>Subtotal</span><span>৳${subtotal.toLocaleString()}</span></div>`;
         html += `<p class="text-[10px] text-gray-400 italic mb-4 text-right">Shipping calculated at checkout</p>`;
 
@@ -202,9 +238,24 @@ function renderSidebarCart() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => { updateCartBadge(); loadNavbar(); });
+// --- 3. ANNOUNCEMENT BAR ---
+window.loadAnnouncementBar = async function() {
+    try {
+        const doc = await db.collection("settings").doc("storefront").get();
+        if (doc.exists && doc.data().announcementBar) {
+            const topBarP = document.querySelector('#top-bar p');
+            if (topBarP) topBarP.innerText = doc.data().announcementBar;
+        }
+    } catch(e) { console.error("Announcement bar error:", e); }
+};
 
-// --- 3. HELPER FUNCTIONS ---
+document.addEventListener('DOMContentLoaded', () => { 
+    updateCartBadge(); 
+    loadNavbar(); 
+    window.loadAnnouncementBar();
+});
+
+// --- 4. HELPER FUNCTIONS ---
 
 window.toggleReceiver = (val) => {
     const el = document.getElementById('recv-details');
@@ -233,12 +284,9 @@ window.getCheckoutExtras = () => {
 };
 
 window.getProductBadge = (stock) => {
-    // Treat missing or empty string as unlimited stock (no badge)
     if (stock === undefined || stock === null || stock === "") return '';
-    
     const numStock = Number(stock);
     if (isNaN(numStock)) return '';
-
     if (numStock <= 0) return `<span class="absolute top-2 left-2 bg-gray-900 text-white text-[9px] font-bold px-2 py-1 uppercase tracking-widest shadow-sm">Sold Out</span>`;
     if (numStock <= 5) return `<span class="absolute top-2 left-2 bg-red-600 text-white text-[9px] font-bold px-2 py-1 uppercase tracking-widest shadow-sm animate-pulse">Low Stock</span>`;
     return '';
@@ -247,7 +295,6 @@ window.getProductBadge = (stock) => {
 window.renderActionButtons = (product) => {
     const cleanName = product.name ? product.name.replace(/'/g, "\\'").replace(/"/g, '&quot;') : "Product";
     
-    // Default to 999 if stock is missing or empty string. Only truly 0 if explicitly set to 0.
     let currentStock = 999;
     if (product.stock !== undefined && product.stock !== null && product.stock !== "") {
         const parsedStock = Number(product.stock);
@@ -284,7 +331,8 @@ window.requestProduct = async (pid, pname) => {
         alert("Request sent! We will notify you when stock is available.");
     } catch (e) { console.error(e); alert("Error sending request."); }
 };
-// --- 4. SURROGATE SESSION (ADMIN MANUAL ORDERS) ---
+
+// --- 5. SURROGATE SESSION (ADMIN MANUAL ORDERS) ---
 function checkSurrogateSession() {
     const surrogateData = sessionStorage.getItem('surrogate_session');
     if (surrogateData) {
@@ -305,8 +353,84 @@ function checkSurrogateSession() {
 window.endSurrogateSession = () => {
     sessionStorage.removeItem('surrogate_session');
     localStorage.removeItem('cart');
-    window.location.href = 'index.html'; // Send admin home
+    window.location.href = 'index.html';
 };
 
-// Hook it into the load sequence
 document.addEventListener('DOMContentLoaded', checkSurrogateSession);
+
+// --- 6. UNIFIED FOOTER LOADER ---
+window.loadFooterData = async function() {
+
+    // Support Links
+    try {
+        const supSnap = await db.collection("support_links").orderBy("order").get();
+        const supEl = document.getElementById('dynamic-support');
+        if (supEl) supEl.innerHTML = supSnap.docs.map(d =>
+            `<li><a href="${d.data().url}" class="hover:text-white transition">${d.data().title}</a></li>`
+        ).join('');
+    } catch(e) { console.error("Support links error:", e); }
+
+    // Social Links
+    try {
+        const socSnap = await db.collection("social_links").get();
+        const icons = {
+            Instagram: `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect width="16" height="16" x="4" y="4" rx="4"/><circle cx="12" cy="12" r="3"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>`,
+            Facebook:  `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3V2z"/></svg>`,
+            WhatsApp:  `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 11-7.6-12.7 8.38 8.38 0 013.8.9L21 3z"/></svg>`,
+            TikTok:    `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 12a4 4 0 104 4V4h4a4 4 0 00-4 4"/></svg>`
+        };
+        const socEl = document.getElementById('dynamic-socials');
+        if (socEl) socEl.innerHTML = socSnap.docs.map(d => {
+            const icon = icons[d.data().platform] || d.data().platform;
+            return `<a href="${d.data().url}" target="_blank" class="text-white hover:text-[#B36A5E] hover:scale-110 transition">${icon}</a>`;
+        }).join(' ');
+    } catch(e) { console.error("Social links error:", e); }
+
+    // Shop Links — ordered by banner order
+    try {
+        const catSnap = await db.collection("categories").get();
+        let dbCats = new Set(catSnap.docs.map(d => d.data().name).filter(Boolean));
+
+        let footerOrderedList = [];
+        try {
+            const footerBannerSnap = await db.collection("category_banners").orderBy("order").get();
+            footerOrderedList = footerBannerSnap.docs.map(d => d.data().category).filter(Boolean);
+        } catch(e) { console.error("Banner order error:", e); }
+
+        let shopHtml = `<li><a href="category.html?type=New" class="hover:text-white transition">New Arrivals</a></li>`;
+        let linkCount = 0;
+
+        footerOrderedList.forEach(cat => {
+            if (dbCats.has(cat) && linkCount < 5) {
+                shopHtml += `<li><a href="category.html?type=${encodeURIComponent(cat)}" class="hover:text-white transition">${cat}</a></li>`;
+                dbCats.delete(cat);
+                linkCount++;
+            }
+        });
+        dbCats.forEach(cat => {
+            if (linkCount < 5) {
+                shopHtml += `<li><a href="category.html?type=${encodeURIComponent(cat)}" class="hover:text-white transition">${cat}</a></li>`;
+                linkCount++;
+            }
+        });
+        shopHtml += `<li><a href="category.html?type=Sale" class="text-[#B36A5E] hover:text-white transition">Sale</a></li>`;
+
+        const footerShopEl = document.getElementById('footer-shop-list');
+        if (footerShopEl) footerShopEl.innerHTML = shopHtml;
+    } catch(e) { console.error("Shop links error:", e); }
+
+    // Contact Info
+    try {
+        const con = await db.collection("settings").doc("contact").get();
+        if (con.exists) {
+            const d = con.data();
+            const ph = document.getElementById('footer-phone');
+            const em = document.getElementById('footer-email');
+            const ad = document.getElementById('footer-address');
+            if (ph && d.phone) ph.innerText = d.phone;
+            if (em && d.email) em.innerText = d.email;
+            if (ad && d.address) ad.innerText = d.address;
+        }
+    } catch(e) { console.error("Contact info error:", e); }
+
+};

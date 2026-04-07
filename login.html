@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In | Sterling You</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Montserrat', sans-serif; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+
+        .otp-input {
+            width: 44px; height: 50px;
+            text-align: center;
+            font-size: 20px; font-weight: 700;
+            border: 1.5px solid #E5E7EB;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: white;
+            color: #322C2B;
+            font-family: 'Montserrat', sans-serif;
+        }
+        .otp-input:focus { border-color: #B36A5E; box-shadow: 0 0 0 3px rgba(179,106,94,0.1); }
+        .otp-input.filled { border-color: #B36A5E; background: #fdf9f8; }
+        .otp-input.error-box { border-color: #EF4444 !important; animation: shake 0.4s ease; }
+
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            20% { transform: translateX(-5px); }
+            40% { transform: translateX(5px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-up { animation: fadeUp 0.35s ease forwards; }
+
+        .spinner {
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.35);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .timer-circle {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 34px; height: 34px; border-radius: 50%;
+            border: 1.5px solid #E5E7EB;
+            font-size: 11px; font-weight: 700; color: #B36A5E;
+            transition: border-color 0.3s, color 0.3s;
+        }
+        .timer-circle.urgent { border-color: #EF4444; color: #EF4444; }
+        .grecaptcha-badge { visibility: hidden; }
+
+        .site-input {
+            width: 100%;
+            border: none;
+            border-bottom: 1.5px solid #E5E7EB;
+            padding: 10px 0;
+            font-size: 14px;
+            font-family: 'Montserrat', sans-serif;
+            outline: none;
+            background: transparent;
+            color: #322C2B;
+            transition: border-color 0.2s;
+        }
+        .site-input:focus { border-bottom-color: #B36A5E; }
+        .site-input::placeholder { color: #9CA3AF; font-size: 12px; }
+    </style>
+
+    <link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<link rel="shortcut icon" href="favicon.png">
+
+</head>
+
+<body class="bg-white flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="w-full bg-white border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-6 md:px-10">
+            <div class="flex justify-center items-center h-20">
+                <a href="index.html" class="block hover:opacity-90 transition">
+                    <img src="web-logo2.png" alt="Sterling You" class="h-12 md:h-16 object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                    <span class="hidden font-serif text-2xl md:text-3xl font-bold text-[#322C2B] italic">Sterling.</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex items-center justify-center py-12 px-4">
+        <div class="w-full max-w-md">
+
+            <div class="text-left mb-8">
+                <p class="text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400 mb-1">Account</p>
+                <h1 id="main-title" class="text-4xl font-serif text-[#322C2B] font-bold">Sign In</h1>
+                <p class="text-sm text-gray-500 font-serif italic tracking-wide mt-2">Welcome back — we missed you.</p>
+            </div>
+
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-8">
+
+                <!-- STEP 1: Phone -->
+                <div id="step-phone" class="fade-up">
+                    <label class="block text-[10px] font-bold tracking-widest uppercase text-gray-500 mb-3">Phone Number</label>
+                    <div class="flex items-center border-b border-gray-200 focus-within:border-[#B36A5E] transition mb-1">
+                        <span class="text-sm font-bold text-gray-500 pr-3 pb-2 border-r border-gray-200 mr-3 whitespace-nowrap">🇧🇩 +880</span>
+                        <input type="tel" id="phone-input" maxlength="11"
+                            placeholder="01XXXXXXXXX"
+                            oninput="this.value=this.value.replace(/[^0-9]/g,''); hideErr('phone-err')"
+                            onkeydown="if(event.key==='Enter') sendOTP()"
+                            class="site-input">
+                    </div>
+                    <p id="phone-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+
+                    <p class="text-[10px] text-gray-400 mt-4 mb-6 leading-relaxed">
+                        We'll send a 6-digit code via SMS to verify your number.
+                    </p>
+
+                    <div id="recaptcha-container"></div>
+
+                    <button id="btn-send" onclick="sendOTP()"
+                        class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg tracking-widest mb-5">
+                        Send OTP
+                    </button>
+
+                    <!-- Divider -->
+                    <div class="flex items-center gap-3 mb-5">
+                        <div class="flex-1 h-px bg-gray-100"></div>
+                        <span class="text-[10px] font-bold uppercase text-gray-300 tracking-widest">or</span>
+                        <div class="flex-1 h-px bg-gray-100"></div>
+                    </div>
+
+                    <!-- Google inline -->
+                    <button onclick="signInWithGoogle()" id="btn-google"
+                        class="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3.5 text-[11px] font-bold uppercase tracking-widest text-[#322C2B] hover:border-[#B36A5E] hover:text-[#B36A5E] transition">
+                        <svg width="16" height="16" viewBox="0 0 24 24" class="flex-shrink-0">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        Continue with Google
+                    </button>
+
+                    <p class="text-[10px] text-gray-400 text-center mt-5 leading-relaxed">
+                        By continuing you agree to our <a href="#" class="text-[#B36A5E] hover:underline">Terms & Conditions</a>
+                    </p>
+                </div>
+
+                <!-- STEP 2: OTP -->
+                <div id="step-otp" class="hidden">
+                    <button onclick="backToPhone()" class="flex items-center gap-1 text-[10px] font-bold uppercase text-gray-400 hover:text-[#B36A5E] transition mb-6">
+                        ← Change Number
+                    </button>
+
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Verification Code</p>
+                    <p class="text-sm text-[#322C2B] font-medium mb-6">
+                        Sent to <span id="display-phone" class="font-bold text-[#B36A5E]"></span>
+                    </p>
+
+                    <div class="flex gap-2 justify-between mb-2">
+                        <input type="tel" maxlength="1" class="otp-input" id="otp-0" oninput="otpInput(this,0)" onkeydown="otpKeydown(event,0)" onpaste="otpPaste(event)">
+                        <input type="tel" maxlength="1" class="otp-input" id="otp-1" oninput="otpInput(this,1)" onkeydown="otpKeydown(event,1)">
+                        <input type="tel" maxlength="1" class="otp-input" id="otp-2" oninput="otpInput(this,2)" onkeydown="otpKeydown(event,2)">
+                        <input type="tel" maxlength="1" class="otp-input" id="otp-3" oninput="otpInput(this,3)" onkeydown="otpKeydown(event,3)">
+                        <input type="tel" maxlength="1" class="otp-input" id="otp-4" oninput="otpInput(this,4)" onkeydown="otpKeydown(event,4)">
+                        <input type="tel" maxlength="1" class="otp-input" id="otp-5" oninput="otpInput(this,5)" onkeydown="otpKeydown(event,5)">
+                    </div>
+
+                    <p id="otp-err" class="text-[10px] text-red-500 font-bold text-center mt-2 mb-1 hidden"></p>
+                    <p id="attempt-warn" class="text-[10px] text-orange-500 font-bold text-center mb-4"></p>
+
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-2">
+                            <span class="timer-circle" id="timer-el">2:00</span>
+                            <span class="text-[10px] text-gray-400">OTP expires in</span>
+                        </div>
+                        <button id="btn-resend" onclick="resendOTP()" disabled
+                            class="text-[10px] font-bold uppercase tracking-widest text-gray-300 hover:text-[#B36A5E] transition disabled:pointer-events-none">
+                            Resend
+                        </button>
+                    </div>
+
+                    <button id="btn-verify" onclick="verifyOTP()"
+                        class="w-full bg-[#10B981] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-green-600 transition shadow-lg tracking-widest">
+                        Verify & Continue
+                    </button>
+                </div>
+
+                <!-- STEP 3: Optional Email -->
+                <div id="step-email" class="hidden">
+                    <div class="flex justify-center mb-5">
+                        <div class="w-14 h-14 rounded-full bg-green-50 border border-green-100 flex items-center justify-center">
+                            <svg width="26" height="26" fill="none" stroke="#10B981" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                    </div>
+                    <h2 class="font-serif text-2xl text-[#322C2B] font-bold text-center mb-1">You're in!</h2>
+                    <p class="text-xs text-gray-400 text-center mb-8">Add your email to receive order updates &amp; exclusive offers</p>
+
+                    <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">
+                        Email Address
+                        <span class="text-gray-300 normal-case font-normal ml-1">(optional)</span>
+                    </label>
+                    <input type="email" id="email-input" placeholder="your@email.com" class="site-input mb-1"
+                        onkeydown="if(event.key==='Enter') saveEmailAndContinue()">
+                    <p id="email-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+
+                    <button onclick="saveEmailAndContinue()"
+                        class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg tracking-widest mt-6 mb-3">
+                        Save & Continue
+                    </button>
+                    <button onclick="skipEmail()"
+                        class="w-full text-gray-400 py-2 text-[10px] font-bold uppercase tracking-widest hover:text-gray-600 transition">
+                        Skip for now
+                    </button>
+                </div>
+
+            </div>
+
+            <p class="text-center text-[10px] text-gray-400 mt-6">
+                <a href="index.html" class="hover:text-[#B36A5E] transition">← Back to Store</a>
+                &nbsp;·&nbsp; Protected by reCAPTCHA
+            </p>
+        </div>
+    </main>
+
+    <footer class="bg-[#322C2B] text-white py-6">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <p class="text-[9px] uppercase text-gray-500 tracking-widest">© 2026 Sterling You. All rights reserved.</p>
+        </div>
+    </footer>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0",
+    authDomain: "sterling-erp.firebaseapp.com",
+    projectId: "sterling-erp",
+    storageBucket: "sterling-erp.firebasestorage.app",
+    messagingSenderId: "692099720173",
+    appId: "1:692099720173:web:2a615f750352021d693de4"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+const SITE_KEY           = '6Lev3ZssAAAAAGmvhZzA36b9VWZNtMR3kJ_smV22';
+const MAX_OTP_PER_HOUR   = 3;
+const MAX_OTP_PER_DAY    = 300;
+const MAX_WRONG_ATTEMPTS = 3;
+const MIN_GAP_MS         = 2000;
+const BD_PREFIXES        = ['013','014','015','016','017','018','019'];
+
+let confirmationResult = null;
+let otpTimer           = null;
+let timerSecs          = 120;
+let lastSendTime       = 0;
+let currentPhone       = '';
+let wrongAttempts      = 0;
+let recaptchaVerifier  = null;
+let authedUser         = null;
+
+const redirectTo = new URLSearchParams(window.location.search).get('redirect') || 'account.html';
+
+auth.onAuthStateChanged(user => { if (user) window.location.href = redirectTo; });
+
+// ── Helpers ──
+function showErr(id, msg) { const el = document.getElementById(id); if(el){ el.innerText=msg; el.classList.remove('hidden'); } }
+function hideErr(id)      { const el = document.getElementById(id); if(el) el.classList.add('hidden'); }
+
+function setBtnLoading(id, loading, label) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.innerHTML = loading ? '<span class="spinner"></span>' : label;
+}
+
+function showStep(step) {
+    ['step-phone','step-otp','step-email'].forEach(s => {
+        const el = document.getElementById(s);
+        el.classList.toggle('hidden', s !== step);
+        if (s === step) { el.classList.remove('fade-up'); void el.offsetWidth; el.classList.add('fade-up'); }
+    });
+}
+
+// ── BD validation ──
+function validatePhone(p) {
+    if (!p || p.length !== 11)               return 'Must be exactly 11 digits';
+    if (!p.startsWith('0'))                  return 'Must start with 0';
+    if (!BD_PREFIXES.includes(p.slice(0,3))) return 'Invalid operator prefix (013–019 only)';
+    return null;
+}
+
+// ── Rate limiting ──
+async function checkRateLimit(phone) {
+    const now = Date.now(), today = new Date().toISOString().split('T')[0], hourAgo = now - 3600000;
+    if (now - lastSendTime < MIN_GAP_MS) return 'Too fast — please wait a moment.';
+    try {
+        const pDoc = await db.collection('otp_rate_limits').doc(phone).get();
+        if (pDoc.exists) {
+            const recent = (pDoc.data().requests||[]).filter(t => t > hourAgo);
+            if (recent.length >= MAX_OTP_PER_HOUR) {
+                const w = Math.ceil((recent[0] + 3600000 - now) / 60000);
+                return `Too many requests. Try again in ${w} min.`;
+            }
+        }
+        const capDoc = await db.collection('otp_daily_cap').doc(today).get();
+        if (capDoc.exists && (capDoc.data().count||0) >= MAX_OTP_PER_DAY) return 'Daily OTP limit reached. Try tomorrow.';
+        return null;
+    } catch(e) { return null; }
+}
+
+async function recordOTPSent(phone) {
+    const now = Date.now(), today = new Date().toISOString().split('T')[0], hourAgo = now - 3600000;
+    try {
+        const pRef = db.collection('otp_rate_limits').doc(phone);
+        const pDoc = await pRef.get();
+        const reqs = pDoc.exists ? (pDoc.data().requests||[]).filter(t=>t>hourAgo) : [];
+        reqs.push(now);
+        await pRef.set({ requests: reqs, lastUpdated: now }, { merge: true });
+        await db.collection('otp_daily_cap').doc(today).set(
+            { count: firebase.firestore.FieldValue.increment(1), date: today }, { merge: true }
+        );
+    } catch(e) {}
+}
+
+// ── reCAPTCHA — initialize once on load, never clear ──
+function setupRecaptcha() {
+    if (recaptchaVerifier) return;
+    recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        size: 'invisible',
+        callback: () => {}
+    });
+    recaptchaVerifier.render();
+}
+
+window.addEventListener('load', setupRecaptcha);
+
+// ── Send OTP ──
+async function sendOTP() {
+    const phone = document.getElementById('phone-input').value.trim();
+    hideErr('phone-err');
+
+    const ve = validatePhone(phone);
+    if (ve) { showErr('phone-err', ve); return; }
+
+    setBtnLoading('btn-send', true, '');
+
+    const re = await checkRateLimit(phone);
+    if (re) { showErr('phone-err', re); setBtnLoading('btn-send', false, 'Send OTP'); return; }
+
+
+
+    const formatted = '+880' + phone.substring(1);
+    currentPhone = phone;
+    lastSendTime = Date.now();
+
+    try {
+        if (!recaptchaVerifier) setupRecaptcha();
+        confirmationResult = await auth.signInWithPhoneNumber(formatted, recaptchaVerifier);
+        await recordOTPSent(phone);
+
+        document.getElementById('display-phone').innerText = phone;
+        wrongAttempts = 0;
+        clearBoxes();
+        document.getElementById('attempt-warn').innerText = '';
+        hideErr('otp-err');
+        showStep('step-otp');
+        startTimer();
+        document.getElementById('otp-0').focus();
+
+    } catch(e) {
+        console.error('OTP Error:', e.code, e.message);
+        let msg = e.code + ': ' + e.message;
+        if (e.code === 'auth/too-many-requests') msg = 'Too many attempts. Please wait before retrying.';
+        if (e.code === 'auth/invalid-phone-number') msg = 'Invalid phone number format.';
+        showErr('phone-err', msg);
+    }
+
+    setBtnLoading('btn-send', false, 'Send OTP');
+}
+
+// ── Resend OTP ──
+async function resendOTP() {
+    clearBoxes();
+    hideErr('otp-err');
+    document.getElementById('attempt-warn').innerText = '';
+
+    const re = await checkRateLimit(currentPhone);
+    if (re) { showErr('otp-err', re); return; }
+
+    const formatted = '+880' + currentPhone.substring(1);
+    lastSendTime = Date.now();
+
+    try {
+        // For resend we need a fresh verifier
+        recaptchaVerifier = null;
+        setupRecaptcha();
+        await recaptchaVerifier.render();
+
+        confirmationResult = await auth.signInWithPhoneNumber(formatted, recaptchaVerifier);
+        await recordOTPSent(currentPhone);
+        wrongAttempts = 0;
+        startTimer();
+        document.getElementById('otp-0').focus();
+    } catch(e) {
+        console.error('Resend error:', e.code, e.message);
+        showErr('otp-err', 'Failed to resend. Please go back and try again.');
+    }
+}
+
+// ── OTP boxes ──
+function otpInput(el, i) {
+    el.value = el.value.replace(/[^0-9]/g,'');
+    el.classList.toggle('filled', !!el.value);
+    el.classList.remove('error-box');
+    if (el.value && i < 5) document.getElementById('otp-'+(i+1)).focus();
+    if (getCode().length === 6) setTimeout(verifyOTP, 250);
+}
+function otpKeydown(e, i) {
+    if (e.key==='Backspace' && !e.target.value && i>0) {
+        const p = document.getElementById('otp-'+(i-1));
+        p.value=''; p.classList.remove('filled'); p.focus();
+    }
+}
+function otpPaste(e) {
+    e.preventDefault();
+    const d = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').substring(0,6);
+    d.split('').forEach((c,i)=>{ const el=document.getElementById('otp-'+i); if(el){el.value=c;el.classList.add('filled');} });
+    if(d.length===6) setTimeout(verifyOTP,250);
+}
+function getCode()   { return [0,1,2,3,4,5].map(i=>document.getElementById('otp-'+i).value).join(''); }
+function clearBoxes(){ [0,1,2,3,4,5].forEach(i=>{ const e=document.getElementById('otp-'+i); e.value=''; e.classList.remove('filled','error-box'); }); }
+function shakeBoxes(){ [0,1,2,3,4,5].forEach(i=>{ const e=document.getElementById('otp-'+i); e.classList.add('error-box'); setTimeout(()=>e.classList.remove('error-box'),500); }); }
+
+// ── Timer ──
+function startTimer() {
+    timerSecs = 120;
+    clearInterval(otpTimer);
+    document.getElementById('btn-resend').disabled = true;
+    otpTimer = setInterval(() => {
+        timerSecs--;
+        const el = document.getElementById('timer-el');
+        if (el) {
+            el.innerText = `${Math.floor(timerSecs/60)}:${(timerSecs%60).toString().padStart(2,'0')}`;
+            el.className = `timer-circle${timerSecs<=30?' urgent':''}`;
+        }
+        if (timerSecs <= 0) {
+            clearInterval(otpTimer);
+            const rb = document.getElementById('btn-resend');
+            if (rb) rb.disabled = false;
+        }
+    }, 1000);
+}
+
+// ── Verify OTP ──
+async function verifyOTP() {
+    const code = getCode();
+    if (code.length < 6) { showErr('otp-err','Please enter all 6 digits.'); return; }
+    if (!confirmationResult) { showErr('otp-err','Session expired. Request a new OTP.'); return; }
+    hideErr('otp-err');
+    setBtnLoading('btn-verify', true, '');
+    try {
+        const result = await confirmationResult.confirm(code);
+        authedUser   = result.user;
+        clearInterval(otpTimer);
+        await ensureUserDoc(result.user, currentPhone);
+        document.getElementById('main-title').innerText = 'Almost Done';
+        showStep('step-email');
+    } catch(e) {
+        wrongAttempts++;
+        if (wrongAttempts >= MAX_WRONG_ATTEMPTS) {
+            shakeBoxes(); clearBoxes();
+            confirmationResult = null; clearInterval(otpTimer);
+            showErr('otp-err','Too many wrong attempts. Please request a new OTP.');
+            setTimeout(backToPhone, 2000);
+        } else {
+            shakeBoxes();
+            const left = MAX_WRONG_ATTEMPTS - wrongAttempts;
+            showErr('otp-err', `Incorrect code. ${left} attempt${left>1?'s':''} remaining.`);
+            document.getElementById('attempt-warn').innerText = left===1 ? '⚠ Last attempt before OTP is locked' : '';
+        }
+    }
+    setBtnLoading('btn-verify', false, 'Verify & Continue');
+}
+
+function backToPhone() {
+    clearInterval(otpTimer); confirmationResult = null; wrongAttempts = 0;
+    showStep('step-phone'); hideErr('otp-err');
+    document.getElementById('main-title').innerText = 'Sign In';
+}
+
+// ── Ensure Firestore user doc ──
+async function ensureUserDoc(user, phone) {
+    const ref = db.collection('users').doc(user.uid);
+    const doc = await ref.get();
+    if (!doc.exists) {
+        await ref.set({
+            fullName:'', phone: phone||user.phoneNumber||'', email: user.email||'',
+            crmTags:'Good', isBlocked:false, addresses:[], totalSpend:0,
+            authMethod:'phone', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        if (phone) await db.collection('phone_lookups').doc(phone).set({ uid: user.uid });
+    } else {
+        const data = doc.data();
+        if (!data.phone && phone) {
+            await ref.update({ phone });
+            await db.collection('phone_lookups').doc(phone).set({ uid: user.uid });
+        }
+    }
+}
+
+// ── Email step ──
+async function saveEmailAndContinue() {
+    const email = document.getElementById('email-input').value.trim();
+    hideErr('email-err');
+    if (email) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('email-err','Please enter a valid email address.'); return; }
+        try {
+            if (authedUser) {
+                await db.collection('users').doc(authedUser.uid).update({ email });
+                try { await authedUser.updateEmail(email); } catch(e) {}
+            }
+        } catch(e) {}
+    }
+    window.location.href = redirectTo;
+}
+function skipEmail() { window.location.href = redirectTo; }
+
+// ── Google login ──
+async function signInWithGoogle() {
+    const googleLabel = `<svg width="16" height="16" viewBox="0 0 24 24" class="flex-shrink-0"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Continue with Google`;
+    const btn = document.getElementById('btn-google');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="border-top-color:#B36A5E;border-color:rgba(179,106,94,0.3)"></span>'; }
+    try {
+        const result = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        await ensureUserDoc(result.user, null);
+        window.location.href = redirectTo;
+    } catch(e) {
+        if (e.code !== 'auth/popup-closed-by-user') showErr('phone-err','Google sign-in failed. Please try again.');
+        if (btn) { btn.disabled = false; btn.innerHTML = googleLabel; }
+    }
+}
+
+</script>
+
+</body>
+</html>

@@ -171,3 +171,8 @@ var expenses = [
 ];
 
 console.log("Sterling Product Catalog and Expenses loaded. Ready for ERP calculation.");
+
+// Disable right click on images
+document.addEventListener('contextmenu', (e) => {
+    if (e.target.tagName === 'IMG') e.preventDefault();
+});

@@ -21,6 +21,50 @@
         .floating-input:placeholder-shown + label, .floating-select:invalid + label { opacity: 0; transform: translateY(-10px); }
         .floating-input:not(:placeholder-shown) + label, .floating-select:valid + label { opacity: 1; transform: translateY(0); }
     </style>
+
+    <!-- Meta Pixel Code -->
+<script>
+
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1307429974563033');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+
+<!-- Primary SEO -->
+<meta name="description" content="Sterling You — curated luxury handbags, footwear, beauty & accessories. Shop the finest collection in Bangladesh.">
+<meta name="keywords" content="handbags bangladesh, luxury bags dhaka, sterling you, footwear bangladesh, beauty accessories">
+<meta name="author" content="Sterling You">
+<link rel="canonical" href="https://sterlingyou.com/">
+
+<!-- Open Graph (Facebook/WhatsApp previews) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Sterling You | Curated Luxury">
+<meta property="og:description" content="Curated luxury handbags, footwear, beauty & accessories in Bangladesh.">
+<meta property="og:image" content="https://sterlingyou.com/web-logo2.png">
+<meta property="og:url" content="https://sterlingyou.com/">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Sterling You | Curated Luxury">
+<meta name="twitter:description" content="Curated luxury in Bangladesh.">
+<meta name="twitter:image" content="https://sterlingyou.com/web-logo2.png">
+
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<link rel="shortcut icon" href="favicon.png">
+
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
 
@@ -40,45 +84,72 @@
     </header>
 
     <div id="auth-section" class="flex-grow flex items-center justify-center py-10 px-6"> 
-        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 w-full max-w-md">
-            
-            <div class="flex justify-center mb-6"> 
-                <img src="web-logo2.png" alt="Sterling You" class="h-24 object-contain">
+    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 w-full max-w-md">
+        
+        <div class="flex justify-center mb-6"> 
+            <img src="web-logo2.png" alt="Sterling You" class="h-24 object-contain">
+        </div>
+
+        <h2 id="auth-title" class="text-2xl font-bold text-[#322C2B] mb-2 text-center">Login</h2>
+        <p id="auth-subtitle" class="text-center text-xs text-gray-400 mb-6">Welcome back to Sterling You</p>
+        
+        <form id="auth-form" class="space-y-4">
+
+            <!-- Registration only fields -->
+            <div id="reg-fields" class="hidden space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Full Name <span class="text-red-400">*</span></label>
+                    <input type="text" id="user-name" minlength="3" maxlength="50" placeholder="e.g. Fatima Rahman" class="w-full border-b py-2 outline-none focus:border-[#B36A5E]">
+                    <p class="text-[9px] text-gray-400 mt-1">Minimum 3 characters</p>
+                </div>
             </div>
 
-            <h2 id="auth-title" class="text-2xl font-bold text-[#322C2B] mb-2 text-center">Login</h2>
-            <p id="auth-subtitle" class="text-center text-xs text-gray-400 mb-6">Welcome back to Sterling</p>
-            
-            <form id="auth-form" class="space-y-4">
-                <div id="reg-fields" class="hidden">
-                    <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest">Full Name</label>
-                    <input type="text" id="user-name" class="w-full border-b py-2 outline-none focus:border-[#B36A5E] mb-2">
-                </div>
-                
-                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest">Phone Number (Email)</label>
-                <input type="tel" id="user-phone" required class="w-full border-b py-2 outline-none focus:border-[#B36A5E] mb-2">
+            <!-- Phone — always shown -->
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Phone Number <span class="text-red-400">*</span></label>
+                <input type="tel" id="user-phone" required placeholder="01XXXXXXXXX" class="w-full border-b py-2 outline-none focus:border-[#B36A5E]">
+                <p id="phone-hint" class="text-[9px] text-gray-400 mt-1 hidden">Bangladesh mobile number (01XXXXXXXXX)</p>
+            </div>
 
-                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest">Password</label>
-                <input type="password" id="user-pass" required class="w-full border-b py-2 outline-none focus:border-[#B36A5E] mb-4">
-                
-                <p id="auth-error" class="hidden text-red-500 text-xs font-bold text-center"></p>
-
-                <button type="submit" id="auth-btn" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg">Login</button>
-                
-                <div class="mt-4 border-t pt-4">
-                    <button type="button" onclick="signInWithGoogle()" id="google-btn" class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 py-3 rounded-xl font-bold text-xs hover:bg-gray-50 transition relative">
-                        <img id="google-icon" src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" width="18" alt="Google Logo">
-                        <span id="google-text">Sign in with Google</span>
+<!-- Password — always shown -->
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Password <span class="text-red-400">*</span></label>
+                <div class="relative">
+                    <input type="password" id="user-pass" required class="w-full border-b py-2 outline-none focus:border-[#B36A5E] pr-8">
+                    <button type="button" onclick="togglePasswordVisibility('user-pass', this)"
+                        class="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
                     </button>
                 </div>
-            </form>
+                <p id="pass-hint" class="text-[9px] text-gray-400 mt-1 hidden">Min 8 chars, 1 uppercase, 1 number</p>
+            </div>
+
+            <!-- Email — registration only -->
+            <div id="reg-email-field" class="hidden">
+<label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Email Address</label>
+<input type="email" id="user-email" class="w-full border-b py-2 outline-none focus:border-[#B36A5E]" placeholder="you@example.com">
+            </div>
+
+            <p id="auth-error" class="hidden text-red-500 text-xs font-bold text-center"></p>
+
+            <button type="submit" id="auth-btn" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg">Login</button>
             
-            <p class="mt-6 text-center text-xs text-gray-500">
-                <span id="auth-toggle-text">New to Sterling?</span> 
-                <button type="button" id="auth-toggle-btn" onclick="toggleAuth()" class="text-[#B36A5E] font-bold ml-1 hover:underline">Create Account</button>
-            </p>       
-        </div>
+            <div class="mt-4 border-t pt-4">
+                <button type="button" onclick="signInWithGoogle()" id="google-btn" class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 py-3 rounded-xl font-bold text-xs hover:bg-gray-50 transition">
+                    <img id="google-icon" src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" width="18" alt="Google Logo">
+                    <span id="google-text">Sign in with Google</span>
+                </button>
+            </div>
+        </form>
+        
+        <p class="mt-6 text-center text-xs text-gray-500">
+            <span id="auth-toggle-text">New to Sterling You?</span> 
+            <button type="button" id="auth-toggle-btn" onclick="toggleAuth()" class="text-[#B36A5E] font-bold ml-1 hover:underline">Create Account</button>
+        </p>       
     </div>
+</div>
 
     <div id="dashboard-section" class="hidden max-w-7xl mx-auto py-10 px-6 w-full flex-grow">
         
@@ -113,8 +184,13 @@
                         <h3 class="text-sm font-bold uppercase tracking-widest text-[#322C2B] mb-4 border-b pb-2">Personal Details</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Full Name</label>
-                                <div class="flex items-center justify-between border-b py-2"><span id="profile-name" class="text-sm font-medium">...</span><button onclick="editField('name')" class="text-[10px] text-[#B36A5E] font-bold uppercase hover:underline">Change</button></div>
+<div>
+    <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Full Name</label>
+    <div class="flex items-center justify-between border-b py-2">
+        <span id="profile-name" class="text-sm font-medium">...</span>
+        <button onclick="editField('fullName')" class="text-[10px] text-[#B36A5E] font-bold uppercase hover:underline">Change</button>
+    </div>
+</div>
                             </div>
                             <div>
                                 <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Date of Birth</label>
@@ -142,7 +218,7 @@
                         <h3 class="text-sm font-bold uppercase tracking-widest text-[#322C2B] mb-4 border-b pb-2">Security</h3>
                         <div class="space-y-4">
                             <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Phone</label><div class="flex justify-between border-b py-2"><span id="profile-phone" class="text-sm">...</span><button onclick="editField('phone')" class="text-[#B36A5E] text-[10px] font-bold uppercase">Change</button></div></div>
-                             <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Email</label><div class="flex justify-between border-b py-2"><span id="profile-email" class="text-sm">...</span><button class="text-gray-300 text-[10px] font-bold uppercase cursor-not-allowed">Locked</button></div></div>
+                             <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Email</label><div class="flex justify-between border-b py-2"><span id="profile-email" class="text-sm">...</span><button onclick="editField('email')" class="text-[#B36A5E] text-[10px] font-bold uppercase hover:underline">Change</button></div></div>
                              <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Password</label><div class="flex justify-between border-b py-2"><span class="text-sm">••••••</span><button onclick="resetPassword()" class="text-[#B36A5E] text-[10px] font-bold uppercase">Reset</button></div></div>
                         </div>
                     </div>
@@ -228,7 +304,7 @@
     <div id="addressModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[200] p-4 backdrop-blur-sm flex">
         <div class="bg-white w-full max-w-lg rounded-2xl p-8 max-h-[90vh] overflow-y-auto">
             <h2 class="text-xl font-bold mb-6" id="addr-modal-title">Address Details</h2>
-            <form id="addressForm" class="space-y-5" novalidate>
+            <form id="addressForm" class="space-y-5 relative" novalidate>
                 <input type="hidden" id="addr-edit-index" value="-1">
                 
                 <div class="mb-4">
@@ -240,69 +316,56 @@
                     </select>
                 </div>
 
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="flex flex-col-reverse">
-                            <select id="addr-division" onchange="updateDistricts()" class="floating-select w-full border-b py-2 text-sm outline-none bg-transparent focus:border-[#B36A5E] transition-colors" required>
-                                <option value="" disabled selected hidden>Division</option>
-                            </select>
-                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Division</label>
-                        </div>
-                        <div class="flex flex-col-reverse">
-                            <select id="addr-district" onchange="updateThanas()" class="floating-select w-full border-b py-2 text-sm outline-none bg-transparent focus:border-[#B36A5E] transition-colors" required>
-                                <option value="" disabled selected hidden>District</option>
-                            </select>
-                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">District</label>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="flex flex-col-reverse col-span-2" id="thana-container">
-                            <select id="addr-thana" onchange="updateZones()" class="floating-select w-full border-b py-2 text-sm outline-none bg-transparent focus:border-[#B36A5E] transition-colors" required>
-                                <option value="" disabled selected hidden>Area / Thana</option>
-                            </select>
-                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Area / Thana</label>
-                        </div>
-                        <div class="flex flex-col-reverse hidden" id="zone-container">
-                            <select id="addr-zone" class="floating-select w-full border-b py-2 text-sm outline-none bg-transparent focus:border-[#B36A5E] transition-colors">
-                                <option value="" disabled selected hidden>Sub-Area / Zone</option>
-                            </select>
-                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Sub-Area / Zone</label>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="flex flex-col-reverse">
-                            <input type="text" id="addr-house" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="House No/Name" required>
-                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">House No/Name</label>
-                        </div>
-                        <div class="flex flex-col-reverse">
-                            <input type="text" id="addr-floor" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Floor / Flat">
-                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Floor / Flat</label>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="flex flex-col-reverse">
-                            <input type="text" id="addr-road" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Road No/Name" required>
-                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Road No/Name</label>
-                        </div>
-                        <div class="flex flex-col-reverse">
-                            <input type="text" id="addr-block" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Block / Sector">
-                            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Block / Sector</label>
-                        </div>
-                    </div>
-                    
-                    <div class="flex flex-col-reverse">
-                        <input type="text" id="addr-detailed" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Detailed Address (e.g., Flat 4B, Amin Court)" required>
-                        <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Detailed Address</label>
-                    </div>
-                    
-                    <div class="flex flex-col-reverse">
-                        <input type="text" id="addr-details" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Additional directions (Optional)">
-                        <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Additional directions</label>
-                    </div>
-                </div>
+<div class="space-y-4">
+    <!-- Smart area search -->
+    <div id="smart-search-container">
+        <label class="block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Search Your Area <span class="text-red-400">*</span></label>
+        <input type="text" id="addr-smart-search" 
+            autocomplete="off"
+            placeholder="Type your area, thana or district (e.g. Gulshan, Mirpur, Dhanmondi...)"
+            class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#B36A5E] transition">
+        <div id="smart-search-results" class="hidden absolute z-50 bg-white border border-gray-200 rounded-xl shadow-xl mt-1 max-h-64 overflow-y-auto w-full left-0"></div>
+        <p id="smart-search-chosen" class="hidden mt-2 text-xs font-bold text-[#10B981] bg-green-50 px-3 py-2 rounded-lg border border-green-100"></p>
+    </div>
+
+    <!-- Hidden fields populated by smart search -->
+    <input type="hidden" id="addr-division">
+    <input type="hidden" id="addr-district">
+    <input type="hidden" id="addr-thana">
+    <input type="hidden" id="addr-zone-hidden">
+
+    <div class="grid grid-cols-2 gap-4">
+        <div class="flex flex-col-reverse">
+            <input type="text" id="addr-house" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="House No/Name" required>
+            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">House No/Name</label>
+        </div>
+        <div class="flex flex-col-reverse">
+            <input type="text" id="addr-floor" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Floor / Flat">
+            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Floor / Flat</label>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-2 gap-4">
+        <div class="flex flex-col-reverse">
+            <input type="text" id="addr-road" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Road No/Name" required>
+            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Road No/Name</label>
+        </div>
+        <div class="flex flex-col-reverse">
+            <input type="text" id="addr-block" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Block / Sector">
+            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Block / Sector</label>
+        </div>
+    </div>
+    
+    <div class="flex flex-col-reverse">
+        <input type="text" id="addr-detailed" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Detailed Address (e.g., Flat 4B, Amin Court)" required>
+        <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Detailed Address</label>
+    </div>
+    
+    <div class="flex flex-col-reverse">
+        <input type="text" id="addr-details" class="floating-input w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Additional directions (Optional)">
+        <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest transition-all duration-300 pointer-events-none">Additional directions</label>
+    </div>
+</div>
 
                 <div class="flex gap-4 pt-4">
                     <button type="button" onclick="closeAddressModal()" class="flex-1 text-xs font-bold uppercase text-gray-400 hover:text-gray-600">Cancel</button>
@@ -345,207 +408,694 @@
                 </div>
         </div>
     </div>
+
+        <!-- OTP Verification Modal -->
+<div id="otpModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[400] p-4 backdrop-blur-sm flex">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-8 text-center">
+        <div class="w-14 h-14 bg-[#322C2B] rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg width="24" height="24" fill="none" stroke="white" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 8.25h3"/></svg>
+        </div>
+        <h3 class="text-lg font-bold text-[#322C2B] mb-1" id="otp-title">Verify Your Number</h3>
+        <p class="text-[11px] text-gray-400 mb-6" id="otp-subtitle">Enter the 6-digit code sent to your number</p>
+        
+        <div class="flex justify-center gap-2 mb-6" id="otp-inputs">
+            <input type="tel" maxlength="1" class="otp-box w-10 h-12 border-2 border-gray-200 rounded-lg text-center text-lg font-bold focus:border-[#B36A5E] outline-none" style="pointer-events:all">
+            <input type="tel" maxlength="1" class="otp-box w-10 h-12 border-2 border-gray-200 rounded-lg text-center text-lg font-bold focus:border-[#B36A5E] outline-none" style="pointer-events:all">
+            <input type="tel" maxlength="1" class="otp-box w-10 h-12 border-2 border-gray-200 rounded-lg text-center text-lg font-bold focus:border-[#B36A5E] outline-none" style="pointer-events:all">
+            <input type="tel" maxlength="1" class="otp-box w-10 h-12 border-2 border-gray-200 rounded-lg text-center text-lg font-bold focus:border-[#B36A5E] outline-none" style="pointer-events:all">
+            <input type="tel" maxlength="1" class="otp-box w-10 h-12 border-2 border-gray-200 rounded-lg text-center text-lg font-bold focus:border-[#B36A5E] outline-none" style="pointer-events:all">
+            <input type="tel" maxlength="1" class="otp-box w-10 h-12 border-2 border-gray-200 rounded-lg text-center text-lg font-bold focus:border-[#B36A5E] outline-none" style="pointer-events:all">
+        </div>
+
+        <p id="otp-error" class="hidden text-red-500 text-xs font-bold mb-4"></p>
+
+        <button id="otp-verify-btn" onclick="verifyOTP()" style="pointer-events:all" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition mb-4">Verify Code</button>
+        
+        <div class="flex items-center justify-center gap-2">
+            <span id="otp-timer" class="text-[11px] text-gray-400"></span>
+            <button id="otp-resend-btn" onclick="resendOTP()" style="pointer-events:all;display:none;" class="text-[11px] font-bold text-[#B36A5E] hover:underline">Resend Code</button>
+        </div>
+
+        <button onclick="closeOTPModal()" style="pointer-events:all" class="mt-4 text-[10px] text-gray-400 hover:text-gray-600 uppercase font-bold tracking-widest">Cancel</button>
+
+        <!-- Invisible reCAPTCHA container -->
+        <div id="recaptcha-container"></div>
+    </div>
+</div>
+
+<!-- Password Reset Modal -->
+<div id="resetModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[400] p-4 backdrop-blur-sm flex">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-8 text-center">
+        <h3 class="text-lg font-bold text-[#322C2B] mb-2">Reset Password</h3>
+        <p id="reset-msg" class="text-[11px] text-gray-400 mb-6"></p>
+
+        <!-- New password fields (shown after OTP verified) -->
+        <div id="reset-new-pass-fields" class="hidden text-left mb-4 space-y-3">
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">New Password</label>
+                <input type="password" id="reset-new-pass" placeholder="Min 8 chars, 1 uppercase, 1 number" style="pointer-events:all" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E]">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Confirm Password</label>
+                <input type="password" id="reset-confirm-pass" style="pointer-events:all" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E]">
+            </div>
+        </div>
+
+        <p id="reset-error" class="hidden text-red-500 text-xs font-bold mb-4"></p>
+
+        <button id="reset-action-btn" onclick="handleResetAction()" style="pointer-events:all" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition mb-3"></button>
+
+        <!-- SMS fallback (shown after email timer) -->
+        <div id="reset-sms-fallback" class="hidden">
+            <div class="border-t pt-4 mt-2">
+                <p id="reset-sms-timer" class="text-[10px] text-gray-400 mb-2"></p>
+                <button id="reset-sms-btn" onclick="sendResetOTP()" style="pointer-events:all;display:none;" class="text-[11px] font-bold text-[#B36A5E] hover:underline uppercase tracking-widest">Send OTP to Mobile Instead</button>
+            </div>
+        </div>
+
+        <button onclick="closeResetModal()" style="pointer-events:all" class="mt-4 text-[10px] text-gray-400 hover:text-gray-600 uppercase font-bold tracking-widest">Cancel</button>
+        <div id="reset-recaptcha-container"></div>
+    </div>
+</div>
+
     
     <script src="cart.js"></script> 
     
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-        
-        let isLogin = true; 
-        let currentUserData = null;
-        let globalOrders = []; 
+const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const tab = urlParams.get('tab');
-            const from = urlParams.get('from');
+let isLogin = true;
+let currentUserData = null;
+let globalOrders = [];
 
-            if(tab === 'addresses') {
-                setTimeout(() => switchTab('addresses'), 100);
-            }
-            if(from === 'checkout') {
-                document.getElementById('continue-checkout-btn').classList.remove('hidden');
-            }
+// OTP state
+let otpConfirmationResult = null;
+let otpPurpose = null; // 'register' or 'reset'
+let otpTimerInterval = null;
+let pendingRegistrationData = null;
+let recaptchaVerifier = null;
+let resetRecaptchaVerifier = null;
+let resetTimerInterval = null;
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+
+// Pre-declare so HTML onclick can call it before auth loads
+        window.openAddressModal = function() {
+            document.getElementById('addressModal').classList.remove('hidden');
+            document.getElementById('addressForm').reset();
+            document.getElementById('addr-edit-index').value = "-1";
+            document.getElementById('addr-modal-title').innerText = "New Address";
+            document.getElementById('addr-submit-btn').innerText = "Save Address";
+            document.getElementById('addr-type').value = "both";
+            // Clear hidden fields
+            ['addr-division','addr-district','addr-thana','addr-zone-hidden'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            // Clear smart search
+            const searchInput = document.getElementById('addr-smart-search');
+            if (searchInput) searchInput.value = '';
+            const chosen = document.getElementById('smart-search-chosen');
+            if (chosen) chosen.classList.add('hidden');
+            const results = document.getElementById('smart-search-results');
+            if (results) results.classList.add('hidden');
+        };
+
+        window.closeAddressModal = () => document.getElementById('addressModal').classList.add('hidden');
+
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tab') === 'addresses') setTimeout(() => switchTab('addresses'), 100);
+    if (urlParams.get('from') === 'checkout') {
+        document.getElementById('continue-checkout-btn').classList.remove('hidden');
+if (urlParams.get('action') === 'add') {
+            // Poll until dashboard is visible (auth may not be done yet)
+            const waitForDash = setInterval(() => {
+                const dash = document.getElementById('dashboard-section');
+                if (dash && !dash.classList.contains('hidden')) {
+                    clearInterval(waitForDash);
+                    switchTab('addresses');
+                    setTimeout(openAddressModal, 200);
+                }
+            }, 200);
+        }
+    }
+    initOTPInputs();
+});
+
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('dashboard-section').classList.remove('hidden');
+        document.getElementById('main-header').classList.remove('hidden');
+        document.getElementById('main-footer').classList.remove('hidden');
+        const surrogateData = sessionStorage.getItem('surrogate_session');
+        const targetUid = surrogateData ? JSON.parse(surrogateData).uid : user.uid;
+        loadDashboard(targetUid);
+    } else {
+        document.getElementById('auth-section').classList.remove('hidden');
+        document.getElementById('dashboard-section').classList.add('hidden');
+        document.getElementById('main-header').classList.add('hidden');
+        document.getElementById('main-footer').classList.add('hidden');
+    }
+});
+
+// Handle Google redirect result
+auth.getRedirectResult().then(async (result) => {
+    if (result && result.user) {
+        await ensureUserDoc(result.user);
+        executeRedirect();
+    }
+}).catch(err => {
+    if (err.code !== 'auth/no-auth-event') console.error("Redirect result error:", err);
+});
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+
+function executeRedirect() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectPage = urlParams.get('from') || urlParams.get('redirect');
+    if (redirectPage) {
+        window.location.href = redirectPage.includes('.html') ? redirectPage : `${redirectPage}.html`;
+    } else if (document.referrer && new URL(document.referrer).origin === window.location.origin && !document.referrer.includes('account.html')) {
+        window.location.href = document.referrer;
+    } else {
+        window.location.href = 'index.html';
+    }
+}
+
+async function ensureUserDoc(user, extraData = {}) {
+    const userDoc = await db.collection("users").doc(user.uid).get();
+    if (!userDoc.exists) {
+        await db.collection("users").doc(user.uid).set({
+            fullName: extraData.fullName || user.displayName || "User",
+            phone: extraData.phone || user.phoneNumber || "",
+            email: user.email || extraData.email || "",
+            contactEmail: extraData.contactEmail || null,
+            crmTags: "Good", isBlocked: false,
+            addresses: [], paymentMethods: [],
+            totalSpend: 0,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+    }
+}
 
-        // AUTH
-        function toggleAuth() {
-            isLogin = !isLogin;
-            document.getElementById('auth-title').innerText = isLogin ? "Login" : "Create Account";
-            document.getElementById('auth-subtitle').innerText = isLogin ? "Welcome back to Sterling" : "Join us for exclusive access";
-            document.getElementById('reg-fields').style.display = isLogin ? 'none' : 'block';
-            document.getElementById('auth-toggle-text').innerText = isLogin ? "New to Sterling?" : "Already have an account?";
-            document.getElementById('auth-toggle-btn').innerText = isLogin ? "Create Account" : "Login"; 
-            document.getElementById('auth-btn').innerText = isLogin ? "Login" : "Create Account";
-            document.getElementById('auth-error').classList.add('hidden');
+function normalizePhone(raw) {
+    let p = raw.trim().replace(/\s+/g, '');
+    if (p.startsWith('0')) p = '+88' + p;
+    if (!p.startsWith('+')) p = '+88' + p;
+    return p;
+}
+
+function showError(elId, msg) {
+    const el = document.getElementById(elId);
+    if (el) { el.innerHTML = msg; el.classList.remove('hidden'); }
+}
+function hideError(elId) {
+    const el = document.getElementById(elId);
+    if (el) el.classList.add('hidden');
+}
+
+// ── AUTH TOGGLE ───────────────────────────────────────────────────────────────
+
+function toggleAuth() {
+    isLogin = !isLogin;
+    document.getElementById('auth-title').innerText = isLogin ? "Login" : "Create Account";
+    document.getElementById('auth-subtitle').innerText = isLogin ? "Welcome back to Sterling You" : "Join us for exclusive access";
+    document.getElementById('reg-fields').style.display = isLogin ? 'none' : 'block';
+    document.getElementById('reg-email-field').classList.toggle('hidden', isLogin);
+    document.getElementById('phone-hint').classList.toggle('hidden', isLogin);
+    document.getElementById('pass-hint').classList.toggle('hidden', isLogin);
+    document.getElementById('auth-toggle-text').innerText = isLogin ? "New to Sterling You?" : "Already have an account?";
+    document.getElementById('auth-toggle-btn').innerText = isLogin ? "Create Account" : "Login";
+    document.getElementById('auth-btn').innerText = isLogin ? "Login" : "Create Account";
+    hideError('auth-error');
+}
+
+// ── LOGIN / REGISTER FORM ─────────────────────────────────────────────────────
+
+document.getElementById('auth-form').onsubmit = async (e) => {
+    e.preventDefault();
+    hideError('auth-error');
+
+    const rawPhone = document.getElementById('user-phone').value;
+    const pass     = document.getElementById('user-pass').value;
+    const name     = document.getElementById('user-name') ? document.getElementById('user-name').value.trim() : '';
+    const phone    = rawPhone.trim().replace(/\s+/g, '');
+    const email    = phone.includes('@') ? phone : phone + "@sterling.com";
+
+    const btn = document.getElementById('auth-btn');
+    btn.disabled = true;
+    btn.innerText = "Please wait...";
+
+    try {
+        if (!isLogin) {
+            // ── REGISTRATION VALIDATION ──
+            if (!name || name.length < 3) throw new Error("Full name must be at least 3 characters.");
+
+            const phoneRegex = /^(\+88)?01[3-9]\d{8}$/;
+            if (!phoneRegex.test(phone)) throw new Error("Enter a valid Bangladesh mobile number (01XXXXXXXXX).");
+
+            if (pass.length < 8)          throw new Error("Password must be at least 8 characters.");
+            if (!/[A-Z]/.test(pass))      throw new Error("Password must contain at least one uppercase letter.");
+            if (!/[0-9]/.test(pass))      throw new Error("Password must contain at least one number.");
+
+            // Check phone not already registered
+            const lookup = await db.collection("phone_lookups").doc(phone).get();
+            if (lookup.exists) throw new Error("Account already exists. <a href='javascript:void(0)' onclick='toggleAuth()' class='underline text-[#B36A5E] ml-1'>Login instead</a>");
+
+            const contactEmail = document.getElementById('user-email') ? document.getElementById('user-email').value.trim() : '';
+
+            // Store pending data then send OTP
+            pendingRegistrationData = { name, phone, email, pass, contactEmail };
+            btn.disabled = false;
+            btn.innerText = "Create Account";
+
+            await sendRegistrationOTP(phone);
+
+        } else {
+            // ── LOGIN ──
+            await auth.signInWithEmailAndPassword(email, pass);
+            executeRedirect();
         }
 
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('dashboard-section').classList.remove('hidden');
-                document.getElementById('main-header').classList.remove('hidden');
-                document.getElementById('main-footer').classList.remove('hidden');
-                
-                // FIX: Support surrogate session so admin manages the correct customer's profile addresses
-                const surrogateData = sessionStorage.getItem('surrogate_session');
-                const targetUid = surrogateData ? JSON.parse(surrogateData).uid : user.uid;
-
-                loadDashboard(targetUid);
-            } else {
-                document.getElementById('auth-section').classList.remove('hidden');
-                document.getElementById('dashboard-section').classList.add('hidden');
-                document.getElementById('main-header').classList.add('hidden');
-                document.getElementById('main-footer').classList.add('hidden');
-            }
-        });
-
-        function executeRedirect() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const redirectPage = urlParams.get('from') || urlParams.get('redirect');
-            
-            if (redirectPage) {
-                window.location.href = redirectPage.includes('.html') ? redirectPage : `${redirectPage}.html`;
-            } else if (document.referrer && new URL(document.referrer).origin === window.location.origin && !document.referrer.includes('account.html')) {
-                window.location.href = document.referrer;
-            } else {
-                window.location.href = 'index.html'; 
-            }
+    } catch (err) {
+        btn.disabled = false;
+        btn.innerText = isLogin ? "Login" : "Create Account";
+        let msg = err.message;
+        if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+            msg = "Incorrect phone number or password.";
+        } else if (err.code === 'auth/invalid-email') {
+            msg = "Invalid phone number format.";
         }
+        showError('auth-error', msg);
+    }
+};
 
-        document.getElementById('auth-form').onsubmit = async (e) => {
+// ── GOOGLE SIGN IN ────────────────────────────────────────────────────────────
+
+window.signInWithGoogle = async () => {
+    const btn = document.getElementById('google-btn');
+    const txt = document.getElementById('google-text');
+    if (btn) btn.disabled = true;
+    if (txt) txt.innerText = 'Connecting to Google...';
+    try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+        const result = await auth.signInWithPopup(provider);
+        await ensureUserDoc(result.user);
+        executeRedirect();
+    } catch(e) {
+        if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+            if (txt) txt.innerText = 'Redirecting to Google...';
+            await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+        } else {
+            console.error("Google sign-in error:", e);
+            if (txt) txt.innerText = 'Sign in with Google';
+            if (btn) btn.disabled = false;
+            alert("Google sign-in failed: " + e.message);
+        }
+    }
+};
+
+// ── OTP MODAL ─────────────────────────────────────────────────────────────────
+
+function initOTPInputs() {
+    const boxes = document.querySelectorAll('.otp-box');
+    boxes.forEach((box, idx) => {
+        box.addEventListener('input', () => {
+            box.value = box.value.replace(/\D/g, '').slice(-1);
+            if (box.value && idx < boxes.length - 1) boxes[idx + 1].focus();
+            if (getOTPValue().length === 6) verifyOTP();
+        });
+        box.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !box.value && idx > 0) boxes[idx - 1].focus();
+        });
+        box.addEventListener('paste', (e) => {
             e.preventDefault();
-            const phoneInput = document.getElementById('user-phone').value;
-            const pass = document.getElementById('user-pass').value;
-            const name = document.getElementById('user-name').value;
-            
-            const phone = phoneInput.trim().replace(/\s+/g, '');
-            const email = phone.includes('@') ? phone : phone + "@sterling.com"; 
-            
-            const errorMsg = document.getElementById('auth-error');
-            errorMsg.classList.add('hidden');
+            const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+            boxes.forEach((b, i) => { b.value = text[i] || ''; });
+            if (text.length === 6) verifyOTP();
+        });
+    });
+}
 
-            try {
-                document.getElementById('auth-btn').disabled = true;
-                document.getElementById('auth-btn').innerText = "Please wait...";
+function getOTPValue() {
+    return Array.from(document.querySelectorAll('.otp-box')).map(b => b.value).join('');
+}
 
-                if (!isLogin) {
-                    const lookup = await db.collection("phone_lookups").doc(phone).get();
-                    if (lookup.exists) {
-                        throw new Error("Account already exists. <a href='javascript:void(0)' onclick='toggleAuth()' class='underline text-[#B36A5E] ml-1'>Click here to Login</a>");
-                    }
-                    const userCred = await auth.createUserWithEmailAndPassword(email, pass);
-                    
-                    await db.collection("users").doc(userCred.user.uid).set({ 
-                        fullName: name, 
-                        phone: phone, 
-                        email: email, 
-                        crmTags: "Good", 
-                        isBlocked: false, 
-                        addresses: [], 
-                        paymentMethods: [], 
-                        totalSpend: 0, 
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp() 
-                    });
-                    
-                    if(!phone.includes('@')) {
-                        await db.collection("phone_lookups").doc(phone).set({ uid: userCred.user.uid });
-                    }
-                } else {
-                    await auth.signInWithEmailAndPassword(email, pass);
-                }
-                
-                executeRedirect();
+function clearOTPInputs() {
+    document.querySelectorAll('.otp-box').forEach(b => b.value = '');
+    document.querySelectorAll('.otp-box')[0].focus();
+}
 
-            } catch (err) { 
-                document.getElementById('auth-btn').disabled = false;
-                document.getElementById('auth-btn').innerText = isLogin ? "Login" : "Create Account";
-                
-                let msg = err.message;
-                if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
-                    msg = "Incorrect phone number or password. Please try again.";
-                } else if (err.code === 'auth/invalid-email') {
-                    msg = "Invalid phone number format.";
-                }
-                
-                errorMsg.innerHTML = msg; 
-                errorMsg.classList.remove('hidden');
+function openOTPModal(title, subtitle) {
+    document.getElementById('otp-title').innerText = title;
+    document.getElementById('otp-subtitle').innerText = subtitle;
+    hideError('otp-error');
+    clearOTPInputs();
+    document.getElementById('otpModal').classList.remove('hidden');
+    setTimeout(() => document.querySelectorAll('.otp-box')[0].focus(), 100);
+}
+
+function closeOTPModal() {
+    document.getElementById('otpModal').classList.add('hidden');
+    clearOTPTimer();
+    otpConfirmationResult = null;
+}
+
+function startOTPTimer(seconds = 60) {
+    clearOTPTimer();
+    const timerEl = document.getElementById('otp-timer');
+    const resendEl = document.getElementById('otp-resend-btn');
+    resendEl.style.display = 'none';
+    let remaining = seconds;
+    timerEl.innerText = `Resend in ${remaining}s`;
+    otpTimerInterval = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+            clearOTPTimer();
+            timerEl.innerText = '';
+            resendEl.style.display = 'inline';
+        } else {
+            timerEl.innerText = `Resend in ${remaining}s`;
+        }
+    }, 1000);
+}
+
+function clearOTPTimer() {
+    if (otpTimerInterval) { clearInterval(otpTimerInterval); otpTimerInterval = null; }
+}
+
+function initRecaptcha(containerId) {
+    // Clear any existing verifier
+    if (containerId === 'recaptcha-container' && recaptchaVerifier) {
+        recaptchaVerifier.clear();
+        recaptchaVerifier = null;
+    }
+    if (containerId === 'reset-recaptcha-container' && resetRecaptchaVerifier) {
+        resetRecaptchaVerifier.clear();
+        resetRecaptchaVerifier = null;
+    }
+    const verifier = new firebase.auth.RecaptchaVerifier(containerId, { size: 'invisible' });
+    if (containerId === 'recaptcha-container') recaptchaVerifier = verifier;
+    else resetRecaptchaVerifier = verifier;
+    return verifier;
+}
+
+// ── REGISTRATION OTP ──────────────────────────────────────────────────────────
+
+async function sendRegistrationOTP(phone) {
+    const e164 = normalizePhone(phone);
+    try {
+        const verifier = initRecaptcha('recaptcha-container');
+        otpPurpose = 'register';
+        otpConfirmationResult = await auth.signInWithPhoneNumber(e164, verifier);
+        openOTPModal('Verify Your Number', `Enter the 6-digit code sent to ${phone}`);
+        startOTPTimer(60);
+    } catch(e) {
+        console.error(e);
+        alert("Could not send OTP. Check your number and try again.\n" + e.message);
+    }
+}
+
+async function resendOTP() {
+    if (otpPurpose === 'register' && pendingRegistrationData) {
+        await sendRegistrationOTP(pendingRegistrationData.phone);
+    } else if (otpPurpose === 'reset') {
+        await sendResetOTP();
+    }
+}
+
+window.resendOTP = resendOTP;
+
+async function verifyOTP() {
+    const code = getOTPValue();
+    if (code.length < 6) { showError('otp-error', 'Enter the complete 6-digit code.'); return; }
+
+    const btn = document.getElementById('otp-verify-btn');
+    btn.disabled = true;
+    btn.innerText = 'Verifying...';
+    hideError('otp-error');
+
+    try {
+        const credential = await otpConfirmationResult.confirm(code);
+
+        if (otpPurpose === 'register') {
+            // OTP verified — now create the account
+            const { name, phone, email, pass, contactEmail } = pendingRegistrationData;
+
+            // Create email/password auth linked to same uid
+            const emailCredential = firebase.auth.EmailAuthProvider.credential(email, pass);
+            await credential.user.linkWithCredential(emailCredential).catch(() => {
+                // If phone user already exists, just proceed
+            });
+
+            await db.collection("users").doc(credential.user.uid).set({
+                fullName: name,
+                phone: phone,
+                email: email,
+                contactEmail: contactEmail || null,
+                crmTags: "Good", isBlocked: false,
+                addresses: [], paymentMethods: [],
+                totalSpend: 0,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            if (!phone.includes('@')) {
+                await db.collection("phone_lookups").doc(phone).set({ uid: credential.user.uid });
             }
-        };
 
-        window.signInWithGoogle = async () => { 
-            try {
-                const result = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-                
-                const userDoc = await db.collection("users").doc(result.user.uid).get();
-                if (!userDoc.exists) {
-                    await db.collection("users").doc(result.user.uid).set({ 
-                        fullName: result.user.displayName || "Google User", 
-                        phone: result.user.phoneNumber || "", 
-                        email: result.user.email, 
-                        crmTags: "Good", 
-                        isBlocked: false, 
-                        addresses: [], 
-                        paymentMethods: [], 
-                        totalSpend: 0, 
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp() 
-                    });
-                }
-                
-                executeRedirect();
-            } catch(e) { 
-                console.error(e); 
-            } 
-        };
+            closeOTPModal();
+            pendingRegistrationData = null;
+            executeRedirect();
 
-        // DASHBOARD
-        async function loadDashboard(uid, retries = 3) {
-            const doc = await db.collection("users").doc(uid).get();
-            if(doc.exists) {
-                currentUserData = doc.data();
-                currentUserData.uid = uid; // FIX: Store target UID for database updates
-                document.getElementById('display-name').innerText = currentUserData.fullName || "User";
-                document.getElementById('profile-name').innerText = currentUserData.fullName || "Not Set";
-                document.getElementById('profile-phone').innerText = currentUserData.phone || 'Not Set';
-                document.getElementById('profile-email').innerText = currentUserData.email || 'Not Set';
-                document.getElementById('profile-gender').value = currentUserData.gender || "";
-
-                if(currentUserData.dob) {
-                    const parts = currentUserData.dob.split('-'); 
-                    document.getElementById('dob-year').value = parts[0]; document.getElementById('dob-month').value = parts[1]; document.getElementById('dob-day').value = parts[2];
-                }
-
-                loadUserOrders(uid);
-                renderAddresses();
-                renderPayments();
-                populateOrderDropdown(uid);
-            } else if (retries > 0) {
-                setTimeout(() => loadDashboard(uid, retries - 1), 500);
-            }
-        }
-        
-        function switchTab(t){ 
-            ['profile','orders','addresses','payments','contact'].forEach(x=>{document.getElementById('tab-'+x).classList.add('hidden'); document.getElementById('btn-'+x).className="inactive-tab text-left px-6 py-4 border-b border-gray-50 transition"});
-            document.getElementById('tab-'+t).classList.remove('hidden');
-            document.getElementById('btn-'+t).className="active-tab text-left px-6 py-4 border-b border-gray-50 transition";
+        } else if (otpPurpose === 'reset') {
+            // OTP verified for password reset — show new password fields
+            closeOTPModal();
+            showNewPasswordFields();
         }
 
-        // FIX: Replaced auth.currentUser.uid with currentUserData.uid for all profile updates
-        async function saveGender(val) { await db.collection("users").doc(currentUserData.uid).update({ gender: val }); }
-        
-        const days = document.getElementById('dob-day'), months = document.getElementById('dob-month'), years = document.getElementById('dob-year');
-        for(let i=1;i<=31;i++) days.add(new Option(i<10?'0'+i:i, i<10?'0'+i:i));
-        for(let i=1;i<=12;i++) months.add(new Option(i<10?'0'+i:i, i<10?'0'+i:i));
-        for(let i=new Date().getFullYear();i>=1950;i--) years.add(new Option(i,i));
-        
-        async function saveDOB() {
-            const dob = `${years.value}-${months.value}-${days.value}`;
-            await db.collection("users").doc(currentUserData.uid).update({ dob: dob });
-            alert("Date of Birth Saved");
+    } catch(e) {
+        btn.disabled = false;
+        btn.innerText = 'Verify Code';
+        showError('otp-error', 'Invalid code. Please try again.');
+        console.error(e);
+    }
+}
+
+window.verifyOTP = verifyOTP;
+
+// ── PASSWORD RESET ────────────────────────────────────────────────────────────
+
+function resetPassword() {
+    const user = auth.currentUser;
+    if (!user || !currentUserData) return;
+
+    const contactEmail = currentUserData.contactEmail;
+    const hasRealEmail = contactEmail || (currentUserData.email && !currentUserData.email.includes('@sterling.com'));
+    const displayEmail = contactEmail || (hasRealEmail ? currentUserData.email : null);
+    const phone = currentUserData.phone;
+
+    if (hasRealEmail && displayEmail) {
+        // Has email — send email reset, show SMS fallback after timer
+        openResetModal('email', displayEmail, phone);
+    } else {
+        // Phone only — send OTP directly
+        openResetModal('phone', null, phone);
+    }
+}
+
+function openResetModal(mode, email, phone) {
+    hideError('reset-error');
+    document.getElementById('reset-new-pass-fields').classList.add('hidden');
+    document.getElementById('reset-sms-fallback').classList.add('hidden');
+    document.getElementById('reset-sms-btn').style.display = 'none';
+    clearResetTimer();
+
+    const msgEl = document.getElementById('reset-msg');
+    const actionBtn = document.getElementById('reset-action-btn');
+
+    if (mode === 'email') {
+        msgEl.innerText = `A password reset link will be sent to ${email}`;
+        actionBtn.innerText = 'Send Reset Email';
+        actionBtn.onclick = () => sendResetEmail(email, phone);
+    } else {
+        msgEl.innerText = `A 6-digit OTP will be sent to ${phone}`;
+        actionBtn.innerText = 'Send OTP to Mobile';
+        actionBtn.onclick = () => sendResetOTP();
+    }
+
+    document.getElementById('resetModal').classList.remove('hidden');
+}
+
+async function sendResetEmail(email, phone) {
+    const btn = document.getElementById('reset-action-btn');
+    btn.disabled = true;
+    btn.innerText = 'Sending...';
+    hideError('reset-error');
+
+    try {
+        await auth.sendPasswordResetEmail(email);
+        document.getElementById('reset-msg').innerText = `Reset link sent to ${email}. Check your inbox.`;
+        btn.innerText = 'Email Sent ✓';
+
+        // Show SMS fallback with countdown
+        const fallback = document.getElementById('reset-sms-fallback');
+        fallback.classList.remove('hidden');
+        startResetTimer(60, phone);
+
+    } catch(e) {
+        btn.disabled = false;
+        btn.innerText = 'Send Reset Email';
+        showError('reset-error', 'Could not send email: ' + e.message);
+    }
+}
+
+function startResetTimer(seconds, phone) {
+    clearResetTimer();
+    const timerEl = document.getElementById('reset-sms-timer');
+    const smsBtn  = document.getElementById('reset-sms-btn');
+    smsBtn.style.display = 'none';
+    let remaining = seconds;
+    timerEl.innerText = `Didn't receive it? You can request an SMS OTP in ${remaining}s`;
+    resetTimerInterval = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+            clearResetTimer();
+            timerEl.innerText = "Didn't receive the email?";
+            smsBtn.style.display = 'inline';
+        } else {
+            timerEl.innerText = `Didn't receive it? You can request an SMS OTP in ${remaining}s`;
         }
+    }, 1000);
+}
+
+function clearResetTimer() {
+    if (resetTimerInterval) { clearInterval(resetTimerInterval); resetTimerInterval = null; }
+}
+
+async function sendResetOTP() {
+    const phone = currentUserData.phone;
+    const e164 = normalizePhone(phone);
+
+    const btn = document.getElementById('reset-sms-btn');
+    const actionBtn = document.getElementById('reset-action-btn');
+    if (btn) btn.style.display = 'none';
+
+    closeResetModal();
+
+    try {
+        const verifier = initRecaptcha('recaptcha-container');
+        otpPurpose = 'reset';
+        otpConfirmationResult = await auth.signInWithPhoneNumber(e164, verifier);
+        openOTPModal('Reset via Mobile', `Enter the 6-digit code sent to ${phone}`);
+        startOTPTimer(60);
+    } catch(e) {
+        console.error(e);
+        alert("Could not send OTP: " + e.message);
+        if (btn) btn.style.display = 'inline';
+    }
+}
+
+window.sendResetOTP = sendResetOTP;
+
+function showNewPasswordFields() {
+    document.getElementById('reset-new-pass-fields').classList.remove('hidden');
+    document.getElementById('reset-msg').innerText = 'OTP verified. Set your new password.';
+    const actionBtn = document.getElementById('reset-action-btn');
+    actionBtn.disabled = false;
+    actionBtn.innerText = 'Set New Password';
+    actionBtn.onclick = setNewPassword;
+    document.getElementById('resetModal').classList.remove('hidden');
+}
+
+async function setNewPassword() {
+    const newPass    = document.getElementById('reset-new-pass').value;
+    const confirmPass = document.getElementById('reset-confirm-pass').value;
+    hideError('reset-error');
+
+    if (newPass.length < 8)         { showError('reset-error', 'Password must be at least 8 characters.'); return; }
+    if (!/[A-Z]/.test(newPass))     { showError('reset-error', 'Must contain at least one uppercase letter.'); return; }
+    if (!/[0-9]/.test(newPass))     { showError('reset-error', 'Must contain at least one number.'); return; }
+    if (newPass !== confirmPass)    { showError('reset-error', 'Passwords do not match.'); return; }
+
+    const btn = document.getElementById('reset-action-btn');
+    btn.disabled = true;
+    btn.innerText = 'Saving...';
+
+    try {
+        await auth.currentUser.updatePassword(newPass);
+        closeResetModal();
+        alert('Password updated successfully!');
+    } catch(e) {
+        btn.disabled = false;
+        btn.innerText = 'Set New Password';
+        showError('reset-error', 'Could not update password: ' + e.message);
+    }
+}
+
+function closeResetModal() {
+    document.getElementById('resetModal').classList.add('hidden');
+    clearResetTimer();
+}
+
+window.handleResetAction = function() {};
+window.closeResetModal = closeResetModal;
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+
+async function loadDashboard(uid, retries = 3) {
+    const doc = await db.collection("users").doc(uid).get();
+    if (doc.exists) {
+        currentUserData = doc.data();
+        currentUserData.uid = uid;
+        document.getElementById('display-name').innerText = currentUserData.fullName || "User";
+        document.getElementById('profile-name').innerText = currentUserData.fullName || "Not Set";
+        document.getElementById('profile-phone').innerText = currentUserData.phone || 'Not Set';
+        document.getElementById('profile-email').innerText = currentUserData.contactEmail || currentUserData.email || 'Not Set';
+        document.getElementById('profile-gender').value = currentUserData.gender || "";
+        if (currentUserData.dob) {
+            const parts = currentUserData.dob.split('-');
+            document.getElementById('dob-year').value = parts[0];
+            document.getElementById('dob-month').value = parts[1];
+            document.getElementById('dob-day').value = parts[2];
+        }
+        loadUserOrders(uid);
+        renderAddresses();
+        renderPayments();
+        populateOrderDropdown(uid);
+    } else if (retries > 0) {
+        setTimeout(() => loadDashboard(uid, retries - 1), 500);
+    }
+}
+
+function switchTab(t) {
+    ['profile','orders','addresses','payments','contact'].forEach(x => {
+        document.getElementById('tab-' + x).classList.add('hidden');
+        document.getElementById('btn-' + x).className = "inactive-tab text-left px-6 py-4 border-b border-gray-50 transition";
+    });
+    document.getElementById('tab-' + t).classList.remove('hidden');
+    document.getElementById('btn-' + t).className = "active-tab text-left px-6 py-4 border-b border-gray-50 transition";
+}
+
+async function saveGender(val) { await db.collection("users").doc(currentUserData.uid).update({ gender: val }); }
+
+const days = document.getElementById('dob-day'), months = document.getElementById('dob-month'), years = document.getElementById('dob-year');
+for(let i=1;i<=31;i++) days.add(new Option(i<10?'0'+i:i, i<10?'0'+i:i));
+for(let i=1;i<=12;i++) months.add(new Option(i<10?'0'+i:i, i<10?'0'+i:i));
+for(let i=new Date().getFullYear();i>=1950;i--) years.add(new Option(i,i));
+
+async function saveDOB() {
+    const dob = `${years.value}-${months.value}-${days.value}`;
+    await db.collection("users").doc(currentUserData.uid).update({ dob: dob });
+    alert("Date of Birth Saved");
+}
+
 
         // --- PAYMENTS ---
         function renderPayments() {
@@ -587,57 +1137,55 @@
         const locationData = {
             "Dhaka": {
                 "Dhaka": {
-                    "Adabor": ["Adabor", "Baitul Aman Housing", "Mohammadia Housing", "Shyamoli Housing"],
-                    "Badda": ["North Badda", "Middle Badda", "South Badda", "Merul Badda", "East Badda", "Aftabnagar", "Banasree", "Shahjadpur", "Satarkul", "Adarshanagar", "Tekpara", "Rupnagar", "Sonakatra"],
-                    "Bangshal": ["Bangshal", "Alu Bazar", "Siddique Bazar", "Lalbagh Chourasta"],
-                    "Bhashantek": ["Bhashantek", "Dewanpara", "Vasantek Cantonment"],
-                    "Bimanbandar": ["Airport Area", "Hajj Camp", "Kawnia"],
-                    "Cantonment": ["Baridhara DOHS", "Cantonment Area", "Kurmitola", "Manikdi", "Matikata"],
-                    "Chak Bazar": ["Chalk Bazar", "Urdu Road", "Water Works Road"],
-                    "Dakshinkhan": ["Dakshinkhan", "Askona", "Azampur", "Chalaband", "Faidabad", "Gawair", "Kanchkura", "Mollartek"],
-                    "Darus Salam": ["Darus Salam", "Kallyanpur", "Gabtoli"],
-                    "Demra": ["Demra", "Amulia", "Bamoil", "Kholamora", "Matuail", "Mridha Bari", "Sarabalia"],
-                    "Dhanmondi": ["Dhanmondi 1-9", "Dhanmondi 10-15", "Dhanmondi 27", "Jigatola", "Shankar", "Sukrabad"],
-                    "Gendaria": ["Gendaria", "Dinnath Sen Road", "Sadhana Oushadhalaya", "Narinda"],
-                    "Gulshan": ["Gulshan 1", "Gulshan 2", "Niketan", "Baridhara Diplomatic Zone"],
-                    "Hatirjheel": ["Hatirjheel", "Mahanagar Project", "Modhubagh", "Ulon"],
-                    "Hazaribagh": ["Hazaribagh", "Enayetganj", "Gajmahal", "Shikdar Real Estate"],
-                    "Jatrabari": ["Jatrabari", "Dholairpar", "Danialpara", "Kutubkhali", "Rayerbagh", "Shanir Akhra"],
-                    "Kadamtali": ["Kadamtali", "Jurain", "Muradpur", "Shyampur", "Donia"],
-                    "Kafrul": ["Kafrul", "Ibrahimpur", "Kachukhet", "Senpara Parbata"],
-                    "Kalabagan": ["Kalabagan", "Bashiruddin Road", "Green Road", "Kathalbagan"],
-                    "Kamrangirchar": ["Kamrangirchar", "Ashrafabad", "Kholamora", "Nawabganj"],
-                    "Khilgaon": ["Khilgaon", "Gorane", "Nandipara", "Sipahibagh", "Taltola"],
-                    "Khilkhet": ["Khilkhet", "Dumni", "Kuril", "Lake City Concord", "Nikunja 1", "Nikunja 2", "Pink City"],
-                    "Kotwali": ["Kotwali", "Babubazar", "Nawabpur", "Patuatuli", "Sadarghat"],
-                    "Lalbagh": ["Lalbagh", "Azimpur", "Dhakeshwari", "Pilkhana"],
-                    "Mirpur": ["Mirpur 1", "Mirpur 2", "Mirpur 10", "Mirpur 11", "Mirpur 12", "Mirpur 14", "Kazipara", "Shewrapara", "Monipur", "Pirerbagh"],
-                    "Mohammadpur": ["Mohammadpur", "Asad Gate", "Babar Road", "Bosila", "Lalmatia", "PC Culture Housing", "Tajmahal Road", "Town Hall"],
-                    "Motijheel": ["Motijheel", "Arambagh", "Dilkusha", "Fakirapool", "Kamalapur", "Toyenbee Circular Road"],
-                    "New Market": ["New Market", "Azimpur", "Elephant Road", "Science Lab"],
-                    "Pallabi": ["Pallabi", "Eastern Housing", "Mirpur 12", "Rupnagar"],
-                    "Paltan": ["Purana Paltan", "Naya Paltan", "Bijoy Nagar", "Kakrail"],
-                    "Ramna": ["Ramna", "Baily Road", "Eskaton", "Moghbazar", "Shantinagar", "Siddheswari"],
-                    "Rampura": ["Rampura", "Banasree", "TV Center", "Ulon", "Wapda Road"],
-                    "Sabujbagh": ["Sabujbagh", "Basabo", "Madartek", "Mugdapara"],
-                    "Shah Ali": ["Shah Ali Bagh", "Bissho Road", "Gudaraghat"],
-                    "Shahbag": ["Shahbag", "Dhaka University Area", "High Court", "Paribagh"],
-                    "Sher-e-Bangla Nagar": ["Sher-e-Bangla Nagar", "Agargaon", "Taltola"],
-                    "Shyampur": ["Shyampur", "Dholaipar", "Igloo Ice Cream Factory Area"],
-                    "Sutrapur": ["Sutrapur", "Faridabad", "Laxmibazar", "Rishikesh Das Road"],
-                    "Tejgaon": ["Tejgaon", "Farmgate", "Karwan Bazar", "Nakhalpara", "Tejturibazar"],
-                    "Tejgaon Ind. Area": ["Tejgaon Industrial Area", "Begunbari", "Kunipara", "Love Road", "Nabisco"],
-                    "Turag": ["Turag", "Baunia", "Diabari", "Kamarpara"],
-                    "Uttara East": ["Sector 1", "Sector 2", "Sector 3", "Sector 4", "Sector 6", "Sector 8"],
-                    "Uttara West": ["Sector 5", "Sector 7", "Sector 9", "Sector 10", "Sector 11", "Sector 12", "Sector 13", "Sector 14"],
-                    "Uttarkhan": ["Uttarkhan", "Atipara", "Chamurkhan", "Kachkura", "Maziara", "Uzampur"],
-                    "Vatara": ["Vatara", "Bashundhara R/A", "Beraid", "Kuril", "Nurer Chala", "Solmaid"],
-                    "Wari": ["Wari", "Baldha Garden", "Gopibagh", "Joy Kali Temple Road", "Rankin Street", "Tikhatuli"],
-                    "Dhamrai": ["Dhamrai"],
-                    "Dohar": ["Dohar"],
-                    "Keraniganj": ["Keraniganj", "Aganagar", "Ati Bazar", "Chunakhali", "Jinjira", "Kalindi", "Ruhitpur", "Taranagar"],
-                    "Nawabganj": ["Nawabganj"],
-                    "Savar": ["Savar", "Aminbazar", "Ashulia", "Bank Town", "Bipail", "Hemayetpur", "Jahangirnagar University", "Nabinagar"]
+                    // Replace your existing Dhaka > Dhaka section entries with these additions/fixes:
+
+"Banani": ["Banani", "Banani Block A", "Banani Block B", "Banani Block C", "Banani Block D", "Banani Block E", "Banani Block F", "Banani Block G", "Banani Block H", "Banani Block I", "Banani Block J", "Banani Block K", "Banani DOHS", "Banani Chairmanbari", "Banani Road 11", "Banani Road 17", "Banani Bazar"],
+"Mohakhali": ["Mohakhali", "Mohakhali DOHS", "Mohakhali Wireless Gate", "Mohakhali Bus Stand", "Mohakhali Bazar", "Mohakhali Rail Gate", "Niketon", "Natun Bazar", "Aminbazar", "Kamal Ataturk Avenue"],
+"Cantonment": ["Cantonment", "Dhaka Cantonment", "Cantonment DOHS", "Shaheed Sarani", "Airport Road", "Khilkhet", "Nikunja 1", "Nikunja 2", "Kurmitola", "Ashkona", "Diabari"],
+"Uttara": ["Uttara", "Uttara Sector 1", "Uttara Sector 2", "Uttara Sector 3", "Uttara Sector 4", "Uttara Sector 5", "Uttara Sector 6", "Uttara Sector 7", "Uttara Sector 8", "Uttara Sector 9", "Uttara Sector 10", "Uttara Sector 11", "Uttara Sector 12", "Uttara Sector 13", "Uttara Sector 14", "Uttara West", "Uttara East", "Uttara Model Town", "Azampur", "Rajlakshmi", "Abdullahpur", "Baitul Aman Housing", "Uttara 3rd Phase"],
+"Pallabi": ["Pallabi", "Mirpur 11", "Mirpur 11.5", "Mirpur 12", "Mirpur 13", "Mirpur 14", "Mirpur DOHS", "Duaripara", "Katasur", "Paikpara", "Gabtoli", "Shewrapara", "Kazipara", "Bauniabadh"],
+"Kafrul": ["Kafrul", "Ibrahimpur", "Kachukhet", "Senpara Parbata", "Monipuripara", "Bhasantek", "Taltola", "Agargaon", "Pirerbagh", "Secretariat Quarter", "Lalmatia Block A", "Lalmatia Block B", "Lalmatia Block C", "Lalmatia Block D", "Lalmatia Block E", "Lalmatia Block F", "Lalmatia Block G"],
+"Hatirjheel": ["Hatirjheel", "Rampura", "East Rampura", "West Rampura", "Banasree", "Banasree Block A", "Banasree Block B", "Banasree Block C", "Banasree Block D", "Banasree Block E", "Meradia", "Mugda", "North Mugda", "South Mugda", "Mahanagar Project", "Ulon"],
+"Gulshan": ["Gulshan", "Gulshan 1", "Gulshan 2", "Gulshan Avenue", "Gulshan Circle 1", "Gulshan Circle 2", "Gulshan North", "Gulshan South", "Gulshan Lake Road", "Gulshan Model Town", "Gulshan Pink City", "DNCC Market", "Niketan", "Baridhara Diplomatic Zone", "Police Plaza"],
+"Baridhara": ["Baridhara", "Baridhara DOHS", "Baridhara Block J", "Baridhara Block K", "Baridhara Diplomatic Zone", "Progati Sarani", "Shahjadpur", "Vatara", "Nordic Club Area", "Notun Bazar"],
+"Tejgaon": ["Tejgaon", "Tejgaon Industrial Area", "Farmgate", "Bijoy Sarani", "Kawran Bazar", "West Nakhalpara", "East Nakhalpara", "Indira Road", "Monipur", "Tejkunipara", "Tejgaon Link Road", "Wireless Gate", "Mogbazar Rail Gate", "Sonargaon Hotel Area"],
+"Shahbagh": ["Shahbagh", "Shahbagh Crossing", "Aziz Market", "TSC", "Doel Chattar", "Nilkhet", "Elephant Road", "Science Lab", "New Market", "Paribagh", "Dhaka University Area", "High Court"],
+"Motijheel": ["Motijheel", "Motijheel C/A", "Dilkusha C/A", "Shapla Chattar", "Arambagh", "Kakrail", "Segunbagicha", "Rajarbagh", "Purana Paltan", "Naya Paltan", "Fakirerpool", "Bijoy Nagar", "Kamalapur", "Toyenbee Circular Road"],
+"Paltan": ["Purana Paltan", "Naya Paltan", "Bijoy Nagar", "Kakrail", "Segunbagicha", "Inner Circular Road", "VIP Road"],
+"Ramna": ["Ramna", "Baily Road", "Eskaton", "New Eskaton", "Old Eskaton", "Moghbazar", "Shantinagar", "Siddheswari", "Minto Road", "Topkhana Road", "Maghbazar Wireless", "Bijoynagar"],
+"Dhanmondi": ["Dhanmondi", "Dhanmondi 1", "Dhanmondi 2", "Dhanmondi 3", "Dhanmondi 4", "Dhanmondi 5", "Dhanmondi 6", "Dhanmondi 7", "Dhanmondi 8", "Dhanmondi 9", "Dhanmondi 10", "Dhanmondi 11", "Dhanmondi 12", "Dhanmondi 13", "Dhanmondi 14", "Dhanmondi 15", "Dhanmondi 16", "Dhanmondi 17", "Dhanmondi 18", "Dhanmondi 27", "Dhanmondi 32", "Satmasjid Road", "Mirpur Road", "Lake Circus", "Jigatola", "Shangkar", "Rayer Bazar", "Sobhanbag", "Panthapath", "Free School Street", "Sukrabad"],
+"Mohammadpur": ["Mohammadpur", "Mohammadpur Bus Stand", "Mohammadpur Krishi Market", "Mohammadpur Town Hall", "Geneva Camp", "Adabor", "Shekhertek", "Nurjahan Road", "Tajmahal Road", "Jahanara Garden", "PC Culture Housing", "Shahed Colony", "Basila", "Katashur", "Dhaka Udyan", "Bajdhar Para", "Rahmatullah Nagar", "Japan Garden City"],
+"Lalbagh": ["Lalbagh", "Azimpur", "Azimpur Colony", "Dhakeshwari", "Pilkhana", "Nawabganj", "Imamganj", "Begum Bazar", "Shankhari Bazar", "Lalbagh Fort Area"],
+"Chawkbazar": ["Chawkbazar", "Begum Bazar", "Shankhari Bazar", "Islampur", "Urdu Road", "Mitford", "Bangsal"],
+"Kotwali": ["Kotwali", "Babubazar", "Nawabpur", "Patuatuli", "Sadarghat", "Mitford", "Bangsal", "Firingi Bazar", "Boro Pool", "Jubilee Road", "Asadganj"],
+"Wari": ["Wari", "Tikatuli", "Gopibagh", "Dholaikhal", "Baldha Garden", "Joy Kali Temple Road", "Rankin Street", "Faridabad", "Laxmibazar", "Narinda"],
+"Sutrapur": ["Sutrapur", "Faridabad", "Laxmibazar", "Narinda", "Wari", "Gendaria", "Dinnath Sen Road"],
+"Gendaria": ["Gendaria", "Dinnath Sen Road", "Sadhana Oushadhalaya", "Narinda", "Swamibagh", "Banagram"],
+"Jatrabari": ["Jatrabari", "Jatrabari Chowrasta", "Dholairpar", "Danialpara", "Kutubkhali", "Rayerbagh", "Shanir Akhra", "Postogola", "Kanchpur Bridge Area", "Donia", "Katherpool"],
+"Demra": ["Demra", "Signboard", "Shanir Akhra", "Matuail", "Sarulia", "Konapara", "Demra Bazar", "Demra Staff Quarter", "Kholamora"],
+"Sabujbagh": ["Sabujbagh", "Basabo", "Madartek", "Mugdapara", "Kamalapur", "Madhubagh", "Maniknagar", "Goran", "Razarbagh"],
+"Khilgaon": ["Khilgaon", "Khilgaon Chowdhurypara", "Khilgaon Taltola", "Khilgaon Railgate", "Tilpapara", "Goran", "North Goran", "South Goran", "Bashabo", "North Bashabo", "South Bashabo", "Maniknagar", "Nandipara", "Sipahibagh"],
+"Rampura": ["Rampura", "East Rampura", "West Rampura", "Banasree", "TV Center", "Wapda Road", "Ulon"],
+"Mirpur": ["Mirpur 1", "Mirpur 2", "Mirpur 6", "Mirpur 7", "Mirpur 10", "Mirpur 10 Golchattar", "Mirpur 11", "Mirpur 11.5", "Mirpur 12", "Mirpur 13", "Mirpur 14", "Mirpur Ceramic", "Mirpur Zoo", "Mirpur Stadium", "Mirpur Beribadh", "Kalshi", "Rupnagar", "Senpara Parbata", "Tollarbag", "Duaripara", "East Monipur", "West Monipur", "Pirerbagh", "Kazipara", "Shewrapara", "Paikpara", "Bauniabadh", "Section 6", "Section 7", "Section 10", "Section 11", "Section 12"],
+"Adabor": ["Adabor", "Baitul Aman Housing", "Mohammadia Housing", "Shyamoli", "Shyamoli Housing", "Ring Road"],
+"Sher-e-Bangla Nagar": ["Sher-e-Bangla Nagar", "Agargaon", "Taltola", "Sher-e-Bangla Krishi Bishwavidyalay", "National Assembly Area"],
+"Kalabagan": ["Kalabagan", "Bashiruddin Road", "Green Road", "Kathalbagan", "Free School Street"],
+"New Market": ["New Market", "Azimpur", "Elephant Road", "Science Lab", "Nilkhet", "Chandni Chowk"],
+"Hazaribagh": ["Hazaribagh", "Rayerbazar", "Jigatola", "Lalbagh Road", "Tannery Area"],
+"Kamrangirchar": ["Kamrangirchar", "Ashrafabad", "Kholamora", "Nawabganj", "Char Kamrangirchar"],
+"Keraniganj": ["Keraniganj", "Aganagar", "Ati Bazar", "Chunakhali", "Jinjira", "Kalindi", "Ruhitpur", "Taranagar", "Shubhadya", "Bochila", "Zinzira Bazar", "Sarulia", "Rokeya Nagar", "Kalatia", "Subhadia", "Hrinagar"],
+"Savar": ["Savar", "Aminbazar", "Ashulia", "Bank Town", "Bipail", "Hemayetpur", "Jahangirnagar University", "Nabinagar", "Savar Bazar", "Nishchintopur", "Vogra", "Balipara", "Ghoshbag", "Tetuljhora", "Pathalia", "Savar EPZ", "Rajfulbaria", "Bypass Road Savar"],
+"Dakshinkhan": ["Dakshinkhan", "Ashkona", "Azampur", "Chalaband", "Faidabad", "Gawair", "Kanchkura", "Mollartek"],
+"Uttarkhan": ["Uttarkhan", "Atipara", "Chamurkhan", "Kachkura", "Maziara", "Uzampur", "Harirampur"],
+"Vatara": ["Vatara", "Bashundhara R/A", "Beraid", "Kuril", "Nurer Chala", "Solmaid", "Nadda", "Kalachadpur", "Notun Bazar", "Boro Beraid", "Joar Sahara", "Kuratoli"],
+"Khilkhet": ["Khilkhet", "Dumni", "Kuril", "Lake City Concord", "Nikunja 1", "Nikunja 2", "Pink City", "Joar Sahara", "Kuratoli"],
+"Bimanbandar": ["Airport Area", "Hajj Camp", "Kawnia", "Zia Colony"],
+"Turag": ["Turag", "Baunia", "Diabari", "Kamarpara", "Tongi"],
+"Darus Salam": ["Darus Salam", "Kallyanpur", "Gabtoli", "Mirpur Road"],
+"Shah Ali": ["Shah Ali Bagh", "Mirpur 1", "Duaripara"],
+"Shyampur": ["Shyampur", "Dholaipar", "Jurain", "Kadamtali", "Muradpur"],
+"Kadamtali": ["Kadamtali", "Jurain", "Muradpur", "Shyampur", "Donia"],
+"Bhashantek": ["Bhashantek", "Dewanpara", "Vasantek Cantonment"],
                 },
                 "Faridpur": ["Alfadanga", "Bhanga", "Boalmari", "Charbhadrasan", "Faridpur Sadar", "Madhukhali", "Nagarkanda", "Sadarpur", "Saltha"],
                 "Gazipur": {
@@ -677,8 +1225,7 @@
                     "Boalkhali": ["Boalkhali"],
                     "Chandanaish": ["Chandanaish"],
                     "Fatikchhari": ["Fatikchhari"],
-                    "Hathazari": ["Hathazari", "Aman Bazar", "Fatehabad"],
-                    "Karnaphuli": ["Karnaphuli"],
+"Hathazari": ["Hathazari", "Aman Bazar", "Fatehabad", "Devpahar", "Gorduara", "Hamidchar", "Mirsharai Bazar"],                    "Karnaphuli": ["Karnaphuli"],
                     "Lohagara": ["Lohagara"],
                     "Mirsharai": ["Mirsharai"],
                     "Patiya": ["Patiya"],
@@ -686,24 +1233,24 @@
                     "Raozan": ["Raozan"],
                     "Sandwip": ["Sandwip"],
                     "Satkania": ["Satkania"],
-                    "Sitakunda": ["Sitakunda", "Bhatiari", "Faujdarhat"],
+                    "Sitakunda": ["Sitakunda", "Bhatiari", "Faujdarhat", "Baraiyadhala", "Kumira", "Salimpur", "Shitakundo Bazar", "Barabkunda", "Fouzdarhat Beach"],
                     "Akbar Shah": ["Akbar Shah", "Firoz Shah Colony", "Biswa Colony"],
                     "Bakalia": ["Bakalia", "Chaktai", "Kalamia Bazar", "Rahattar Pool"],
                     "Bandar": ["Bandar", "Gosaildanga", "Nimtala"],
-                    "Bayazid": ["Bayazid Bostami", "Oxygen", "Sher Shah Colony"],
-                    "Chandgaon": ["Chandgaon", "Bahaddarhat", "Kalurghat", "Mohra"],
+                    "Bayazid": ["Bayazid Bostami", "Oxygen", "Sher Shah Colony", "Baizid Link Road", "Sugandha", "CDA Avenue", "Baizid Bostami Road", "Foy's Lake Area", "Khulshi Hill"],
+                    "Chandgaon": ["Chandgaon", "Bahaddarhat", "Kalurghat", "Mohra", "Chandgaon R/A", "Muradpur", "Hazi Colony", "East Nasirabad", "Bayazid Bostami Road"],
                     "Chawkbazar": ["Chawkbazar", "Jamal Khan", "Kapasgola", "Katalganj"],
-                    "Double Mooring": ["Double Mooring", "Agrabad", "Choumuhani", "Dewanhat", "Munsurabad"],
+                    "Double Mooring": ["Double Mooring", "Agrabad", "Agrabad Access Road", "Choumuhani", "Dewanhat", "Munsurabad", "CDA Commercial Area", "Segun Bagicha"],
                     "EPZ": ["EPZ", "Cement Crossing", "Free Port"],
-                    "Halishahar": ["Halishahar", "Boroipara", "Naya Bazar", "Shantibag"],
+                    "Halishahar": ["Halishahar", "Boroipara", "Naya Bazar", "Shantibag", "Halishahar Housing Estate", "Block A", "Block B", "Block C", "Block D", "Block E", "Block F", "Block G", "Port Connecting Road"],
                     "Khulshi": ["Khulshi", "GEC", "Jhautala", "Lalkhan Bazar", "Nasirabad", "Zakir Hossain Road"],
-                    "Kotwali": ["Kotwali", "Anderkilla", "Khatunganj", "New Market", "Reazuddin Bazar", "Station Road"],
-                    "Pahartali": ["Pahartali", "AK Khan", "Alangkar", "Colonel Hat"],
-                    "Panchlaish": ["Panchlaish", "2 No Gate", "Muradpur", "Sholashahar"],
+                    "Kotwali": ["Kotwali", "Anderkilla", "Khatunganj", "New Market", "Reazuddin Bazar", "Station Road", "Chawk Bazar", "Firingi Bazar", "Boro Pool", "Jubilee Road", "Asadganj"],
+                    "Pahartali": ["Pahartali", "AK Khan", "Alangkar", "Colonel Hat", "Oxygen", "CDA Avenue", "Baizid Link Road", "Nasirabad Housing", "Zakir Hossain Road"],
+                    "Panchlaish": ["Panchlaish", "2 No Gate", "Muradpur", "Sholashahar", "GEC Circle", "Probortak Circle", "Wasa Mor", "Dampara", "Nasirabad", "Surma"],
                     "Patenga": ["Patenga", "Kathgar", "Potenga Sea Beach Area", "Steel Mill"],
                     "Sadarghat": ["Sadarghat", "Majhirghat"]
                 },
-                "Cox's Bazar": ["Chakaria", "Cox's Bazar Sadar", "Kutubdia", "Maheshkhali", "Pekua", "Ramu", "Teknaf", "Ukhia"],
+                "Cox's Bazar": ["Chakaria", "Cox's Bazar Sadar", "Kutubdia", "Maheshkhali", "Pekua", "Ramu", "Teknaf", "Ukhia", "Cox's Bazar Beach", "Kolatoli", "Sugandha Beach", "Laboni Beach", "Himchhari", "Inani", "Baharchhara", "Jhilongjha"],
                 "Cumilla": ["Barura", "Brahmanpara", "Burichang", "Chandina", "Chauddagram", "Cumilla Sadar", "Daudkandi", "Debidwar", "Homna", "Laksam", "Lalmai", "Manoharganj", "Meghna", "Muradnagar", "Nangalkot", "Titas"],
                 "Feni": ["Chhagalnaiya", "Daganbhuiyan", "Feni Sadar", "Fulgazi", "Parshuram", "Sonagazi"],
                 "Khagrachhari": ["Dighinala", "Khagrachhari Sadar", "Lakshmichhari", "Mahalchhari", "Manikchhari", "Matiranga", "Panchhari", "Ramgarh"],
@@ -711,32 +1258,40 @@
                 "Noakhali": ["Begumganj", "Chatkhil", "Companiganj", "Hatiya", "Kabirhat", "Noakhali Sadar", "Senbagh", "Sonaimuri", "Subarnachar"],
                 "Rangamati": ["Baghaichhari", "Barkal", "Belaichhari", "Juraichhari", "Kaptai", "Kawkhali", "Langadu", "Naniarchar", "Rajasthali", "Rangamati Sadar"]
             },
-            "Sylhet": {
-                "Habiganj": ["Ajmiriganj", "Bahubal", "Baniachong", "Chunarughat", "Habiganj Sadar", "Lakhai", "Madhabpur", "Nabiganj"],
-                "Moulvibazar": ["Barlekha", "Juri", "Kamalganj", "Kulaura", "Moulvibazar Sadar", "Rajnagar", "Sreemangal"],
-                "Sunamganj": ["Bishwamvarpur", "Chhatak", "Dakshin Sunamganj", "Derai", "Dharmapasha", "Dowarabazar", "Jagannathpur", "Jamalganj", "Sullah", "Sunamganj Sadar", "Tahirpur"],
-                "Sylhet": {
-                    "Balaganj": ["Balaganj"],
-                    "Beanibazar": ["Beanibazar"],
-                    "Bishwanath": ["Bishwanath"],
-                    "Companiganj": ["Companiganj"],
-                    "Dakshin Surma": ["Dakshin Surma", "Chandipool", "Humayun Rashid Chottor", "Kadamtali", "Khadim Nagar"],
-                    "Fenchuganj": ["Fenchuganj"],
-                    "Golapganj": ["Golapganj"],
-                    "Gowainghat": ["Gowainghat"],
-                    "Jaintiapur": ["Jaintiapur"],
-                    "Kanaighat": ["Kanaighat"],
-                    "Osmani Nagar": ["Osmani Nagar"],
-                    "Sylhet Sadar": ["Sylhet Sadar", "Akhalia", "Amberkhana", "Bandar Bazar", "Chouhatta", "Dargah Mahalla", "Lamabazar", "Mirboxtola", "Pathantula", "Shibganj", "Subidbazar", "Tilagarh", "Uposhohor", "Zindabazar"],
-                    "Zakiganj": ["Zakiganj"]
-                }
-            },
+"Sylhet": {
+    "Habiganj": ["Ajmiriganj", "Bahubal", "Baniachong", "Chunarughat", "Habiganj Sadar", "Lakhai", "Madhabpur", "Nabiganj"],
+    "Moulvibazar": {
+        "Barlekha": ["Barlekha"],
+        "Juri": ["Juri"],
+        "Kamalganj": ["Kamalganj"],
+        "Kulaura": ["Kulaura"],
+        "Moulvibazar Sadar": ["Moulvibazar Sadar"],
+        "Rajnagar": ["Rajnagar"],
+        "Sreemangal": ["Sreemangal", "Sreemangal Town", "Tea Garden Area", "Bhanu Beel", "Lawachara", "Kalapur"]
+    },
+    "Sunamganj": ["Bishwamvarpur", "Chhatak", "Dakshin Sunamganj", "Derai", "Dharmapasha", "Dowarabazar", "Jagannathpur", "Jamalganj", "Sullah", "Sunamganj Sadar", "Tahirpur"],
+    "Sylhet": {
+        "Balaganj": ["Balaganj"],
+        "Beanibazar": ["Beanibazar"],
+        "Bishwanath": ["Bishwanath"],
+        "Companiganj": ["Companiganj"],
+        "Dakshin Surma": ["Dakshin Surma", "Chandipool", "Humayun Rashid Chottor", "Kadamtali", "Khadim Nagar"],
+        "Fenchuganj": ["Fenchuganj"],
+        "Golapganj": ["Golapganj"],
+        "Gowainghat": ["Gowainghat"],
+        "Jaintiapur": ["Jaintiapur"],
+        "Kanaighat": ["Kanaighat"],
+        "Osmani Nagar": ["Osmani Nagar"],
+        "Sylhet Sadar": ["Sylhet Sadar", "Akhalia", "Amberkhana", "Bandar Bazar", "Chouhatta", "Dargah Mahalla", "Lamabazar", "Mirboxtola", "Pathantula", "Shibganj", "Subidbazar", "Tilagarh", "Uposhohor", "Zindabazar", "Airport Road", "Kumarpara", "Shahjalal Upashahar", "Modina Market", "Bondor Bazar", "Kazir Bazar", "Taltola", "Mendibagh", "Nayasarak", "Rekabi Bazar"],
+        "Zakiganj": ["Zakiganj"]
+    }
+},
             "Khulna": {
                 "Bagerhat": ["Bagerhat Sadar", "Chitalmari", "Fakirhat", "Kachua", "Mollahat", "Mongla", "Morrelganj", "Rampal", "Sarankhola"],
                 "Chuadanga": ["Alamdanga", "Chuadanga Sadar", "Damurhuda", "Jibannagar"],
-                "Jashore": ["Abhaynagar", "Bagherpara", "Chaugachha", "Jashore Sadar", "Jhikargachha", "Keshabpur", "Manirampur", "Sharsha"],
+                "Jashore": ["Abhaynagar", "Bagherpara", "Chaugachha", "Jashore Sadar", "Jhikargachha", "Keshabpur", "Manirampur", "Sharsha", "Jashore Town", "Rail Gate", "Mujib Sarani", "Chanchra", "Benapole"],
                 "Jhenaidah": ["Harinakunda", "Jhenaidah Sadar", "Kaliganj", "Kotchandpur", "Maheshpur", "Shailkupa"],
-                "Khulna": ["Batiaghata", "Dacope", "Dumuria", "Dighalia", "Koyra", "Paikgacha", "Phultala", "Rupsa", "Terokhada", "Khulna Sadar", "Sonadanga"],
+                "Khulna": ["Batiaghata", "Dacope", "Dumuria", "Dighalia", "Koyra", "Paikgacha", "Phultala", "Rupsa", "Terokhada", "Khulna Sadar", "Sonadanga", "Boyra", "Khalishpur", "Khan Jahan Ali Road", "Shiromoni", "Daulatpur", "Fulbarigate", "Nirala", "Gollamari", "Tutpara", "Mujgunni", "Hadis Park Area", "KDA Avenue", "Ferri Ghat"],
                 "Kushtia": ["Bheramara", "Daulatpur", "Khoksa", "Kumarkhali", "Kushtia Sadar", "Mirpur"],
                 "Magura": ["Magura Sadar", "Mohammadpur", "Shalikha", "Sreepur"],
                 "Meherpur": ["Gangni", "Meherpur Sadar", "Mujibnagar"],
@@ -745,131 +1300,43 @@
             },
             "Barishal": {
                 "Barguna": ["Amtali", "Bamna", "Barguna Sadar", "Betagi", "Patharghata", "Taltali"],
-                "Barishal": ["Agailjhara", "Babuganj", "Bakerganj", "Banaripara", "Barishal Sadar", "Gournadi", "Hizla", "Mehendiganj", "Muladi", "Wazirpur"],
+                "Barishal": ["Agailjhara", "Babuganj", "Bakerganj", "Banaripara", "Barishal Sadar", "Gournadi", "Hizla", "Mehendiganj", "Muladi", "Wazirpur", "Barishal City", "Natullabad", "Sadar Road", "Band Road", "Rupatali", "Chawkbazar Barishal", "Amtala", "Kawnia", "Barishal Launch Ghat", "Circuit House Road"],
                 "Bhola": ["Bhola Sadar", "Burhanuddin", "Char Fasson", "Daulatkhan", "Lalmohan", "Manpura", "Tazumuddin"],
                 "Jhalokati": ["Jhalokati Sadar", "Kathalia", "Nalchity", "Rajapur"],
                 "Patuakhali": ["Bauphal", "Dashmina", "Dumki", "Galachipa", "Kalapara", "Mirzaganj", "Patuakhali Sadar", "Rangabali"],
                 "Pirojpur": ["Bhandaria", "Kawkhali", "Mathbaria", "Nazirpur", "Nesarabad", "Pirojpur Sadar", "Zianagar"]
             },
             "Rangpur": {
-                "Dinajpur": ["Birampur", "Birganj", "Biral", "Bochaganj", "Chirirbandar", "Dinajpur Sadar", "Fulbari", "Ghoraghat", "Hakimpur", "Kaharole", "Khansama", "Nawabganj", "Parbatipur"],
+                "Dinajpur": ["Birampur", "Birganj", "Biral", "Bochaganj", "Chirirbandar", "Dinajpur Sadar", "Fulbari", "Ghoraghat", "Hakimpur", "Kaharole", "Khansama", "Nawabganj", "Parbatipur", "Dinajpur Town", "Gor-e-Shahid", "Munshipara", "Station Road Dinajpur", "Dhap Dinajpur"],
                 "Gaibandha": ["Fulchhari", "Gaibandha Sadar", "Gobindaganj", "Palashbari", "Sadullapur", "Saghata", "Sundarganj"],
                 "Kurigram": ["Bhurungamari", "Char Rajibpur", "Chilmari", "Kurigram Sadar", "Nageshwari", "Phulbari", "Rajarhat", "Raomari", "Ulipur"],
                 "Lalmonirhat": ["Aditmari", "Hatibandha", "Kaliganj", "Lalmonirhat Sadar", "Patgram"],
                 "Nilphamari": ["Dimla", "Domar", "Jaldhaka", "Kishoreganj", "Nilphamari Sadar", "Saidpur"],
                 "Panchagarh": ["Atwari", "Boda", "Debiganj", "Panchagarh Sadar", "Tetulia"],
-                "Rangpur": ["Badarganj", "Gangachara", "Kaunia", "Mithapukur", "Pirgachha", "Pirganj", "Rangpur Sadar", "Taraganj"],
+                "Rangpur": ["Badarganj", "Gangachara", "Kaunia", "Mithapukur", "Pirgachha", "Pirganj", "Rangpur Sadar", "Taraganj", "Rangpur City", "Dhap", "Station Road", "Jahaj Company", "Shapla Chottor", "Modern More", "Koiborta Para", "Lalbag", "Medhabibag"],
                 "Thakurgaon": ["Baliadangi", "Haripur", "Pirganj", "Ranisankail", "Thakurgaon Sadar"]
             },
             "Mymensingh": {
                 "Jamalpur": ["Bakshiganj", "Dewanganj", "Islampur", "Jamalpur Sadar", "Madarganj", "Melandaha", "Sarishabari"],
-                "Mymensingh": ["Bhaluka", "Dhobaura", "Fulbaria", "Gaffargaon", "Gauripur", "Haluaghat", "Ishwarganj", "Muktagacha", "Mymensingh Sadar", "Nandail", "Phulpur", "Trishal"],
+                "Mymensingh": ["Bhaluka", "Dhobaura", "Fulbaria", "Gaffargaon", "Gauripur", "Haluaghat", "Ishwarganj", "Muktagacha", "Mymensingh Sadar", "Nandail", "Phulpur", "Trishal", "Mymensingh Town", "Ganginagar", "Charpara", "Kewatkhali", "Shambhuganj", "Chorpara", "Notun Bazar Mymensingh", "Medical College Road"],
                 "Netrokona": ["Atpara", "Barhatta", "Durgapur", "Khaliajuri", "Kalmakanda", "Kendua", "Madan", "Mohanganj", "Netrokona Sadar", "Purbadhala"],
                 "Sherpur": ["Jhenaigati", "Nakla", "Nalitabari", "Sherpur Sadar", "Sreebardi"]
             },
-            "Rajshahi": {
-                "Bogura": ["Adamdighi", "Bogura Sadar", "Dhunat", "Dhupchanchia", "Gabtali", "Kahaloo", "Nandigram", "Sariakandi", "Shajahanpur", "Sherpur", "Shibganj", "Sonatola"],
+            "Rajshahi": {"Bogura": ["Adamdighi", "Bogura Sadar", "Dhunat", "Dhupchanchia", "Gabtali", "Kahaloo", "Nandigram", "Sariakandi", "Shajahanpur", "Sherpur", "Shibganj", "Sonatola", "Bogura Town", "Satmatha", "Thana Road", "Jhauthala", "Khelafat Market", "Rangpur Road", "Jail Road"],
+            "Bogura": ["Adamdighi", "Bogura Sadar", "Dhunat", "Dhupchanchia", "Gabtali", "Kahaloo", "Nandigram", "Sariakandi", "Shajahanpur", "Sherpur", "Shibganj", "Sonatola"],
                 "Joypurhat": ["Akkelpur", "Joypurhat Sadar", "Kalai", "Khetlal", "Panchbibi"],
                 "Naogaon": ["Atrai", "Badalgachhi", "Dhamoirhat", "Manda", "Mohadevpur", "Naogaon Sadar", "Niamatpur", "Patnitala", "Porsha", "Raninagar", "Sapahar"],
                 "Natore": ["Bagatipara", "Baraigram", "Gurudaspur", "Lalpur", "Naldanga", "Natore Sadar", "Singra"],
                 "Chapainawabganj": ["Bholahat", "Gomastapur", "Nachole", "Nawabganj Sadar", "Shibganj"],
                 "Pabna": ["Atgharia", "Bera", "Bhangura", "Chatmohar", "Faridpur", "Ishwardi", "Pabna Sadar", "Santhia", "Sujanagar"],
-                "Rajshahi": ["Bagha", "Bagmara", "Boalia", "Charghat", "Durgapur", "Godagari", "Mohanpur", "Paba", "Puthia", "Rajpara", "Shah Makhdum", "Tanore"],
+                "Rajshahi": ["Bagha", "Bagmara", "Boalia", "Charghat", "Durgapur", "Godagari", "Mohanpur", "Paba", "Puthia", "Rajpara", "Shah Makhdum", "Tanore", "Rajshahi City", "Sahebbazar", "Ghoramara", "Laxmipur", "Padma Residential Area", "Uposhahar", "Kazla", "Binodpur Bazar", "Talaimari", "Bhandardaha"],
                 "Sirajganj": ["Belkuchi", "Chauhali", "Kamarkhanda", "Kazipur", "Raiganj", "Shahjadpur", "Sirajganj Sadar", "Tarash", "Ullahpara"]
             }
         };
 
-        const divSel = document.getElementById('addr-division');
-        const distSel = document.getElementById('addr-district');
-        const thanaSel = document.getElementById('addr-thana');
-        const zoneSel = document.getElementById('addr-zone');
-        const thanaContainer = document.getElementById('thana-container');
+const thanaContainer = document.getElementById('thana-container');
         const zoneContainer = document.getElementById('zone-container');
 
-        if (divSel) Object.keys(locationData).sort().forEach(d => divSel.add(new Option(d,d)));
-
-        // POPULATE DROPDOWNS
-        window.updateDistricts = () => {
-            if (!distSel || !thanaSel) return;
-            distSel.innerHTML = '<option value="" disabled selected hidden>District</option>'; 
-            thanaSel.innerHTML = '<option value="" disabled selected hidden>Area / Thana</option>';
-            if (zoneSel) zoneSel.innerHTML = '<option value="" disabled selected hidden>Sub-Area / Zone</option>';
-            
-            if (zoneContainer) {
-                zoneContainer.classList.add('hidden');
-                thanaContainer.classList.add('col-span-2');
-            }
-
-            const d = divSel.value;
-            if(d && locationData[d]) Object.keys(locationData[d]).sort().forEach(k => distSel.add(new Option(k,k)));
-        };
-
-        window.updateThanas = () => {
-            if (!thanaSel) return;
-            thanaSel.innerHTML = '<option value="" disabled selected hidden>Area / Thana</option>';
-            if (zoneSel) zoneSel.innerHTML = '<option value="" disabled selected hidden>Sub-Area / Zone</option>';
-            
-            if (zoneContainer) {
-                zoneContainer.classList.add('hidden');
-                thanaContainer.classList.add('col-span-2');
-            }
-
-            const d = divSel.value, k = distSel.value;
-            if(d && k && locationData[d][k]) {
-                if (Array.isArray(locationData[d][k])) {
-                    locationData[d][k].sort().forEach(t => thanaSel.add(new Option(t,t)));
-                } else {
-                    Object.keys(locationData[d][k]).sort().forEach(t => thanaSel.add(new Option(t,t)));
-                }
-            }
-        };
-
-        window.updateZones = () => {
-            if (!zoneSel || !thanaSel) return;
-            zoneSel.innerHTML = '<option value="" disabled selected hidden>Sub-Area / Zone</option>';
-            
-            const d = divSel.value, k = distSel.value, t = thanaSel.value;
-            if(d && k && t && locationData[d][k] && !Array.isArray(locationData[d][k])) {
-                const zones = locationData[d][k][t];
-                if (zones && zones.length > 1) { 
-                    zoneContainer.classList.remove('hidden');
-                    thanaContainer.classList.remove('col-span-2');
-                    zones.sort().forEach(z => zoneSel.add(new Option(z,z)));
-                } else {
-                    zoneContainer.classList.add('hidden');
-                    thanaContainer.classList.add('col-span-2');
-                }
-            } else {
-                zoneContainer.classList.add('hidden');
-                thanaContainer.classList.add('col-span-2');
-            }
-        };
-
-        window.openAddressModal = () => {
-            document.getElementById('addressModal').classList.remove('hidden');
-            document.getElementById('addressForm').reset();
-            document.getElementById('addr-edit-index').value = "-1";
-            
-            const title = document.getElementById('addr-modal-title');
-            if(title) title.innerText = "New Address";
-            
-            const btn = document.getElementById('addr-submit-btn');
-            if(btn) btn.innerText = "Save Address";
-            
-            // FIX: Explicitly Reset dropdowns innerHTML to clear out populated options from past edits
-            document.getElementById('addr-type').value = "";
-            document.getElementById('addr-division').value = "";
-            if(document.getElementById('addr-district')) document.getElementById('addr-district').innerHTML = '<option value="" disabled selected hidden>District</option>';
-            if(document.getElementById('addr-thana')) document.getElementById('addr-thana').innerHTML = '<option value="" disabled selected hidden>Area / Thana</option>';
-            if(document.getElementById('addr-zone')) document.getElementById('addr-zone').innerHTML = '<option value="" disabled selected hidden>Sub-Area / Zone</option>';
-
-            if (zoneContainer) {
-                zoneContainer.classList.add('hidden');
-                thanaContainer.classList.add('col-span-2');
-            }
-        };
-
-        window.closeAddressModal = () => document.getElementById('addressModal').classList.add('hidden');
 
         window.editAddress = (index) => {
             const addr = currentUserData.addresses[index];
@@ -924,11 +1391,11 @@
             e.preventDefault();
             
             // MANUAL VALIDATION to bypass silent browser blocking 
-            const addrType = document.getElementById('addr-type').value;
-            const div = document.getElementById('addr-division').value;
-            const dist = document.getElementById('addr-district').value;
+const addrType = document.getElementById('addr-type').value;
+            const div   = document.getElementById('addr-division').value;
+            const dist  = document.getElementById('addr-district').value;
             const thana = document.getElementById('addr-thana').value;
-            const subArea = document.getElementById('addr-zone') && !zoneContainer.classList.contains('hidden') ? document.getElementById('addr-zone').value : '';
+            const subArea = document.getElementById('addr-zone-hidden') ? document.getElementById('addr-zone-hidden').value : '';
             
             const house = document.getElementById('addr-house') ? document.getElementById('addr-house').value.trim() : '';
             const floor = document.getElementById('addr-floor') ? document.getElementById('addr-floor').value.trim() : '';
@@ -937,13 +1404,17 @@
             const detailed = document.getElementById('addr-detailed') ? document.getElementById('addr-detailed').value.trim() : '';
             const extra = document.getElementById('addr-details') ? document.getElementById('addr-details').value.trim() : '';
 
-            if (!addrType || !div || !dist || !thana || !house || !road || !detailed) {
-                alert("Please fill in all required fields: Address Type, Division, District, Area, House, Road, and Detailed Address.");
+if (!addrType) {
+                alert("Please select an Address Type.");
                 return;
             }
-            
-            if (!zoneContainer.classList.contains('hidden') && !subArea) {
-                alert("Please select a Sub-Area / Zone for this location.");
+            if (!div || !dist || !thana) {
+                alert("Please search and select your area using the area search field.");
+                document.getElementById('addr-smart-search').focus();
+                return;
+            }
+            if (!house || !road || !detailed) {
+                alert("Please fill in House No/Name, Road, and Detailed Address.");
                 return;
             }
 
@@ -1000,6 +1471,12 @@
                 
                 closeAddressModal();
                 loadDashboard(currentUserData.uid);
+
+                // Auto-redirect back to checkout if that's where user came from
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('from') === 'checkout') {
+                    setTimeout(() => { window.location.href = 'checkout.html'; }, 400);
+                }
             } catch (error) {
                 console.error(error);
                 alert("Could not save address: " + error.message);
@@ -1181,17 +1658,382 @@ await db.collection("contact_messages").add({
             document.getElementById('viewOrderModal').classList.add('hidden');
         };
         
-        function editField(field) {
-            const val = prompt(`Enter new ${field}:`);
-            if(val) {
-                db.collection("users").doc(currentUserData.uid).update({ [field]: val }).then(() => loadDashboard(currentUserData.uid));
-            }
+function editField(field) {
+    if (field === 'phone') {
+        const val = prompt('Enter new phone number:');
+        if (!val || !val.trim()) return;
+        const phoneRegex = /^(\+88)?01[3-9]\d{8}$/;
+        if (!phoneRegex.test(val.trim())) {
+            alert('Enter a valid Bangladesh mobile number (01XXXXXXXXX).');
+            return;
         }
-        function resetPassword() {
-            auth.sendPasswordResetEmail(auth.currentUser.email).then(()=>alert("Password reset email sent to " + auth.currentUser.email)).catch(e=>alert(e.message));
-        }
+        db.collection("users").doc(currentUserData.uid).update({ phone: val.trim() })
+            .then(() => {
+                db.collection("phone_lookups").doc(val.trim()).set({ uid: currentUserData.uid });
+                loadDashboard(currentUserData.uid);
+                alert('Phone number updated.');
+            });
+        return;
+    }
+    if (field === 'fullName') {
+        const val = prompt('Enter new full name (min 3 characters):');
+        if (!val || val.trim().length < 3) return;
+        db.collection("users").doc(currentUserData.uid).update({ fullName: val.trim() })
+            .then(() => loadDashboard(currentUserData.uid));
+        return;
+    }
+    if (field === 'email' || field === 'contactEmail') {
+        openEmailChangeModal();
+        return;
+    }
+}
+
+function openEmailChangeModal() {
+    const existing = document.getElementById('emailChangeModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'emailChangeModal';
+    modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-[400] p-4 backdrop-blur-sm';
+    modal.innerHTML = `
+        <div class="bg-white w-full max-w-sm rounded-2xl p-8 shadow-2xl">
+            <h3 class="text-lg font-bold text-[#322C2B] mb-2">Update Email Address</h3>
+            <p class="text-xs text-gray-400 mb-6">For security, please confirm your current password first.</p>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">New Email Address</label>
+                    <input type="email" id="new-email-input" placeholder="you@example.com"
+                        class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E]">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Current Password</label>
+                    <div class="relative">
+                        <input type="password" id="email-change-pass" placeholder="Your current password"
+                            class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] pr-8">
+                        <button type="button" onclick="togglePasswordVisibility('email-change-pass', this)"
+                            class="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <p id="email-change-error" class="hidden text-red-500 text-xs font-bold"></p>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="document.getElementById('emailChangeModal').remove()"
+                        class="flex-1 text-xs font-bold uppercase text-gray-400 border border-gray-200 py-3 rounded-xl hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="submitEmailChange()" id="email-change-btn"
+                        class="flex-1 bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-lg">
+                        Update Email
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    setTimeout(() => document.getElementById('new-email-input').focus(), 100);
+}
+
+window.togglePasswordVisibility = function(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    btn.innerHTML = isHidden
+        ? `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+               <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-10-8-10-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 10 8 10 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+               <line x1="1" y1="1" x2="23" y2="23"/>
+           </svg>`
+        : `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+               <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>
+           </svg>`;
+};
+
+window.submitEmailChange = async function() {
+    const newEmail = document.getElementById('new-email-input').value.trim();
+    const password = document.getElementById('email-change-pass').value;
+    const errEl    = document.getElementById('email-change-error');
+    const btn      = document.getElementById('email-change-btn');
+
+    errEl.classList.add('hidden');
+
+    if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+        errEl.innerText = 'Please enter a valid email address.';
+        errEl.classList.remove('hidden');
+        return;
+    }
+    if (!password) {
+        errEl.innerText = 'Please enter your current password.';
+        errEl.classList.remove('hidden');
+        return;
+    }
+
+    btn.innerText = 'Updating...';
+    btn.disabled = true;
+
+    try {
+        const user = auth.currentUser;
+        const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
+        await user.reauthenticateWithCredential(credential);
+        await user.updateEmail(newEmail);
+        await db.collection("users").doc(currentUserData.uid).update({
+            contactEmail: newEmail,
+            email: newEmail
+        });
+        document.getElementById('emailChangeModal').remove();
+        alert('✅ Email updated successfully!');
+        loadDashboard(currentUserData.uid);
+    } catch(e) {
+        btn.innerText = 'Update Email';
+        btn.disabled = false;
+        let msg = e.message;
+        if (e.code === 'auth/wrong-password')        msg = 'Incorrect password. Please try again.';
+        if (e.code === 'auth/email-already-in-use')  msg = 'This email is already in use.';
+        if (e.code === 'auth/invalid-email')         msg = 'Invalid email format.';
+        if (e.code === 'auth/requires-recent-login') msg = 'Session expired. Please log out and log in again.';
+        errEl.innerText = msg;
+        errEl.classList.remove('hidden');
+    }
+};
+
 
         window.logout=()=>auth.signOut();
+
+        // ── SMART AREA SEARCH ─────────────────────────────────────────────────────────
+(function() {
+    // Build a flat searchable index from locationData
+    function buildSearchIndex() {
+        const index = [];
+        Object.keys(locationData).forEach(division => {
+            const districts = locationData[division];
+            Object.keys(districts).forEach(district => {
+                const thanas = districts[district];
+                if (Array.isArray(thanas)) {
+                    thanas.forEach(thana => {
+                        index.push({ division, district, thana, zone: '' });
+                    });
+                } else {
+                    Object.keys(thanas).forEach(thana => {
+                        const zones = thanas[thana];
+                        if (Array.isArray(zones) && zones.length > 0) {
+                            zones.forEach(zone => {
+                                index.push({ division, district, thana, zone });
+                            });
+                            index.push({ division, district, thana, zone: '' });
+                        } else {
+                            index.push({ division, district, thana, zone: '' });
+                        }
+                    });
+                }
+            });
+        });
+        return index;
+    }
+
+    let searchIndex = null;
+    let selectedAreaData = null;
+
+    function normalizeTranslit(str) {
+        return str
+            // sh → s (shukrabad → sukrabad, shahbag → sabag catch)
+            .replace(/sh/g, 's')
+            // ph → f or p (phultala → pultala)
+            .replace(/ph/g, 'p')
+            // kh → k (khilgaon → kilgaon)
+            .replace(/kh/g, 'k')
+            // gh → g (moghbazar → mogbazar)
+            .replace(/gh/g, 'g')
+            // ch → c (chawkbazar → cawkbazar)
+            .replace(/ch/g, 'c')
+            // dh → d (dhanmondi → danmondi)
+            .replace(/dh/g, 'd')
+            // th → t (thana → tana)
+            .replace(/th/g, 't')
+            // double letters → single (nadda → nada, mirpur → mirpur)
+            .replace(/(.)\1+/g, '$1')
+            // oo → u (mooghbazar)
+            .replace(/oo/g, 'u')
+            // ee → i
+            .replace(/ee/g, 'i')
+            // aa → a
+            .replace(/aa/g, 'a')
+            // Remove trailing 'a' variations (sukrabad vs sukrabada)
+            .trim();
+    }
+
+    function initSmartSearch() {
+        if (!searchIndex) searchIndex = buildSearchIndex();
+
+        const input = document.getElementById('addr-smart-search');
+        const results = document.getElementById('smart-search-results');
+        if (!input || !results) return;
+
+input.addEventListener('input', function() {
+            const raw = this.value.trim().toLowerCase();
+            const query = normalizeTranslit(raw);
+            if (query.length < 2) {
+                results.classList.add('hidden');
+                return;
+            }
+
+            // Fuzzy match — score each entry
+            const scored = searchIndex.map(entry => {
+const haystack = normalizeTranslit(
+                    [entry.zone, entry.thana, entry.district, entry.division]
+                    .filter(Boolean).join(' ').toLowerCase()
+                );
+                
+                let score = 0;
+                const words = query.split(/\s+/);
+                words.forEach(word => {
+                    if (haystack.includes(word)) score += 3;
+                    else {
+                        // Check each part of haystack for partial match
+                        const parts = haystack.split(/[\s,]+/);
+                        parts.forEach(part => {
+                            if (part.startsWith(word)) score += 2;
+                            else if (part.includes(word)) score += 1;
+                            // Levenshtein-lite: allow 1 char difference for 4+ char words
+else if (word.length >= 3) {
+    // Allow more tolerance for longer words
+    const maxDiff = word.length >= 6 ? 2 : 1;
+    let diff = 0;
+    const minLen = Math.min(word.length, part.length);
+    for (let i = 0; i < minLen; i++) {
+        if (word[i] !== part[i]) diff++;
+    }
+    if (diff <= maxDiff && Math.abs(word.length - part.length) <= maxDiff) score += 1;
+    // Also check if word is contained within part (handles prefix like "nada" matching "nadda")
+    if (part.replace(/(.)\1+/g, '$1').includes(word.replace(/(.)\1+/g, '$1'))) score += 2;
+}
+                        });
+                    }
+                });
+                return { entry, score };
+            }).filter(s => s.score > 0)
+              .sort((a, b) => b.score - a.score)
+              .slice(0, 15);
+
+            if (scored.length === 0) {
+                results.innerHTML = '<div class="p-3 text-xs text-gray-400 italic">No matching area found. Try a different spelling.</div>';
+                results.classList.remove('hidden');
+                return;
+            }
+
+            // Deduplicate display
+            const seen = new Set();
+            results.innerHTML = scored.map(({ entry }) => {
+                const label = entry.zone
+                    ? `${entry.zone}, ${entry.thana}, ${entry.district}, ${entry.division}`
+                    : `${entry.thana}, ${entry.district}, ${entry.division}`;
+                if (seen.has(label)) return '';
+                seen.add(label);
+
+                const highlighted = label.replace(
+                    new RegExp(`(${query.split(/\s+/).filter(w => w.length > 1).join('|')})`, 'gi'),
+                    '<strong class="text-[#B36A5E]">$1</strong>'
+                );
+
+                return `<div class="px-4 py-3 text-xs hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 transition"
+                    data-division="${entry.division}"
+                    data-district="${entry.district}"
+                    data-thana="${entry.thana}"
+                    data-zone="${entry.zone}"
+                    onclick="window.selectSmartArea(this)">
+                    📍 ${highlighted}
+                </div>`;
+            }).join('');
+
+            results.classList.remove('hidden');
+        });
+
+        // Hide results on outside click
+        document.addEventListener('click', function(e) {
+            if (!input.contains(e.target) && !results.contains(e.target)) {
+                results.classList.add('hidden');
+            }
+        });
+    }
+
+    window.selectSmartArea = function(el) {
+        const division = el.getAttribute('data-division');
+        const district = el.getAttribute('data-district');
+        const thana    = el.getAttribute('data-thana');
+        const zone     = el.getAttribute('data-zone');
+
+        // Set hidden fields
+        document.getElementById('addr-division').value     = division;
+        document.getElementById('addr-district').value     = district;
+        document.getElementById('addr-thana').value        = thana;
+        document.getElementById('addr-zone-hidden').value  = zone;
+
+        selectedAreaData = { division, district, thana, zone };
+
+        // Update input display
+        const input = document.getElementById('addr-smart-search');
+        input.value = zone
+            ? `${zone}, ${thana}, ${district}, ${division}`
+            : `${thana}, ${district}, ${division}`;
+
+        // Show confirmation badge
+        const chosen = document.getElementById('smart-search-chosen');
+        chosen.innerHTML = `✓ <strong>${district}</strong> › ${thana}${zone ? ' › ' + zone : ''} <span class="text-gray-400 font-normal">(${division})</span>`;
+        chosen.classList.remove('hidden');
+
+        // Hide dropdown
+        document.getElementById('smart-search-results').classList.add('hidden');
+    };
+
+    // Re-init whenever address modal opens
+    const origOpenModal = window.openAddressModal;
+    window.openAddressModal = function() {
+        origOpenModal();
+        selectedAreaData = null;
+        const input = document.getElementById('addr-smart-search');
+        if (input) input.value = '';
+        const chosen = document.getElementById('smart-search-chosen');
+        if (chosen) chosen.classList.add('hidden');
+        ['addr-division','addr-district','addr-thana','addr-zone-hidden'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        setTimeout(initSmartSearch, 50);
+    };
+
+    // Pre-fill smart search when editing existing address
+    const origEditAddress = window.editAddress;
+    window.editAddress = function(index) {
+        origEditAddress(index);
+        const addr = currentUserData.addresses[index];
+        if (!addr) return;
+        setTimeout(() => {
+            // Rebuild hidden fields from existing address
+            if (addr.division) document.getElementById('addr-division').value = addr.division;
+            if (addr.district) document.getElementById('addr-district').value = addr.district;
+            if (addr.thana)    document.getElementById('addr-thana').value    = addr.thana;
+            if (addr.subArea)  document.getElementById('addr-zone-hidden').value = addr.subArea;
+
+            // Show pre-filled search
+            const input = document.getElementById('addr-smart-search');
+            const chosen = document.getElementById('smart-search-chosen');
+            if (input) {
+                input.value = addr.subArea
+                    ? `${addr.subArea}, ${addr.thana}, ${addr.district}, ${addr.division}`
+                    : `${addr.thana}, ${addr.district}, ${addr.division}`;
+            }
+            if (chosen && addr.thana) {
+                chosen.innerHTML = `✓ <strong>${addr.district}</strong> › ${addr.thana}${addr.subArea ? ' › ' + addr.subArea : ''} <span class="text-gray-400 font-normal">(${addr.division})</span>`;
+                chosen.classList.remove('hidden');
+            }
+            initSmartSearch();
+        }, 100);
+    };
+
+})();
+
+
+
     </script>
 </body>
 </html>
