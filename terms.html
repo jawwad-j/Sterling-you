@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms & Conditions | Sterling You</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Montserrat', sans-serif; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .section-body p { margin-bottom: 0.75rem; line-height: 1.75; }
+        .section-body ul { list-style: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+        .section-body ul li { margin-bottom: 0.4rem; line-height: 1.7; }
+        
+    </style>
+
+        <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="favicon.png">
+    <link rel="shortcut icon" href="favicon.png">
+    
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+    <header class="bg-white border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+            <a href="index.html">
+                <img src="web-logo2.png" alt="Sterling You" class="h-12 object-contain hover:opacity-80 transition">
+            </a>
+            <nav class="hidden md:flex gap-6 text-[11px] font-bold uppercase tracking-widest text-gray-600">
+                <a href="index.html" class="hover:text-[#B36A5E]">Home</a>
+                <a href="category.html" class="hover:text-[#B36A5E]">Shop</a>
+                <a href="account.html" class="hover:text-[#B36A5E]">Account</a>
+            </nav>
+            <a href="index.html" class="md:hidden text-[11px] font-bold text-[#B36A5E]">← Home</a>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-3xl mx-auto px-5 py-14 w-full">
+
+        <div class="mb-12 text-center">
+            <p class="text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400 mb-3">Legal</p>
+            <h1 class="text-3xl md:text-4xl font-serif font-bold text-[#322C2B]">Terms &amp; Conditions</h1>
+            <p class="text-xs text-gray-400 mt-3">Last updated: April 2026 &nbsp;&middot;&nbsp; sterlingyou.com</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-7 mb-6 text-sm text-gray-600 leading-relaxed section-body">
+            <p>These Terms &amp; Conditions govern your use of the Sterling You website (<strong class="text-[#322C2B]">sterlingyou.com</strong>) and all services provided through it, including browsing, purchasing, and contacting us. By accessing or purchasing from Sterling You, you confirm that you have read, understood, and accepted these Terms in full.</p>
+            <p>Sterling You reserves the right to update or modify these Terms at any time without prior notice. Your continued use of the platform after any changes constitutes your acceptance of the revised Terms.</p>
+            <p>All product photos and images shown on the platform are for illustrative purposes and may differ slightly from the actual product.</p>
+        </div>
+
+        <div class="space-y-6">
+
+            <!-- 1 -->
+            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-[#322C2B] px-6 py-4">
+                    <h2 class="text-white font-bold text-sm uppercase tracking-widest">1. Delivery &amp; Return Policy</h2>
+                </div>
+                <div class="px-6 py-7 space-y-4">
+                    <div class="flex gap-4 p-4 bg-green-50 border border-green-100 rounded-xl">
+                        <span class="text-green-600 font-bold text-base shrink-0 mt-0.5">&#10003;</span>
+                        <div>
+                            <p class="font-bold text-sm text-[#322C2B] mb-1">Inspect Before Payment</p>
+                            <p class="text-sm text-gray-600 leading-relaxed">Please thoroughly inspect the product in front of the delivery person <strong>before making any payment</strong>. Do not accept and pay for an order without checking it first.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                        <span class="text-amber-600 font-bold text-base shrink-0 mt-0.5">&#9888;</span>
+                        <div>
+                            <p class="font-bold text-sm text-[#322C2B] mb-1">Do Not Be Misled by the Delivery Person</p>
+                            <p class="text-sm text-gray-600 leading-relaxed">If the delivery person claims <em>"The page will handle the exchange, please accept the parcel"</em> — do not accept a damaged or incorrect product on this basis. Return it immediately on the spot. Sterling You will not be responsible for any complaints raised after delivery has been accepted and payment made.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 p-4 bg-green-50 border border-green-100 rounded-xl">
+                        <span class="text-green-600 font-bold text-base shrink-0 mt-0.5">&#10003;</span>
+                        <div>
+                            <p class="font-bold text-sm text-[#322C2B] mb-1">Defective Products — Return Immediately</p>
+                            <p class="text-sm text-gray-600 leading-relaxed">If you find any defect or fault at the time of delivery, return it to the delivery person immediately on the spot. There will be no charge for returns due to product defects confirmed at time of delivery.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 p-4 bg-red-50 border border-red-100 rounded-xl">
+                        <span class="text-red-600 font-bold text-base shrink-0 mt-0.5">&#10005;</span>
+                        <div>
+                            <p class="font-bold text-sm text-[#322C2B] mb-1">No Returns After Delivery is Completed</p>
+                            <p class="text-sm text-gray-600 leading-relaxed">Once a delivery is completed and the parcel accepted, <strong>no complaints, returns, exchanges, or refunds will be entertained</strong> under any circumstances.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                        <span class="text-gray-500 font-bold text-base shrink-0 mt-0.5">&#128204;</span>
+                        <div>
+                            <p class="font-bold text-sm text-[#322C2B] mb-1">Note: Delivery Charge on Returns</p>
+                            <p class="text-sm text-gray-600 leading-relaxed">In the case of a return where the fault lies with the customer (e.g. change of mind, ordering error), a delivery charge will be applicable.</p>
+                        </div>
+                    </div>
+                    <div class="mt-2 p-5 bg-[#322C2B] rounded-xl text-center">
+                        <p class="text-white text-sm leading-relaxed mb-3">For any confusion or queries regarding your order, please contact our helpline:</p>
+                        <p id="terms-phone" class="text-[#B36A5E] font-bold text-lg mb-3">Loading...</p>
+                        <a id="terms-whatsapp" href="#" class="inline-block bg-green-500 text-white text-xs font-bold uppercase tracking-widest px-5 py-2.5 rounded-lg hover:bg-green-600 transition">Message on WhatsApp</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2 -->
+            <section class="bg-white rounded-2xl shadow-sm border border-red-200 overflow-hidden">
+                <div class="bg-red-600 px-6 py-4">
+                    <h2 class="text-white font-bold text-sm uppercase tracking-widest">2. Mastercopy &amp; Replica Product Disclaimer</h2>
+                </div>
+                <div class="px-6 py-7 section-body text-sm text-gray-600">
+                    <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                        <p class="font-bold text-red-700 text-sm mb-2">Important — Please Read Carefully</p>
+                        <p>Some products listed on Sterling You are explicitly described in their product listing as <strong class="text-red-700">"mastercopy," "replica," "inspired by," or "AAA grade."</strong> These products are <strong>not original branded goods</strong> and are not affiliated with, endorsed by, or manufactured by any original brand.</p>
+                    </div>
+                    <p>By purchasing any product described as a mastercopy or replica:</p>
+                    <ul>
+                        <li>You acknowledge that you have read and understood the product description prior to purchase.</li>
+                        <li>You accept that the product is not an original branded item.</li>
+                        <li>You agree that Sterling You holds <strong>no responsibility</strong> for any claims that the item is not original, as this information is clearly disclosed in the product listing.</li>
+                        <li><strong>No refunds, returns, or exchanges will be accepted</strong> on the basis that a mastercopy product is not an original — this is stated at the time of purchase.</li>
+                        <li>It is the buyer's sole responsibility to read the product description before ordering. Sterling You does not misrepresent mastercopy products as originals.</li>
+                    </ul>
+                    <p>If you are unsure whether a product is an original or a mastercopy, please contact us before placing your order.</p>
+                </div>
+            </section>
+
+            <!-- 3 -->
+            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-[#B36A5E] px-6 py-4">
+                    <h2 class="text-white font-bold text-sm uppercase tracking-widest">3. Orders &amp; Payments</h2>
+                </div>
+                <div class="px-6 py-7 section-body text-sm text-gray-600">
+                    <p><strong class="text-[#322C2B]">3.1 Placing an Order.</strong> When you place an order on Sterling You, you will receive a confirmation. You must ensure that all information — including delivery address and contact number — is accurate. Sterling You shall not be liable for delivery failures due to incorrect information provided by you.</p>
+                    <p><strong class="text-[#322C2B]">3.2 Payment.</strong> Sterling You currently accepts Cash on Delivery (COD) only. Payment is collected at the time of delivery, after you have inspected the product.</p>
+                    <p><strong class="text-[#322C2B]">3.3 Order Cancellation.</strong> Orders may be cancelled before dispatch by contacting us immediately. Once dispatched or handed over to the courier, cancellation is not possible.</p>
+                    <p><strong class="text-[#322C2B]">3.4 Pricing.</strong> All prices are listed in Bangladeshi Taka (&#2547;). The price displayed at time of placing the order is the final price charged.</p>
+                    <p><strong class="text-[#322C2B]">3.5 Fraudulent Orders.</strong> Sterling You reserves the right to cancel any order and/or suspend your account if fraudulent or abusive behaviour is reasonably suspected.</p>
+                </div>
+            </section>
+
+            <!-- 4 -->
+            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-gray-800 px-6 py-4">
+                    <h2 class="text-white font-bold text-sm uppercase tracking-widest">4. Shipping &amp; Delivery</h2>
+                </div>
+                <div class="px-6 py-7 section-body text-sm text-gray-600">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="text-center p-4 bg-gray-50 rounded-xl border border-gray-100">
+                            <p class="text-xl mb-2">&#127759;</p>
+                            <p class="font-bold text-sm text-[#322C2B] mb-1">Inside Dhaka</p>
+                            <p class="text-xs text-gray-500">1&#8211;2 business days</p>
+                        </div>
+                        <div class="text-center p-4 bg-gray-50 rounded-xl border border-gray-100">
+                            <p class="text-xl mb-2">&#128506;</p>
+                            <p class="font-bold text-sm text-[#322C2B] mb-1">Outside Dhaka</p>
+                            <p class="text-xs text-gray-500">2&#8211;4 business days</p>
+                        </div>
+                        <div class="text-center p-4 bg-gray-50 rounded-xl border border-gray-100">
+                            <p class="text-xl mb-2">&#128179;</p>
+                            <p class="font-bold text-sm text-[#322C2B] mb-1">Payment</p>
+                            <p class="text-xs text-gray-500">Cash on Delivery only</p>
+                        </div>
+                    </div>
+                    <p><strong class="text-[#322C2B]">4.1</strong> Delivery times are estimates and may vary due to courier delays, weather, public holidays, or other factors outside Sterling You's control.</p>
+                    <p><strong class="text-[#322C2B]">4.2</strong> You must ensure that you or an authorised person is available to receive the order at the delivery address.</p>
+                    <p><strong class="text-[#322C2B]">4.3</strong> Sterling You is not responsible for delays caused by third-party courier partners once the order has been handed over.</p>
+                    <p><strong class="text-[#322C2B]">4.4 Failed Deliveries.</strong> If delivery is unsuccessful due to reasons on your end (e.g. wrong address, no one available), Sterling You reserves the right to cancel the order without refund.</p>
+                </div>
+            </section>
+
+            <!-- 5 -->
+            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-[#322C2B] px-6 py-4">
+                    <h2 class="text-white font-bold text-sm uppercase tracking-widest">5. Products &amp; Descriptions</h2>
+                </div>
+                <div class="px-6 py-7 section-body text-sm text-gray-600">
+                    <p><strong class="text-[#322C2B]">5.1</strong> Sterling You makes every effort to display products accurately. However, colours may appear slightly different due to screen settings or photography. This does not constitute grounds for a return.</p>
+                    <p><strong class="text-[#322C2B]">5.2</strong> Product availability is subject to stock levels. Sterling You reserves the right to cancel an order if a product becomes unavailable, with full notification to the customer.</p>
+                    <p><strong class="text-[#322C2B]">5.3 Mastercopy/Replica Products.</strong> Where a product description explicitly states it is a mastercopy, replica, or AAA grade item, the customer is fully informed of this at the time of purchase. See Section 2 for the full disclaimer.</p>
+                </div>
+            </section>
+
+            <!-- 6 -->
+            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-[#B36A5E] px-6 py-4">
+                    <h2 class="text-white font-bold text-sm uppercase tracking-widest">6. User Account</h2>
+                </div>
+                <div class="px-6 py-7 section-body text-sm text-gray-600">
+                    <p><strong class="text-[#322C2B]">6.1</strong> You are responsible for maintaining the confidentiality of your account and for all activity under your account.</p>
+                    <p><strong class="text-[#322C2B]">6.2</strong> You agree to provide accurate and complete information during registration and to keep it up to date.</p>
+                    <p><strong class="text-[#322C2B]">6.3</strong> Sterling You reserves the right to suspend or terminate your account for violations of these Terms or fraudulent activity.</p>
+                    <p><strong class="text-[#322C2B]">6.4</strong> The platform may be used by persons aged 18 and above. If you are below 18, parental consent is required.</p>
+                </div>
+            </section>
+
+            <!-- 7 -->
+            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-gray-800 px-6 py-4">
+                    <h2 class="text-white font-bold text-sm uppercase tracking-widest">7. Intellectual Property</h2>
+                </div>
+                <div class="px-6 py-7 section-body text-sm text-gray-600">
+                    <p>All content on sterlingyou.com — including logos, images, product photography, text, and design — is the exclusive intellectual property of Sterling You. You may not copy, reproduce, republish, upload, distribute, or modify any content from this platform without prior written consent.</p>
+                    <p>Unauthorised use of Sterling You's content or trademarks will be pursued to the fullest extent permitted by law.</p>
+                </div>
+            </section>
+
+            <!-- 8 -->
+            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-[#322C2B] px-6 py-4">
+                    <h2 class="text-white font-bold text-sm uppercase tracking-widest">8. Privacy &amp; Personal Data</h2>
+                </div>
+                <div class="px-6 py-7 section-body text-sm text-gray-600">
+                    <p><strong class="text-[#322C2B]">8.1</strong> Sterling You collects personal information (name, phone, delivery address, email) solely to process and fulfil your orders.</p>
+                    <p><strong class="text-[#322C2B]">8.2</strong> Your personal data will not be sold or shared with any third party except where required by law or to fulfil delivery (e.g. sharing your address and contact with the courier).</p>
+                    <p><strong class="text-[#322C2B]">8.3</strong> By using Sterling You, you consent to the collection and use of your data as described above.</p>
+                </div>
+            </section>
+
+            <!-- 9 -->
+            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-[#B36A5E] px-6 py-4">
+                    <h2 class="text-white font-bold text-sm uppercase tracking-widest">9. Limitation of Liability</h2>
+                </div>
+                <div class="px-6 py-7 section-body text-sm text-gray-600">
+                    <p>To the extent permitted by law, Sterling You shall not be liable for any indirect, incidental, or consequential damages arising from your use of the platform or from the purchase of products, including but not limited to:</p>
+                    <ul>
+                        <li>Delays caused by third-party courier partners</li>
+                        <li>Damage to products after delivery has been accepted</li>
+                        <li>Losses arising from incorrect information provided by the customer</li>
+                        <li>Any claim that a mastercopy product is an original, where this was clearly disclosed in the product description</li>
+                    </ul>
+                    <p>Sterling You's total liability shall not exceed the value of the order in question.</p>
+                </div>
+            </section>
+
+            <!-- 10 -->
+            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-gray-800 px-6 py-4">
+                    <h2 class="text-white font-bold text-sm uppercase tracking-widest">10. Prohibited Conduct</h2>
+                </div>
+                <div class="px-6 py-7 section-body text-sm text-gray-600">
+                    <p>You agree not to engage in any of the following while using Sterling You:</p>
+                    <ul>
+                        <li>Placing fraudulent, false, or abusive orders</li>
+                        <li>Impersonating another person</li>
+                        <li>Using the platform for any unlawful purpose</li>
+                        <li>Attempting to gain unauthorised access to any part of the platform</li>
+                        <li>Harassing or threatening Sterling You staff or delivery personnel</li>
+                        <li>Making false chargeback or dispute claims</li>
+                    </ul>
+                    <p>Sterling You reserves the right to terminate your access and pursue legal remedies in the event of prohibited conduct.</p>
+                </div>
+            </section>
+
+            <!-- 11 -->
+            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-[#322C2B] px-6 py-4">
+                    <h2 class="text-white font-bold text-sm uppercase tracking-widest">11. Amendments &amp; Governing Law</h2>
+                </div>
+                <div class="px-6 py-7 section-body text-sm text-gray-600">
+                    <p><strong class="text-[#322C2B]">11.1 Amendments.</strong> Sterling You may amend these Terms at any time. The updated Terms will be posted on this page with a revised date. Your continued use of the platform constitutes acceptance.</p>
+                    <p><strong class="text-[#322C2B]">11.2 Governing Law.</strong> These Terms are governed by the laws of the People's Republic of Bangladesh. Any disputes shall be subject to the jurisdiction of the courts of Bangladesh.</p>
+                    <p><strong class="text-[#322C2B]">11.3 Severability.</strong> If any provision of these Terms is found invalid, the remaining provisions continue in full force.</p>
+                    <p><strong class="text-[#322C2B]">11.4 Prevailing Language.</strong> These Terms are written in English. In the event of any dispute or inconsistency, the English version shall prevail.</p>
+                </div>
+            </section>
+
+            <!-- Contact -->
+            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 class="font-bold text-sm uppercase tracking-widest text-[#322C2B] mb-5">12. Contact Us</h2>
+                <p class="text-sm text-gray-600 mb-4">If you have any questions, complaints, or require clarification about these Terms, please reach out:</p>
+                <div class="space-y-2">
+                    <p class="text-sm font-bold text-[#322C2B]" id="terms-contact-phone">Loading...</p>
+                    <p class="text-sm text-[#B36A5E]" id="terms-contact-email">Loading...</p>
+                    <p class="text-xs text-gray-400">sterlingyou.com &nbsp;&middot;&nbsp; Dhaka, Bangladesh</p>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer class="bg-[#322C2B] text-white py-8 mt-10">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <p class="text-[10px] uppercase tracking-widest text-gray-400">&copy; 2026 Sterling You. All rights reserved.</p>
+            <div class="flex justify-center gap-6 mt-3 text-[10px] font-bold uppercase tracking-widest">
+                <a href="index.html" class="text-gray-400 hover:text-white transition">Home</a>
+                <a href="category.html" class="text-gray-400 hover:text-white transition">Shop</a>
+                <a href="account.html" class="text-gray-400 hover:text-white transition">Account</a>
+                <a href="terms.html" class="text-[#B36A5E]">Terms</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        db.collection("settings").doc("contact").get().then(doc => {
+            const d = doc.exists ? doc.data() : {};
+            const phone = d.phone || '+880 1800 000 775';
+            const email = d.email || 'support@sterlingyou.com';
+            document.getElementById('terms-phone').innerText = phone;
+            document.getElementById('terms-contact-phone').innerText = phone;
+            document.getElementById('terms-contact-email').innerText = email;
+            const waNum = phone.replace(/[^0-9]/g, '');
+            document.getElementById('terms-whatsapp').href = 'https://wa.me/' + waNum + '?text=Hello, I have a question about my order.';
+        }).catch(() => {
+            document.getElementById('terms-phone').innerText = '+880 1800 000 775';
+            document.getElementById('terms-contact-phone').innerText = '+880 1800 000 775';
+            document.getElementById('terms-contact-email').innerText = 'support@sterlingyou.com';
+            document.getElementById('terms-whatsapp').href = 'https://wa.me/8801800000775';
+        });
+    </script>
+</body>
+</html>

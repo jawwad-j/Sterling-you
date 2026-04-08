@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sterling Enterprise | ERP & CRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -24,88 +25,181 @@
 
         /* ─── MOBILE RESPONSIVE ─── */
 @media (max-width: 768px) {
+
     /* Hide desktop sidebar */
-    aside { 
-        display: none !important; 
-    }
-    
-    /* Full width main */
-    #app-container { 
-        flex-direction: column !important; 
-    }
-    
-    main { 
-        padding: 12px !important; 
-        padding-bottom: 80px !important; 
-        height: auto !important;
-        overflow-y: auto !important;
+    aside {
+        display: none !important;
     }
 
-    /* Mobile bottom nav */
+    /* Full width main content */
+    #app-container {
+        flex-direction: column !important;
+    }
+
+    main {
+        padding: 12px !important;
+        padding-top: 70px !important;
+        padding-bottom: 90px !important;
+        height: auto !important;
+        min-height: 100vh !important;
+        overflow-y: auto !important;
+        width: 100% !important;
+    }
+
+    /* Mobile nav bars */
     #mobile-bottom-nav {
         display: flex !important;
     }
-
-    /* Mobile header */
     #mobile-top-bar {
         display: flex !important;
     }
 
-    /* Shrink top action bar */
-    .top-action-bar {
-        flex-wrap: wrap;
-        gap: 8px;
+    /* Top action bar */
+    #app-container main > .bg-white.rounded-2xl.shadow-sm.mb-8 {
+        flex-direction: column !important;
+        padding: 10px !important;
+        margin-bottom: 12px !important;
+        gap: 8px !important;
     }
 
-    /* KPI cards — 2 per row on mobile */
-    .grid-cols-6 { 
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important; 
-    }
-    .lg\:grid-cols-6 { 
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important; 
+    /* KPI grid — 2 per row */
+    #dashboard .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    /* Charts stack */
-    .lg\:col-span-2 { 
-        grid-column: span 1 !important; 
-    }
-    .lg\:grid-cols-3 { 
-        grid-template-columns: 1fr !important; 
-    }
-    .lg\:grid-cols-2 { 
-        grid-template-columns: 1fr !important; 
+    /* Charts full width */
+    #dashboard canvas {
+        max-width: 100% !important;
     }
 
-    /* Tables — scrollable */
-    .overflow-hidden { 
-        overflow-x: auto !important; 
-    }
-    table { 
-        min-width: 600px; 
+    /* All tables scrollable */
+    .bg-white.rounded-2xl table,
+    .overflow-hidden table,
+    .overflow-x-auto table {
+        min-width: 480px !important;
+        font-size: 11px !important;
     }
 
-    /* Modal full screen on mobile */
+    .bg-white.rounded-2xl,
+    .overflow-hidden {
+        overflow-x: auto !important;
+    }
+
+    th, td {
+        padding: 6px 5px !important;
+        white-space: nowrap !important;
+    }
+
+    /* Hide less critical columns */
+    .hide-mobile {
+        display: none !important;
+    }
+
+    /* ── ALL MODALS ── */
+    .fixed.inset-0 {
+        padding: 8px !important;
+        align-items: flex-end !important;
+    }
+
     .fixed.inset-0 > div {
-        max-height: 95vh !important;
-        margin: 8px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 92vh !important;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
     }
 
-    /* CRM grid */
-    .md\:grid-cols-2 { 
-        grid-template-columns: 1fr !important; 
-    }
-    .md\:col-span-2 { 
-        grid-column: span 1 !important; 
-    }
-    .md\:col-span-3 { 
-        grid-column: span 1 !important; 
+    /* Multi-col modal grids → single col */
+    .fixed.inset-0 .grid {
+        grid-template-columns: 1fr !important;
     }
 
-    /* Hide less important table columns */
-    .hide-mobile { display: none !important; }
+    /* Except 2-col grids that should stay 2 */
+    .fixed.inset-0 .grid.grid-cols-2 {
+        grid-template-columns: 1fr 1fr !important;
+    }
 
-    /* Sticky table headers */
-    thead.sticky { position: sticky; top: 0; z-index: 10; }
+    /* Product modal gallery stays 3 col */
+    #productModal .grid-cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    /* Dashboard period filter */
+    #dashboard > div:first-child {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+
+    #dash-btn-today, #dash-btn-week,
+    #dash-btn-month, #dash-btn-lifetime {
+        padding: 5px 8px !important;
+        font-size: 9px !important;
+    }
+
+    #dash-month-select {
+        font-size: 9px !important;
+        padding: 6px 8px !important;
+    }
+
+    #dash-custom-from, #dash-custom-to {
+        font-size: 9px !important;
+    }
+
+    /* Inventory controls */
+    #inv-product-controls {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    #inv-product-controls input {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    /* Inventory sub-tabs */
+    #inventory > div:first-child {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+    }
+
+    /* CRM table */
+    #crm-table tr td:nth-child(3),
+    #crm-table tr td:nth-child(4),
+    #crm-table tr th:nth-child(3),
+    #crm-table tr th:nth-child(4) {
+        display: none !important;
+    }
+
+    /* Order tables — hide less important cols */
+    #pipeline-pending th:nth-child(2),
+    #pipeline-pending td:nth-child(2),
+    #pipeline-pending th:nth-child(4),
+    #pipeline-pending td:nth-child(4) {
+        display: none !important;
+    }
+
+    /* Payout table */
+    #payout-table-body td:nth-child(7),
+    #payout-table-body td:nth-child(8) {
+        display: none !important;
+    }
+
+    /* Minimum touch targets */
+    button {
+        min-height: 36px !important;
+    }
+
+    /* Login card */
+    #login-screen > div:last-child {
+        width: calc(100% - 32px) !important;
+        max-width: 400px !important;
+        margin: 16px !important;
+    }
 }
 
 @media (min-width: 769px) {
@@ -113,6 +207,7 @@
     #mobile-top-bar { display: none !important; }
     #mobile-sidebar-drawer { display: none !important; }
 }
+    
     </style>
 
 <script>
@@ -243,7 +338,7 @@ if (tabId === 'contact-settings') {
             <h1 class="font-bold text-3xl tracking-tighter text-[#1F2937]">STERLING <span class="text-[#B36A5E]">ERP</span></h1>
             <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400 mt-2">Authorized Personnel Only</p>
         </div>
-        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm border border-gray-100">
+        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm border border-gray-100 mx-4">
             <form id="admin-login-form" class="space-y-5">
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Email Address</label>

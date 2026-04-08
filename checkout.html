@@ -252,15 +252,15 @@ if (!currentCheckoutUser.phone) {
 
                         renderAddressSelection();
                         updateShippingAndTotals();
-                    } else {
-                        alert("Customer profile missing. Please restart the order.");
+                } else {
+                        window.location.href = "login.html?redirect=checkout.html";
                     }
                 } catch (err) {
                     console.error("Error loading checkout data:", err);
                     document.getElementById('address-container').innerHTML = `<p class="text-sm text-red-500">Error loading addresses.</p>`;
                 }
             } else {
-                window.location.href = "account.html?msg=login_required";
+                window.location.href = "login.html?redirect=checkout.html";
             }
         });
 
