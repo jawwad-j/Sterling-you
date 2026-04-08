@@ -59,8 +59,6 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
 <meta name="twitter:title" content="Sterling You | Curated Luxury">
 <meta name="twitter:description" content="Curated luxury in Bangladesh.">
 <meta name="twitter:image" content="https://sterlingyou.com/web-logo2.png">
-
-<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
 <link rel="shortcut icon" href="favicon.png">
@@ -152,7 +150,7 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
                         <div class="space-y-4">
                             <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Phone</label><div class="flex justify-between border-b py-2"><span id="profile-phone" class="text-sm">...</span><button onclick="editField('phone')" class="text-[#B36A5E] text-[10px] font-bold uppercase">Change</button></div></div>
                              <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Email</label><div class="flex justify-between border-b py-2"><span id="profile-email" class="text-sm">...</span><button onclick="editField('email')" class="text-[#B36A5E] text-[10px] font-bold uppercase hover:underline">Change</button></div></div>
-                             <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Password</label><div class="flex justify-between border-b py-2"><span class="text-sm">••••••</span><button onclick="resetPassword()" class="text-[#B36A5E] text-[10px] font-bold uppercase">Reset</button></div></div>
+                             <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Password</label><div class="flex justify-between border-b py-2"><span class="text-sm">••••••</span><button onclick="auth.signOut().then(() => window.location.href='login.html')" class="text-[#B36A5E] text-[10px] font-bold uppercase">Reset</button></div></div>
                         </div>
                     </div>
                 </div>
@@ -342,74 +340,7 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
         </div>
     </div>
 
-        <!-- OTP Verification Modal -->
-<div id="otpModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[400] p-4 backdrop-blur-sm flex">
-    <div class="bg-white w-full max-w-sm rounded-2xl p-8 text-center">
-        <div class="w-14 h-14 bg-[#322C2B] rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg width="24" height="24" fill="none" stroke="white" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 8.25h3"/></svg>
-        </div>
-        <h3 class="text-lg font-bold text-[#322C2B] mb-1" id="otp-title">Verify Your Number</h3>
-        <p class="text-[11px] text-gray-400 mb-6" id="otp-subtitle">Enter the 6-digit code sent to your number</p>
-        
-        <div class="flex justify-center gap-2 mb-6" id="otp-inputs">
-            <input type="tel" maxlength="1" class="otp-box w-10 h-12 border-2 border-gray-200 rounded-lg text-center text-lg font-bold focus:border-[#B36A5E] outline-none" style="pointer-events:all">
-            <input type="tel" maxlength="1" class="otp-box w-10 h-12 border-2 border-gray-200 rounded-lg text-center text-lg font-bold focus:border-[#B36A5E] outline-none" style="pointer-events:all">
-            <input type="tel" maxlength="1" class="otp-box w-10 h-12 border-2 border-gray-200 rounded-lg text-center text-lg font-bold focus:border-[#B36A5E] outline-none" style="pointer-events:all">
-            <input type="tel" maxlength="1" class="otp-box w-10 h-12 border-2 border-gray-200 rounded-lg text-center text-lg font-bold focus:border-[#B36A5E] outline-none" style="pointer-events:all">
-            <input type="tel" maxlength="1" class="otp-box w-10 h-12 border-2 border-gray-200 rounded-lg text-center text-lg font-bold focus:border-[#B36A5E] outline-none" style="pointer-events:all">
-            <input type="tel" maxlength="1" class="otp-box w-10 h-12 border-2 border-gray-200 rounded-lg text-center text-lg font-bold focus:border-[#B36A5E] outline-none" style="pointer-events:all">
-        </div>
-
-        <p id="otp-error" class="hidden text-red-500 text-xs font-bold mb-4"></p>
-
-        <button id="otp-verify-btn" onclick="verifyOTP()" style="pointer-events:all" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition mb-4">Verify Code</button>
-        
-        <div class="flex items-center justify-center gap-2">
-            <span id="otp-timer" class="text-[11px] text-gray-400"></span>
-            <button id="otp-resend-btn" onclick="resendOTP()" style="pointer-events:all;display:none;" class="text-[11px] font-bold text-[#B36A5E] hover:underline">Resend Code</button>
-        </div>
-
-        <button onclick="closeOTPModal()" style="pointer-events:all" class="mt-4 text-[10px] text-gray-400 hover:text-gray-600 uppercase font-bold tracking-widest">Cancel</button>
-
-        <!-- Invisible reCAPTCHA container -->
-        <div id="recaptcha-container"></div>
-    </div>
-</div>
-
-<!-- Password Reset Modal -->
-<div id="resetModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[400] p-4 backdrop-blur-sm flex">
-    <div class="bg-white w-full max-w-sm rounded-2xl p-8 text-center">
-        <h3 class="text-lg font-bold text-[#322C2B] mb-2">Reset Password</h3>
-        <p id="reset-msg" class="text-[11px] text-gray-400 mb-6"></p>
-
-        <!-- New password fields (shown after OTP verified) -->
-        <div id="reset-new-pass-fields" class="hidden text-left mb-4 space-y-3">
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">New Password</label>
-                <input type="password" id="reset-new-pass" placeholder="Min 8 chars, 1 uppercase, 1 number" style="pointer-events:all" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E]">
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Confirm Password</label>
-                <input type="password" id="reset-confirm-pass" style="pointer-events:all" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E]">
-            </div>
-        </div>
-
-        <p id="reset-error" class="hidden text-red-500 text-xs font-bold mb-4"></p>
-
-        <button id="reset-action-btn" onclick="handleResetAction()" style="pointer-events:all" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition mb-3"></button>
-
-        <!-- SMS fallback (shown after email timer) -->
-        <div id="reset-sms-fallback" class="hidden">
-            <div class="border-t pt-4 mt-2">
-                <p id="reset-sms-timer" class="text-[10px] text-gray-400 mb-2"></p>
-                <button id="reset-sms-btn" onclick="sendResetOTP()" style="pointer-events:all;display:none;" class="text-[11px] font-bold text-[#B36A5E] hover:underline uppercase tracking-widest">Send OTP to Mobile Instead</button>
-            </div>
-        </div>
-
-        <button onclick="closeResetModal()" style="pointer-events:all" class="mt-4 text-[10px] text-gray-400 hover:text-gray-600 uppercase font-bold tracking-widest">Cancel</button>
-        <div id="reset-recaptcha-container"></div>
-    </div>
-</div>
+ 
 
     
     <script src="cart.js"></script> 
@@ -424,13 +355,7 @@ const auth = firebase.auth();
 let currentUserData = null;
 let globalOrders = [];
 
-// OTP state
-let otpConfirmationResult = null;
-let otpPurpose = null; // 'register' or 'reset'
-let otpTimerInterval = null;
-let recaptchaVerifier = null;
-let resetRecaptchaVerifier = null;
-let resetTimerInterval = null;
+
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 
@@ -475,7 +400,6 @@ if (urlParams.get('action') === 'add') {
             }, 200);
         }
     }
-    initOTPInputs();
 });
 
 auth.onAuthStateChanged((user) => {
@@ -541,333 +465,6 @@ function hideError(elId) {
     const el = document.getElementById(elId);
     if (el) el.classList.add('hidden');
 }
-
-
-
-// ── OTP MODAL ─────────────────────────────────────────────────────────────────
-
-function initOTPInputs() {
-    const boxes = document.querySelectorAll('.otp-box');
-    boxes.forEach((box, idx) => {
-        box.addEventListener('input', () => {
-            box.value = box.value.replace(/\D/g, '').slice(-1);
-            if (box.value && idx < boxes.length - 1) boxes[idx + 1].focus();
-            if (getOTPValue().length === 6) verifyOTP();
-        });
-        box.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' && !box.value && idx > 0) boxes[idx - 1].focus();
-        });
-        box.addEventListener('paste', (e) => {
-            e.preventDefault();
-            const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
-            boxes.forEach((b, i) => { b.value = text[i] || ''; });
-            if (text.length === 6) verifyOTP();
-        });
-    });
-}
-
-function getOTPValue() {
-    return Array.from(document.querySelectorAll('.otp-box')).map(b => b.value).join('');
-}
-
-function clearOTPInputs() {
-    document.querySelectorAll('.otp-box').forEach(b => b.value = '');
-    document.querySelectorAll('.otp-box')[0].focus();
-}
-
-function openOTPModal(title, subtitle) {
-    document.getElementById('otp-title').innerText = title;
-    document.getElementById('otp-subtitle').innerText = subtitle;
-    hideError('otp-error');
-    clearOTPInputs();
-    document.getElementById('otpModal').classList.remove('hidden');
-    setTimeout(() => document.querySelectorAll('.otp-box')[0].focus(), 100);
-}
-
-function closeOTPModal() {
-    document.getElementById('otpModal').classList.add('hidden');
-    clearOTPTimer();
-    otpConfirmationResult = null;
-}
-
-function startOTPTimer(seconds = 60) {
-    clearOTPTimer();
-    const timerEl = document.getElementById('otp-timer');
-    const resendEl = document.getElementById('otp-resend-btn');
-    resendEl.style.display = 'none';
-    let remaining = seconds;
-    timerEl.innerText = `Resend in ${remaining}s`;
-    otpTimerInterval = setInterval(() => {
-        remaining--;
-        if (remaining <= 0) {
-            clearOTPTimer();
-            timerEl.innerText = '';
-            resendEl.style.display = 'inline';
-        } else {
-            timerEl.innerText = `Resend in ${remaining}s`;
-        }
-    }, 1000);
-}
-
-function clearOTPTimer() {
-    if (otpTimerInterval) { clearInterval(otpTimerInterval); otpTimerInterval = null; }
-}
-
-function initRecaptcha(containerId) {
-    // Clear any existing verifier
-    if (containerId === 'recaptcha-container' && recaptchaVerifier) {
-        recaptchaVerifier.clear();
-        recaptchaVerifier = null;
-    }
-    if (containerId === 'reset-recaptcha-container' && resetRecaptchaVerifier) {
-        resetRecaptchaVerifier.clear();
-        resetRecaptchaVerifier = null;
-    }
-    const verifier = new firebase.auth.RecaptchaVerifier(containerId, { size: 'invisible' });
-    if (containerId === 'recaptcha-container') recaptchaVerifier = verifier;
-    else resetRecaptchaVerifier = verifier;
-    return verifier;
-}
-
-// ── REGISTRATION OTP ──────────────────────────────────────────────────────────
-
-async function sendRegistrationOTP(phone) {
-    const e164 = normalizePhone(phone);
-    try {
-        const verifier = initRecaptcha('recaptcha-container');
-        otpPurpose = 'register';
-        otpConfirmationResult = await auth.signInWithPhoneNumber(e164, verifier);
-        openOTPModal('Verify Your Number', `Enter the 6-digit code sent to ${phone}`);
-        startOTPTimer(60);
-    } catch(e) {
-        console.error(e);
-        alert("Could not send OTP. Check your number and try again.\n" + e.message);
-    }
-}
-
-async function resendOTP() {
-    if (otpPurpose === 'register' && pendingRegistrationData) {
-        await sendRegistrationOTP(pendingRegistrationData.phone);
-    } else if (otpPurpose === 'reset') {
-        await sendResetOTP();
-    }
-}
-
-window.resendOTP = resendOTP;
-
-async function verifyOTP() {
-    const code = getOTPValue();
-    if (code.length < 6) { showError('otp-error', 'Enter the complete 6-digit code.'); return; }
-
-    const btn = document.getElementById('otp-verify-btn');
-    btn.disabled = true;
-    btn.innerText = 'Verifying...';
-    hideError('otp-error');
-
-    try {
-        const credential = await otpConfirmationResult.confirm(code);
-
-        if (otpPurpose === 'register') {
-            // OTP verified — now create the account
-            const { name, phone, email, pass, contactEmail } = pendingRegistrationData;
-
-            // Create email/password auth linked to same uid
-            const emailCredential = firebase.auth.EmailAuthProvider.credential(email, pass);
-            await credential.user.linkWithCredential(emailCredential).catch(() => {
-                // If phone user already exists, just proceed
-            });
-
-            await db.collection("users").doc(credential.user.uid).set({
-                fullName: name,
-                phone: phone,
-                email: email,
-                contactEmail: contactEmail || null,
-                crmTags: "Good", isBlocked: false,
-                addresses: [], paymentMethods: [],
-                totalSpend: 0,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-
-            if (!phone.includes('@')) {
-                await db.collection("phone_lookups").doc(phone).set({ uid: credential.user.uid });
-            }
-
-            closeOTPModal();
-            pendingRegistrationData = null;
-            executeRedirect();
-
-        } else if (otpPurpose === 'reset') {
-            // OTP verified for password reset — show new password fields
-            closeOTPModal();
-            showNewPasswordFields();
-        }
-
-    } catch(e) {
-        btn.disabled = false;
-        btn.innerText = 'Verify Code';
-        showError('otp-error', 'Invalid code. Please try again.');
-        console.error(e);
-    }
-}
-
-window.verifyOTP = verifyOTP;
-
-// ── PASSWORD RESET ────────────────────────────────────────────────────────────
-
-function resetPassword() {
-    const user = auth.currentUser;
-    if (!user || !currentUserData) return;
-
-    const contactEmail = currentUserData.contactEmail;
-    const hasRealEmail = contactEmail || (currentUserData.email && !currentUserData.email.includes('@sterling.com'));
-    const displayEmail = contactEmail || (hasRealEmail ? currentUserData.email : null);
-    const phone = currentUserData.phone;
-
-    if (hasRealEmail && displayEmail) {
-        // Has email — send email reset, show SMS fallback after timer
-        openResetModal('email', displayEmail, phone);
-    } else {
-        // Phone only — send OTP directly
-        openResetModal('phone', null, phone);
-    }
-}
-
-function openResetModal(mode, email, phone) {
-    hideError('reset-error');
-    document.getElementById('reset-new-pass-fields').classList.add('hidden');
-    document.getElementById('reset-sms-fallback').classList.add('hidden');
-    document.getElementById('reset-sms-btn').style.display = 'none';
-    clearResetTimer();
-
-    const msgEl = document.getElementById('reset-msg');
-    const actionBtn = document.getElementById('reset-action-btn');
-
-    if (mode === 'email') {
-        msgEl.innerText = `A password reset link will be sent to ${email}`;
-        actionBtn.innerText = 'Send Reset Email';
-        actionBtn.onclick = () => sendResetEmail(email, phone);
-    } else {
-        msgEl.innerText = `A 6-digit OTP will be sent to ${phone}`;
-        actionBtn.innerText = 'Send OTP to Mobile';
-        actionBtn.onclick = () => sendResetOTP();
-    }
-
-    document.getElementById('resetModal').classList.remove('hidden');
-}
-
-async function sendResetEmail(email, phone) {
-    const btn = document.getElementById('reset-action-btn');
-    btn.disabled = true;
-    btn.innerText = 'Sending...';
-    hideError('reset-error');
-
-    try {
-        await auth.sendPasswordResetEmail(email);
-        document.getElementById('reset-msg').innerText = `Reset link sent to ${email}. Check your inbox.`;
-        btn.innerText = 'Email Sent ✓';
-
-        // Show SMS fallback with countdown
-        const fallback = document.getElementById('reset-sms-fallback');
-        fallback.classList.remove('hidden');
-        startResetTimer(60, phone);
-
-    } catch(e) {
-        btn.disabled = false;
-        btn.innerText = 'Send Reset Email';
-        showError('reset-error', 'Could not send email: ' + e.message);
-    }
-}
-
-function startResetTimer(seconds, phone) {
-    clearResetTimer();
-    const timerEl = document.getElementById('reset-sms-timer');
-    const smsBtn  = document.getElementById('reset-sms-btn');
-    smsBtn.style.display = 'none';
-    let remaining = seconds;
-    timerEl.innerText = `Didn't receive it? You can request an SMS OTP in ${remaining}s`;
-    resetTimerInterval = setInterval(() => {
-        remaining--;
-        if (remaining <= 0) {
-            clearResetTimer();
-            timerEl.innerText = "Didn't receive the email?";
-            smsBtn.style.display = 'inline';
-        } else {
-            timerEl.innerText = `Didn't receive it? You can request an SMS OTP in ${remaining}s`;
-        }
-    }, 1000);
-}
-
-function clearResetTimer() {
-    if (resetTimerInterval) { clearInterval(resetTimerInterval); resetTimerInterval = null; }
-}
-
-async function sendResetOTP() {
-    const phone = currentUserData.phone;
-    const e164 = normalizePhone(phone);
-
-    const btn = document.getElementById('reset-sms-btn');
-    const actionBtn = document.getElementById('reset-action-btn');
-    if (btn) btn.style.display = 'none';
-
-    closeResetModal();
-
-    try {
-        const verifier = initRecaptcha('recaptcha-container');
-        otpPurpose = 'reset';
-        otpConfirmationResult = await auth.signInWithPhoneNumber(e164, verifier);
-        openOTPModal('Reset via Mobile', `Enter the 6-digit code sent to ${phone}`);
-        startOTPTimer(60);
-    } catch(e) {
-        console.error(e);
-        alert("Could not send OTP: " + e.message);
-        if (btn) btn.style.display = 'inline';
-    }
-}
-
-window.sendResetOTP = sendResetOTP;
-
-function showNewPasswordFields() {
-    document.getElementById('reset-new-pass-fields').classList.remove('hidden');
-    document.getElementById('reset-msg').innerText = 'OTP verified. Set your new password.';
-    const actionBtn = document.getElementById('reset-action-btn');
-    actionBtn.disabled = false;
-    actionBtn.innerText = 'Set New Password';
-    actionBtn.onclick = setNewPassword;
-    document.getElementById('resetModal').classList.remove('hidden');
-}
-
-async function setNewPassword() {
-    const newPass    = document.getElementById('reset-new-pass').value;
-    const confirmPass = document.getElementById('reset-confirm-pass').value;
-    hideError('reset-error');
-
-    if (newPass.length < 8)         { showError('reset-error', 'Password must be at least 8 characters.'); return; }
-    if (!/[A-Z]/.test(newPass))     { showError('reset-error', 'Must contain at least one uppercase letter.'); return; }
-    if (!/[0-9]/.test(newPass))     { showError('reset-error', 'Must contain at least one number.'); return; }
-    if (newPass !== confirmPass)    { showError('reset-error', 'Passwords do not match.'); return; }
-
-    const btn = document.getElementById('reset-action-btn');
-    btn.disabled = true;
-    btn.innerText = 'Saving...';
-
-    try {
-        await auth.currentUser.updatePassword(newPass);
-        closeResetModal();
-        alert('Password updated successfully!');
-    } catch(e) {
-        btn.disabled = false;
-        btn.innerText = 'Set New Password';
-        showError('reset-error', 'Could not update password: ' + e.message);
-    }
-}
-
-function closeResetModal() {
-    document.getElementById('resetModal').classList.add('hidden');
-    clearResetTimer();
-}
-
-window.handleResetAction = function() {};
-window.closeResetModal = closeResetModal;
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 
@@ -1047,7 +644,8 @@ async function saveDOB() {
                     "Boalkhali": ["Boalkhali"],
                     "Chandanaish": ["Chandanaish"],
                     "Fatikchhari": ["Fatikchhari"],
-"Hathazari": ["Hathazari", "Aman Bazar", "Fatehabad", "Devpahar", "Gorduara", "Hamidchar", "Mirsharai Bazar"],                    "Karnaphuli": ["Karnaphuli"],
+"Hathazari": ["Hathazari", "Aman Bazar", "Fatehabad", "Gorduara", "Hamidchar", "Mirsharai Bazar"],                    
+"Karnaphuli": ["Karnaphuli"],
                     "Lohagara": ["Lohagara"],
                     "Mirsharai": ["Mirsharai"],
                     "Patiya": ["Patiya"],
@@ -1061,7 +659,7 @@ async function saveDOB() {
                     "Bandar": ["Bandar", "Gosaildanga", "Nimtala"],
                     "Bayazid": ["Bayazid Bostami", "Oxygen", "Sher Shah Colony", "Baizid Link Road", "Sugandha", "CDA Avenue", "Baizid Bostami Road", "Foy's Lake Area", "Khulshi Hill"],
                     "Chandgaon": ["Chandgaon", "Bahaddarhat", "Kalurghat", "Mohra", "Chandgaon R/A", "Muradpur", "Hazi Colony", "East Nasirabad", "Bayazid Bostami Road"],
-                    "Chawkbazar": ["Chawkbazar", "Jamal Khan", "Kapasgola", "Katalganj"],
+                    "Chawkbazar": ["Chawkbazar", "Jamal Khan", "Kapasgola", "Katalganj", "Devpahar"],
                     "Double Mooring": ["Double Mooring", "Agrabad", "Agrabad Access Road", "Choumuhani", "Dewanhat", "Munsurabad", "CDA Commercial Area", "Segun Bagicha"],
                     "EPZ": ["EPZ", "Cement Crossing", "Free Port"],
                     "Halishahar": ["Halishahar", "Boroipara", "Naya Bazar", "Shantibag", "Halishahar Housing Estate", "Block A", "Block B", "Block C", "Block D", "Block E", "Block F", "Block G", "Port Connecting Road"],

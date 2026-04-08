@@ -8,7 +8,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Montserrat', sans-serif; }
@@ -77,17 +76,21 @@
         }
         .site-input:focus { border-bottom-color: #B36A5E; }
         .site-input::placeholder { color: #9CA3AF; font-size: 12px; }
+
+        .pass-eye {
+            position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer;
+            color: #9CA3AF; padding: 4px;
+        }
+        .pass-eye:hover { color: #322C2B; }
     </style>
-
     <link rel="icon" type="image/png" href="favicon.png">
-<link rel="apple-touch-icon" href="favicon.png">
-<link rel="shortcut icon" href="favicon.png">
-
+    <link rel="apple-touch-icon" href="favicon.png">
+    <link rel="shortcut icon" href="favicon.png">
 </head>
 
 <body class="bg-white flex flex-col min-h-screen">
 
-    <!-- Header -->
     <header class="w-full bg-white border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-6 md:px-10">
             <div class="flex justify-center items-center h-20">
@@ -106,12 +109,12 @@
             <div class="text-left mb-8">
                 <p class="text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400 mb-1">Account</p>
                 <h1 id="main-title" class="text-4xl font-serif text-[#322C2B] font-bold">Sign In</h1>
-                <p class="text-sm text-gray-500 font-serif italic tracking-wide mt-2">Welcome back — we missed you.</p>
+                <p id="main-subtitle" class="text-sm text-gray-500 font-serif italic tracking-wide mt-2">Welcome to Sterling You.</p>
             </div>
 
             <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-8">
 
-                <!-- STEP 1: Phone -->
+                <!-- ── STEP 1: Phone entry ── -->
                 <div id="step-phone" class="fade-up">
                     <label class="block text-[10px] font-bold tracking-widest uppercase text-gray-500 mb-3">Phone Number</label>
                     <div class="flex items-center border-b border-gray-200 focus-within:border-[#B36A5E] transition mb-1">
@@ -119,30 +122,28 @@
                         <input type="tel" id="phone-input" maxlength="11"
                             placeholder="01XXXXXXXXX"
                             oninput="this.value=this.value.replace(/[^0-9]/g,''); hideErr('phone-err')"
-                            onkeydown="if(event.key==='Enter') sendOTP()"
+                            onkeydown="if(event.key==='Enter') checkPhone()"
                             class="site-input">
                     </div>
                     <p id="phone-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
 
                     <p class="text-[10px] text-gray-400 mt-4 mb-6 leading-relaxed">
-                        We'll send a 6-digit code via SMS to verify your number.
+                        We'll check if you have an account and guide you from there.
                     </p>
 
                     <div id="recaptcha-container"></div>
 
-                    <button id="btn-send" onclick="sendOTP()"
+                    <button id="btn-check" onclick="checkPhone()"
                         class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg tracking-widest mb-5">
-                        Send OTP
+                        Continue
                     </button>
 
-                    <!-- Divider -->
                     <div class="flex items-center gap-3 mb-5">
                         <div class="flex-1 h-px bg-gray-100"></div>
                         <span class="text-[10px] font-bold uppercase text-gray-300 tracking-widest">or</span>
                         <div class="flex-1 h-px bg-gray-100"></div>
                     </div>
 
-                    <!-- Google inline -->
                     <button onclick="signInWithGoogle()" id="btn-google"
                         class="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3.5 text-[11px] font-bold uppercase tracking-widest text-[#322C2B] hover:border-[#B36A5E] hover:text-[#B36A5E] transition">
                         <svg width="16" height="16" viewBox="0 0 24 24" class="flex-shrink-0">
@@ -155,14 +156,65 @@
                     </button>
 
                     <p class="text-[10px] text-gray-400 text-center mt-5 leading-relaxed">
-                        By continuing you agree to our <a href="#" class="text-[#B36A5E] hover:underline">Terms & Conditions</a>
+                        By continuing you agree to our
+                        <a href="terms.html" target="_blank" class="text-[#B36A5E] hover:underline">Terms &amp; Conditions</a>
                     </p>
                 </div>
 
-                <!-- STEP 2: OTP -->
-                <div id="step-otp" class="hidden">
+                <!-- ── STEP 2a: Existing user — password login ── -->
+                <div id="step-existing" class="hidden">
                     <button onclick="backToPhone()" class="flex items-center gap-1 text-[10px] font-bold uppercase text-gray-400 hover:text-[#B36A5E] transition mb-6">
                         ← Change Number
+                    </button>
+
+                    <div class="flex items-center gap-3 mb-6 bg-gray-50 px-4 py-3 rounded-xl border border-gray-100">
+                        <div class="w-8 h-8 rounded-full bg-[#322C2B] flex items-center justify-center text-white text-xs font-bold flex-shrink-0" id="existing-avatar">?</div>
+                        <div>
+                            <p class="text-xs font-bold text-[#322C2B]" id="existing-name">User</p>
+                            <p class="text-[10px] text-gray-400" id="existing-phone-display"></p>
+                        </div>
+                    </div>
+
+                    <div id="existing-password-section">
+                        <label class="block text-[10px] font-bold tracking-widest uppercase text-gray-500 mb-1">Password</label>
+                        <div class="relative">
+                            <input type="password" id="existing-pass" class="site-input pr-8"
+                                placeholder="Enter your password"
+                                onkeydown="if(event.key==='Enter') loginWithPassword()">
+                            <button type="button" class="pass-eye" onclick="toggleEye('existing-pass', this)">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                        </div>
+                        <p id="existing-pass-err" class="text-[10px] text-red-500 font-bold mt-2 hidden"></p>
+
+                        <div class="flex justify-end mt-2 mb-5">
+                            <button onclick="startForgotPassword()" class="text-[10px] text-[#B36A5E] font-bold hover:underline uppercase tracking-widest">
+                                Forgot Password?
+                            </button>
+                        </div>
+
+                        <button id="btn-login-pass" onclick="loginWithPassword()"
+                            class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg tracking-widest mb-4">
+                            Login
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="flex-1 h-px bg-gray-100"></div>
+                        <span class="text-[10px] font-bold uppercase text-gray-300 tracking-widest">or</span>
+                        <div class="flex-1 h-px bg-gray-100"></div>
+                    </div>
+
+                    <button id="btn-login-otp" onclick="sendOTPForExisting()"
+                        class="w-full border border-[#322C2B] text-[#322C2B] py-3.5 rounded-xl font-bold uppercase text-xs hover:bg-[#322C2B] hover:text-white transition tracking-widest">
+                        Login with OTP instead
+                    </button>
+                </div>
+
+                <!-- ── STEP 2b: OTP verification ── -->
+                <div id="step-otp" class="hidden">
+                    <button onclick="backFromOTP()" class="flex items-center gap-1 text-[10px] font-bold uppercase text-gray-400 hover:text-[#B36A5E] transition mb-6">
+                        ← Back
                     </button>
 
                     <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Verification Code</p>
@@ -199,48 +251,123 @@
                     </button>
                 </div>
 
-<!-- STEP 3: Name + Optional Email -->
-<div id="step-email" class="hidden">
+                <!-- ── STEP 3a: New user — create account ── -->
+                <div id="step-new-user" class="hidden">
+                    <div class="flex justify-center mb-5">
+                        <div class="w-14 h-14 rounded-full bg-[#322C2B]/10 border border-[#322C2B]/20 flex items-center justify-center">
+                            <svg width="26" height="26" fill="none" stroke="#322C2B" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </div>
+                    </div>
+                    <h2 class="font-serif text-2xl text-[#322C2B] font-bold text-center mb-1">Create Account</h2>
+                    <p class="text-xs text-gray-400 text-center mb-6">Complete your profile to get started</p>
+
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Full Name <span class="text-red-400">*</span></label>
+                            <input type="text" id="new-name" placeholder="e.g. Fatima Rahman" class="site-input"
+                                onkeydown="if(event.key==='Enter') document.getElementById('new-email').focus()">
+                            <p id="new-name-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">
+                                Email Address <span class="text-gray-300 normal-case font-normal">(optional)</span>
+                            </label>
+                            <input type="email" id="new-email" placeholder="you@example.com" class="site-input"
+                                onkeydown="if(event.key==='Enter') document.getElementById('new-pass').focus()">
+                            <p id="new-email-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">New Password <span class="text-red-400">*</span></label>
+                            <div class="relative">
+                                <input type="password" id="new-pass" placeholder="Min 6 chars, 1 uppercase, 1 number" class="site-input pr-8"
+                                    onkeydown="if(event.key==='Enter') document.getElementById('new-pass-confirm').focus()">
+                                <button type="button" class="pass-eye" onclick="toggleEye('new-pass', this)">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </div>
+                            <p class="text-[10px] text-gray-400 mt-1">Min 6 characters, 1 uppercase letter, 1 number</p>
+<p id="new-pass-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Confirm Password <span class="text-red-400">*</span></label>
+                            <div class="relative">
+                                <input type="password" id="new-pass-confirm" placeholder="Re-enter your password" class="site-input pr-8"
+                                    onkeydown="if(event.key==='Enter') createAccount()">
+                                <button type="button" class="pass-eye" onclick="toggleEye('new-pass-confirm', this)">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </div>
+                            <p id="new-pass-confirm-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+                        </div>
+                    </div>
+
+                    <p id="create-account-err" class="text-[10px] text-red-500 font-bold mt-3 hidden"></p>
+
+                    <button id="btn-create" onclick="createAccount()"
+                        class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg tracking-widest mt-6">
+                        Create Account
+                    </button>
+                </div>
+
+<!-- ── STEP 3b: Set new password after forgot password OTP ── -->
+<div id="step-reset-pass" class="hidden">
     <div class="flex justify-center mb-5">
         <div class="w-14 h-14 rounded-full bg-green-50 border border-green-100 flex items-center justify-center">
             <svg width="26" height="26" fill="none" stroke="#10B981" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
     </div>
-    <h2 class="font-serif text-2xl text-[#322C2B] font-bold text-center mb-1">You're in!</h2>
-    <p class="text-xs text-gray-400 text-center mb-8">Tell us your name and optionally your email</p>
+    <h2 class="font-serif text-2xl text-[#322C2B] font-bold text-center mb-1">Set New Password</h2>
+    <p class="text-xs text-gray-400 text-center mb-6">OTP verified. Choose a new password.</p>
 
-    <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">
-        Full Name <span class="text-red-400">*</span>
-    </label>
-    <input type="text" id="name-input" placeholder="e.g. Fatima Rahman" class="site-input mb-4"
-        onkeydown="if(event.key==='Enter') document.getElementById('email-input').focus()">
-    <p id="name-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+    <div class="space-y-5">
+        <div>
+            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">New Password <span class="text-red-400">*</span></label>
+            <div class="relative">
+                <input type="password" id="reset-new-pass" placeholder="Enter new password" class="site-input pr-8"
+                    onkeydown="if(event.key==='Enter') document.getElementById('reset-confirm-pass').focus()">
+                <button type="button" class="pass-eye" onclick="toggleEye('reset-new-pass', this)">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1">Min 6 characters, 1 uppercase letter, 1 number</p>
+            <p id="reset-new-pass-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+        </div>
+        <div>
+            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Confirm Password <span class="text-red-400">*</span></label>
+            <div class="relative">
+                <input type="password" id="reset-confirm-pass" placeholder="Re-enter your new password" class="site-input pr-8"
+                    onkeydown="if(event.key==='Enter') saveNewPassword()">
+                <button type="button" class="pass-eye" onclick="toggleEye('reset-confirm-pass', this)">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+            </div>
+            <p id="reset-confirm-pass-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+        </div>
+    </div>
 
-    <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1 mt-4">
-        Email Address
-        <span class="text-gray-300 normal-case font-normal ml-1">(optional)</span>
-    </label>
-    <input type="email" id="email-input" placeholder="your@email.com" class="site-input mb-1"
-        onkeydown="if(event.key==='Enter') saveEmailAndContinue()">
-    <p id="email-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+    <p id="reset-pass-err" class="text-[10px] text-red-500 font-bold mt-3 hidden"></p>
 
-    <button onclick="saveEmailAndContinue()"
-        class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg tracking-widest mt-6 mb-3">
-        Save & Continue
-    </button>
-    <button onclick="skipEmail()"
-        class="w-full text-gray-400 py-2 text-[10px] font-bold uppercase tracking-widest hover:text-gray-600 transition">
-        Skip for now
+    <button id="btn-save-pass" onclick="saveNewPassword()"
+        class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg tracking-widest mt-6">
+        Save Password & Login
     </button>
 </div>
 
-            </div>
+<main class="flex-1 flex items-center justify-center py-12 px-4">
+    <div class="w-full max-w-md">
+        <div class="text-left mb-8"></div>
+        <div class="bg-white border ...">
+</div>
 
             <p class="text-center text-[10px] text-gray-400 mt-6">
                 <a href="index.html" class="hover:text-[#B36A5E] transition">← Back to Store</a>
                 &nbsp;·&nbsp; Protected by reCAPTCHA
             </p>
-        </div>
+</div>
+        </div><!-- closes w-full max-w-md -->
     </main>
 
     <footer class="bg-[#322C2B] text-white py-6">
@@ -250,6 +377,7 @@
     </footer>
 
 <script>
+// ── Firebase init ──────────────────────────────────────────────────────────────
 const firebaseConfig = {
     apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0",
     authDomain: "sterling-erp.firebaseapp.com",
@@ -262,30 +390,46 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
-const SITE_KEY           = '6Lev3ZssAAAAAGmvhZzA36b9VWZNtMR3kJ_smV22';
+
+// ── Constants ──────────────────────────────────────────────────────────────────
 const MAX_OTP_PER_HOUR   = 3;
-const MAX_OTP_PER_DAY    = 300;
 const MAX_WRONG_ATTEMPTS = 3;
 const MIN_GAP_MS         = 2000;
 const BD_PREFIXES        = ['013','014','015','016','017','018','019'];
 
+// ── State ──────────────────────────────────────────────────────────────────────
+const redirectTo       = new URLSearchParams(window.location.search).get('redirect') || 'account.html';
+let skipAutoRedirect   = false;
+let currentPhone       = '';
 let confirmationResult = null;
 let otpTimer           = null;
 let timerSecs          = 120;
 let lastSendTime       = 0;
-let currentPhone       = '';
 let wrongAttempts      = 0;
 let recaptchaVerifier  = null;
 let authedUser         = null;
+let otpPurpose         = ''; // 'new_user' | 'existing_otp_login' | 'forgot_password'
+let existingUserEmail  = ''; // phone-derived email for existing users
 
-const redirectTo = new URLSearchParams(window.location.search).get('redirect') || 'account.html';
+// ── Auth guard — only fires when not in a mid-flow state ──────────────────────
+auth.onAuthStateChanged(user => {
+    if (user && !skipAutoRedirect) window.location.href = redirectTo;
+});
 
-auth.onAuthStateChanged(user => { if (user) window.location.href = redirectTo; });
+// ── reCAPTCHA ─────────────────────────────────────────────────────────────────
+function setupRecaptcha() {
+    if (recaptchaVerifier) return;
+    recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        size: 'invisible', callback: () => {}
+    });
+    recaptchaVerifier.render();
+}
+window.addEventListener('load', setupRecaptcha);
 
-
-// ── Helpers ──
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function showErr(id, msg) { const el = document.getElementById(id); if(el){ el.innerText=msg; el.classList.remove('hidden'); } }
 function hideErr(id)      { const el = document.getElementById(id); if(el) el.classList.add('hidden'); }
+function clearErr(...ids) { ids.forEach(hideErr); }
 
 function setBtnLoading(id, loading, label) {
     const btn = document.getElementById(id);
@@ -295,14 +439,27 @@ function setBtnLoading(id, loading, label) {
 }
 
 function showStep(step) {
-    ['step-phone','step-otp','step-email'].forEach(s => {
+    ['step-phone','step-existing','step-otp','step-new-user','step-reset-pass'].forEach(s => {
         const el = document.getElementById(s);
         el.classList.toggle('hidden', s !== step);
         if (s === step) { el.classList.remove('fade-up'); void el.offsetWidth; el.classList.add('fade-up'); }
     });
 }
 
-// ── BD validation ──
+function setTitle(title, subtitle) {
+    document.getElementById('main-title').innerText = title;
+    document.getElementById('main-subtitle').innerText = subtitle;
+}
+
+function toggleEye(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    btn.innerHTML = isPass
+        ? `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-10-8-10-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 10 8 10 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+        : `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
+}
+
 function validatePhone(p) {
     if (!p || p.length !== 11)               return 'Must be exactly 11 digits';
     if (!p.startsWith('0'))                  return 'Must start with 0';
@@ -310,9 +467,16 @@ function validatePhone(p) {
     return null;
 }
 
-// ── Rate limiting ──
+function validatePassword(pass) {
+    if (pass.length < 6)       return 'Password must be at least 6 characters.';
+    if (!/[A-Z]/.test(pass))   return 'Must contain at least one uppercase letter.';
+    if (!/[0-9]/.test(pass))   return 'Must contain at least one number.';
+    return null;
+}
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
 async function checkRateLimit(phone) {
-    const now = Date.now(), today = new Date().toISOString().split('T')[0], hourAgo = now - 3600000;
+    const now = Date.now(), hourAgo = now - 3600000;
     if (now - lastSendTime < MIN_GAP_MS) return 'Too fast — please wait a moment.';
     try {
         const pDoc = await db.collection('otp_rate_limits').doc(phone).get();
@@ -320,17 +484,18 @@ async function checkRateLimit(phone) {
             const recent = (pDoc.data().requests||[]).filter(t => t > hourAgo);
             if (recent.length >= MAX_OTP_PER_HOUR) {
                 const w = Math.ceil((recent[0] + 3600000 - now) / 60000);
-                return `Too many requests. Try again in ${w} min.`;
+                return `Too many OTP requests. Try again in ${w} min.`;
             }
         }
+        const today = new Date().toISOString().split('T')[0];
         const capDoc = await db.collection('otp_daily_cap').doc(today).get();
-        if (capDoc.exists && (capDoc.data().count||0) >= MAX_OTP_PER_DAY) return 'Daily OTP limit reached. Try tomorrow.';
+        if (capDoc.exists && (capDoc.data().count||0) >= 300) return 'Daily OTP limit reached. Try tomorrow.';
         return null;
     } catch(e) { return null; }
 }
 
 async function recordOTPSent(phone) {
-    const now = Date.now(), today = new Date().toISOString().split('T')[0], hourAgo = now - 3600000;
+    const now = Date.now(), hourAgo = now - 3600000, today = new Date().toISOString().split('T')[0];
     try {
         const pRef = db.collection('otp_rate_limits').doc(phone);
         const pDoc = await pRef.get();
@@ -343,92 +508,143 @@ async function recordOTPSent(phone) {
     } catch(e) {}
 }
 
-// ── reCAPTCHA — initialize once on load, never clear ──
-function setupRecaptcha() {
-    if (recaptchaVerifier) return;
-    recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-        size: 'invisible',
-        callback: () => {}
-    });
-    recaptchaVerifier.render();
-}
-
-window.addEventListener('load', setupRecaptcha);
-
-// ── Send OTP ──
-async function sendOTP() {
+// ── STEP 1: Check phone ───────────────────────────────────────────────────────
+async function checkPhone() {
     const phone = document.getElementById('phone-input').value.trim();
     hideErr('phone-err');
 
     const ve = validatePhone(phone);
     if (ve) { showErr('phone-err', ve); return; }
 
-    setBtnLoading('btn-send', true, '');
-
-    const re = await checkRateLimit(phone);
-    if (re) { showErr('phone-err', re); setBtnLoading('btn-send', false, 'Send OTP'); return; }
-
-
-
-    const formatted = '+880' + phone.substring(1);
-    currentPhone = phone;
-    lastSendTime = Date.now();
+    setBtnLoading('btn-check', true, '');
 
     try {
-        if (!recaptchaVerifier) setupRecaptcha();
-        confirmationResult = await auth.signInWithPhoneNumber(formatted, recaptchaVerifier);
-        await recordOTPSent(phone);
+        const lookup = await db.collection('phone_lookups').doc(phone).get();
+        currentPhone = phone;
 
-        document.getElementById('display-phone').innerText = phone;
-        wrongAttempts = 0;
-        clearBoxes();
-        document.getElementById('attempt-warn').innerText = '';
-        hideErr('otp-err');
-        showStep('step-otp');
-        startTimer();
-        document.getElementById('otp-0').focus();
+if (lookup.exists) {
+    // ── EXISTING USER ──
+    existingUserEmail = phone + '@sterling.com';
+    const name = lookup.data().name || 'User';
 
-    } catch(e) {
-        console.error('OTP Error:', e.code, e.message);
-        let msg = e.code + ': ' + e.message;
-        if (e.code === 'auth/too-many-requests') msg = 'Too many attempts. Please wait before retrying.';
-        if (e.code === 'auth/invalid-phone-number') msg = 'Invalid phone number format.';
-        showErr('phone-err', msg);
-    }
+            document.getElementById('existing-name').innerText = name;
+            document.getElementById('existing-avatar').innerText = name.charAt(0).toUpperCase();
+            document.getElementById('existing-phone-display').innerText = '+880' + phone.substring(1);
+            setTitle('Welcome Back', 'We missed you — sign in to continue.');
+            showStep('step-existing');
 
-    setBtnLoading('btn-send', false, 'Send OTP');
+        } else {
+            // ── NEW USER — send OTP first ──
+            const rateErr = await checkRateLimit(phone);
+            if (rateErr) { showErr('phone-err', rateErr); setBtnLoading('btn-check', false, 'Continue'); return; }
+
+            otpPurpose = 'new_user';
+            skipAutoRedirect = true;
+            await sendOTPtoPhone(phone);
+            setTitle('Verify Number', 'Enter the code sent to your phone.');
+            showStep('step-otp');
+        }
+} catch(e) {
+    console.error('FULL ERROR:', e.code, e.message, e);
+    showErr('phone-err', e.code + ': ' + e.message);
 }
 
-// ── Resend OTP ──
-async function resendOTP() {
-    clearBoxes();
-    hideErr('otp-err');
-    document.getElementById('attempt-warn').innerText = '';
+    setBtnLoading('btn-check', false, 'Continue');
+}
 
-    const re = await checkRateLimit(currentPhone);
-    if (re) { showErr('otp-err', re); return; }
+// ── STEP 2a: Login with password ──────────────────────────────────────────────
+async function loginWithPassword() {
+    hideErr('existing-pass-err');
+    const pass = document.getElementById('existing-pass').value;
+    if (!pass) { showErr('existing-pass-err', 'Please enter your password.'); return; }
 
-    const formatted = '+880' + currentPhone.substring(1);
-    lastSendTime = Date.now();
+    setBtnLoading('btn-login-pass', true, '');
+    skipAutoRedirect = true;
 
     try {
-        // For resend we need a fresh verifier
+        await auth.signInWithEmailAndPassword(existingUserEmail, pass);
+        window.location.href = redirectTo;
+    } catch(e) {
+        skipAutoRedirect = false;
+        let msg = 'Incorrect password. Please try again.';
+        if (e.code === 'auth/too-many-requests') msg = 'Too many attempts. Please wait or use OTP login.';
+        showErr('existing-pass-err', msg);
+        setBtnLoading('btn-login-pass', false, 'Login');
+    }
+}
+
+// ── STEP 2a: Login with OTP (existing user) ───────────────────────────────────
+async function sendOTPForExisting() {
+    hideErr('existing-pass-err');
+    const rateErr = await checkRateLimit(currentPhone);
+    if (rateErr) { showErr('existing-pass-err', rateErr); return; }
+
+    setBtnLoading('btn-login-otp', true, '');
+
+    try {
+        otpPurpose = 'existing_otp_login';
+        skipAutoRedirect = true;
+        await sendOTPtoPhone(currentPhone);
+        setTitle('Verify Number', 'Enter the code sent to your phone.');
+        showStep('step-otp');
+    } catch(e) {
+        skipAutoRedirect = false;
+        showErr('existing-pass-err', 'Could not send OTP. Please try again.');
+        setBtnLoading('btn-login-otp', false, 'Login with OTP instead');
+    }
+}
+
+// ── STEP 2a: Forgot password ──────────────────────────────────────────────────
+async function startForgotPassword() {
+    hideErr('existing-pass-err');
+    const rateErr = await checkRateLimit(currentPhone);
+    if (rateErr) { showErr('existing-pass-err', rateErr); return; }
+
+    try {
+        otpPurpose = 'forgot_password';
+        skipAutoRedirect = true;
+        await sendOTPtoPhone(currentPhone);
+        setTitle('Reset Password', "Verify it's you first.");
+        showStep('step-otp');
+    } catch(e) {
+        skipAutoRedirect = false;
+        showErr('existing-pass-err', 'Could not send OTP. Please try again.');
+    }
+}
+
+// ── Core: send OTP ────────────────────────────────────────────────────────────
+async function sendOTPtoPhone(phone) {
+    const formatted = '+880' + phone.substring(1);
+    lastSendTime = Date.now();
+    if (!recaptchaVerifier) setupRecaptcha();
+    confirmationResult = await auth.signInWithPhoneNumber(formatted, recaptchaVerifier);
+    await recordOTPSent(phone);
+    document.getElementById('display-phone').innerText = phone;
+    wrongAttempts = 0;
+    clearBoxes();
+    const warn = document.getElementById('attempt-warn');
+    if (warn) warn.innerText = '';
+    hideErr('otp-err');
+    startTimer();
+    setTimeout(() => { const el = document.getElementById('otp-0'); if(el) el.focus(); }, 100);
+}
+
+// ── Resend OTP ────────────────────────────────────────────────────────────────
+async function resendOTP() {
+    const rateErr = await checkRateLimit(currentPhone);
+    if (rateErr) { showErr('otp-err', rateErr); return; }
+    clearBoxes(); hideErr('otp-err');
+    try {
         recaptchaVerifier = null;
         setupRecaptcha();
         await recaptchaVerifier.render();
-
-        confirmationResult = await auth.signInWithPhoneNumber(formatted, recaptchaVerifier);
-        await recordOTPSent(currentPhone);
-        wrongAttempts = 0;
-        startTimer();
-        document.getElementById('otp-0').focus();
+        await sendOTPtoPhone(currentPhone);
     } catch(e) {
-        console.error('Resend error:', e.code, e.message);
         showErr('otp-err', 'Failed to resend. Please go back and try again.');
     }
 }
 
-// ── OTP boxes ──
+// ── OTP boxes ─────────────────────────────────────────────────────────────────
 function otpInput(el, i) {
     el.value = el.value.replace(/[^0-9]/g,'');
     el.classList.toggle('filled', !!el.value);
@@ -448,15 +664,16 @@ function otpPaste(e) {
     d.split('').forEach((c,i)=>{ const el=document.getElementById('otp-'+i); if(el){el.value=c;el.classList.add('filled');} });
     if(d.length===6) setTimeout(verifyOTP,250);
 }
-function getCode()   { return [0,1,2,3,4,5].map(i=>document.getElementById('otp-'+i).value).join(''); }
-function clearBoxes(){ [0,1,2,3,4,5].forEach(i=>{ const e=document.getElementById('otp-'+i); e.value=''; e.classList.remove('filled','error-box'); }); }
-function shakeBoxes(){ [0,1,2,3,4,5].forEach(i=>{ const e=document.getElementById('otp-'+i); e.classList.add('error-box'); setTimeout(()=>e.classList.remove('error-box'),500); }); }
+function getCode()    { return [0,1,2,3,4,5].map(i=>document.getElementById('otp-'+i).value).join(''); }
+function clearBoxes() { [0,1,2,3,4,5].forEach(i=>{ const e=document.getElementById('otp-'+i); e.value=''; e.classList.remove('filled','error-box'); }); }
+function shakeBoxes() { [0,1,2,3,4,5].forEach(i=>{ const e=document.getElementById('otp-'+i); e.classList.add('error-box'); setTimeout(()=>e.classList.remove('error-box'),500); }); }
 
-// ── Timer ──
+// ── Timer ─────────────────────────────────────────────────────────────────────
 function startTimer() {
     timerSecs = 120;
     clearInterval(otpTimer);
-    document.getElementById('btn-resend').disabled = true;
+    const rb = document.getElementById('btn-resend');
+    if (rb) rb.disabled = true;
     otpTimer = setInterval(() => {
         timerSecs--;
         const el = document.getElementById('timer-el');
@@ -466,137 +683,194 @@ function startTimer() {
         }
         if (timerSecs <= 0) {
             clearInterval(otpTimer);
-            const rb = document.getElementById('btn-resend');
-            if (rb) rb.disabled = false;
+            const rb2 = document.getElementById('btn-resend');
+            if (rb2) rb2.disabled = false;
         }
     }, 1000);
 }
 
-// ── Verify OTP ──
+// ── Verify OTP ────────────────────────────────────────────────────────────────
 async function verifyOTP() {
     const code = getCode();
     if (code.length < 6) { showErr('otp-err','Please enter all 6 digits.'); return; }
     if (!confirmationResult) { showErr('otp-err','Session expired. Request a new OTP.'); return; }
     hideErr('otp-err');
     setBtnLoading('btn-verify', true, '');
-    try {
-        let skipAutoRedirect = false;
 
-auth.onAuthStateChanged(user => { 
-    if (user && !skipAutoRedirect) window.location.href = redirectTo; 
-});
+    skipAutoRedirect = true; // Lock redirect before confirm fires auth state
+
+    try {
         const result = await confirmationResult.confirm(code);
-        authedUser   = result.user;
+        authedUser = result.user;
         clearInterval(otpTimer);
-        skipAutoRedirect = true;
-        await ensureUserDoc(result.user, currentPhone);
-        document.getElementById('main-title').innerText = 'Almost Done';
-        showStep('step-email');
+
+        if (otpPurpose === 'new_user') {
+            setTitle('Create Account', 'Almost done — set up your profile.');
+            showStep('step-new-user');
+            setTimeout(() => { const el = document.getElementById('new-name'); if(el) el.focus(); }, 300);
+
+        } else if (otpPurpose === 'existing_otp_login') {
+            window.location.href = redirectTo;
+
+        } else if (otpPurpose === 'forgot_password') {
+            setTitle('New Password', 'Choose a strong password.');
+            showStep('step-reset-pass');
+            setTimeout(() => { const el = document.getElementById('reset-new-pass'); if(el) el.focus(); }, 300);
+        }
+
     } catch(e) {
+        if (!authedUser) skipAutoRedirect = false;
         wrongAttempts++;
         if (wrongAttempts >= MAX_WRONG_ATTEMPTS) {
             shakeBoxes(); clearBoxes();
             confirmationResult = null; clearInterval(otpTimer);
             showErr('otp-err','Too many wrong attempts. Please request a new OTP.');
-            setTimeout(backToPhone, 2000);
+            setTimeout(() => backFromOTP(), 2000);
         } else {
             shakeBoxes();
             const left = MAX_WRONG_ATTEMPTS - wrongAttempts;
             showErr('otp-err', `Incorrect code. ${left} attempt${left>1?'s':''} remaining.`);
-            document.getElementById('attempt-warn').innerText = left===1 ? '⚠ Last attempt before OTP is locked' : '';
+            const warn = document.getElementById('attempt-warn');
+            if (warn) warn.innerText = left===1 ? '⚠ Last attempt before OTP is locked' : '';
         }
     }
+
     setBtnLoading('btn-verify', false, 'Verify & Continue');
 }
 
-function backToPhone() {
-    clearInterval(otpTimer); confirmationResult = null; wrongAttempts = 0;
-    showStep('step-phone'); hideErr('otp-err');
-    document.getElementById('main-title').innerText = 'Sign In';
-}
+// ── STEP 3a: Create account ───────────────────────────────────────────────────
+async function createAccount() {
+    clearErr('new-name-err','new-email-err','new-pass-err','new-pass-confirm-err','create-account-err');
 
-// ── Ensure Firestore user doc ──
-async function ensureUserDoc(user, phone) {
-    const ref = db.collection('users').doc(user.uid);
-    const doc = await ref.get();
-    if (!doc.exists) {
-        await ref.set({
-            fullName:'', phone: phone||user.phoneNumber||'', email: user.email||'',
-            crmTags:'Good', isBlocked:false, addresses:[], totalSpend:0,
-            authMethod:'phone', createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        if (phone) await db.collection('phone_lookups').doc(phone).set({ uid: user.uid });
-    } else {
-        const data = doc.data();
-        if (!data.phone && phone) {
-            await ref.update({ phone });
-            await db.collection('phone_lookups').doc(phone).set({ uid: user.uid });
-        }
-    }
-}
+    const name    = document.getElementById('new-name').value.trim();
+    const email   = document.getElementById('new-email').value.trim();
+    const pass    = document.getElementById('new-pass').value;
+    const confirm = document.getElementById('new-pass-confirm').value;
 
-async function saveEmailAndContinue() {
-    const name  = document.getElementById('name-input').value.trim();
-    const email = document.getElementById('email-input').value.trim();
-    hideErr('email-err');
-    hideErr('name-err');
+    let hasErr = false;
+    if (!name || name.length < 3)                                          { showErr('new-name-err', 'Full name must be at least 3 characters.'); hasErr = true; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))               { showErr('new-email-err', 'Enter a valid email address.'); hasErr = true; }
+    const passErr = validatePassword(pass);
+    if (passErr)                                                            { showErr('new-pass-err', passErr); hasErr = true; }
+    if (pass !== confirm)                                                   { showErr('new-pass-confirm-err', 'Passwords do not match.'); hasErr = true; }
+    if (hasErr) return;
 
-    // Only require name if this is a new user (no existing fullName)
-    const userDoc = await db.collection('users').doc(authedUser.uid).get();
-    const isNewUser = !userDoc.data().fullName;
-
-    if (isNewUser && (!name || name.length < 3)) {
-        showErr('name-err', 'Please enter your full name (min 3 characters).');
-        return;
-    }
-
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showErr('email-err', 'Please enter a valid email address.');
-        return;
-    }
+    setBtnLoading('btn-create', true, '');
 
     try {
-        const updates = {};
-        if (name) updates.fullName = name;
-        if (email) {
-            updates.email = email;
-            updates.contactEmail = email;
-            try { await authedUser.updateEmail(email); } catch(e) {}
-        }
-        if (Object.keys(updates).length > 0) {
-            await db.collection('users').doc(authedUser.uid).update(updates);
-        }
+        // Link email+password credential to the phone-authed user
+        const emailCred = firebase.auth.EmailAuthProvider.credential(
+            currentPhone + '@sterling.com', pass
+        );
+        await authedUser.linkWithCredential(emailCred).catch(() => {});
+
+        // Save Firestore user doc
+        const currentUid = auth.currentUser ? auth.currentUser.uid : authedUser.uid;
+await db.collection('users').doc(currentUid).set({
+            fullName: name,
+            phone: currentPhone,
+            email: email || (currentPhone + '@sterling.com'),
+            contactEmail: email || null,
+            crmTags: 'Good', isBlocked: false,
+            addresses: [], paymentMethods: [],
+            totalSpend: 0,
+            authMethod: 'phone',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await db.collection('phone_lookups').doc(currentPhone).set({ 
+    uid: authedUser.uid,
+    name: name  // save name so login page can show it without auth
+});
+
+        window.location.href = redirectTo;
+
     } catch(e) {
         console.error(e);
+        showErr('create-account-err', 'Could not create account: ' + e.message);
+        setBtnLoading('btn-create', false, 'Create Account');
     }
-
-    window.location.href = redirectTo;
 }
 
-async function skipEmail() {
-    const userDoc = await db.collection('users').doc(authedUser.uid).get();
-    if (!userDoc.data().fullName) {
-        showErr('name-err', 'Please enter your name to continue.');
-        return;
+// ── STEP 3b: Save new password ────────────────────────────────────────────────
+async function saveNewPassword() {
+    clearErr('reset-new-pass-err','reset-confirm-pass-err','reset-pass-err');
+
+    const pass    = document.getElementById('reset-new-pass').value;
+    const confirm = document.getElementById('reset-confirm-pass').value;
+
+    const passErr = validatePassword(pass);
+    if (passErr) { showErr('reset-new-pass-err', passErr); return; }
+    if (pass !== confirm) { showErr('reset-confirm-pass-err', 'Passwords do not match.'); return; }
+
+    setBtnLoading('btn-save-pass', true, '');
+
+    try {
+        const emailCred = firebase.auth.EmailAuthProvider.credential(existingUserEmail, pass);
+        await authedUser.linkWithCredential(emailCred).catch(async (e) => {
+            if (e.code === 'auth/provider-already-linked' || e.code === 'auth/email-already-in-use') {
+                await authedUser.updatePassword(pass);
+            } else { throw e; }
+        });
+        window.location.href = redirectTo;
+    } catch(e) {
+        console.error(e);
+        showErr('reset-pass-err', 'Could not update password: ' + e.message);
+        setBtnLoading('btn-save-pass', false, 'Save Password & Login');
     }
-    window.location.href = redirectTo;
 }
 
-// ── Google login ──
+// ── Back navigation ───────────────────────────────────────────────────────────
+function backToPhone() {
+    clearInterval(otpTimer);
+    confirmationResult = null; wrongAttempts = 0;
+    authedUser = null; skipAutoRedirect = false;
+    currentPhone = ''; existingUserEmail = '';
+    document.getElementById('phone-input').value = '';
+    setTitle('Sign In', 'Welcome back — we missed you.');
+    showStep('step-phone');
+}
+
+function backFromOTP() {
+    clearInterval(otpTimer);
+    confirmationResult = null; wrongAttempts = 0;
+    if (!authedUser) skipAutoRedirect = false;
+
+    if (otpPurpose === 'new_user') {
+        backToPhone();
+    } else {
+        // Return to existing user password screen
+        setTitle('Welcome Back', 'We missed you — sign in to continue.');
+        showStep('step-existing');
+    }
+}
+
+// ── Google Sign In ────────────────────────────────────────────────────────────
 async function signInWithGoogle() {
     const googleLabel = `<svg width="16" height="16" viewBox="0 0 24 24" class="flex-shrink-0"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Continue with Google`;
     const btn = document.getElementById('btn-google');
     if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="border-top-color:#B36A5E;border-color:rgba(179,106,94,0.3)"></span>'; }
+    skipAutoRedirect = true;
     try {
         const result = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-        await ensureUserDoc(result.user, null);
+        const ref = db.collection('users').doc(result.user.uid);
+        const doc = await ref.get();
+        if (!doc.exists) {
+            await ref.set({
+                fullName: result.user.displayName || '',
+                phone: '', email: result.user.email || '',
+                crmTags: 'Good', isBlocked: false,
+                addresses: [], totalSpend: 0,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
         window.location.href = redirectTo;
     } catch(e) {
+        skipAutoRedirect = false;
         if (e.code !== 'auth/popup-closed-by-user') showErr('phone-err','Google sign-in failed. Please try again.');
         if (btn) { btn.disabled = false; btn.innerHTML = googleLabel; }
     }
 }
-
 </script>
 
 </body>
