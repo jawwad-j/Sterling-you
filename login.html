@@ -199,33 +199,40 @@
                     </button>
                 </div>
 
-                <!-- STEP 3: Optional Email -->
-                <div id="step-email" class="hidden">
-                    <div class="flex justify-center mb-5">
-                        <div class="w-14 h-14 rounded-full bg-green-50 border border-green-100 flex items-center justify-center">
-                            <svg width="26" height="26" fill="none" stroke="#10B981" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                        </div>
-                    </div>
-                    <h2 class="font-serif text-2xl text-[#322C2B] font-bold text-center mb-1">You're in!</h2>
-                    <p class="text-xs text-gray-400 text-center mb-8">Add your email to receive order updates &amp; exclusive offers</p>
+<!-- STEP 3: Name + Optional Email -->
+<div id="step-email" class="hidden">
+    <div class="flex justify-center mb-5">
+        <div class="w-14 h-14 rounded-full bg-green-50 border border-green-100 flex items-center justify-center">
+            <svg width="26" height="26" fill="none" stroke="#10B981" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+    </div>
+    <h2 class="font-serif text-2xl text-[#322C2B] font-bold text-center mb-1">You're in!</h2>
+    <p class="text-xs text-gray-400 text-center mb-8">Tell us your name and optionally your email</p>
 
-                    <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">
-                        Email Address
-                        <span class="text-gray-300 normal-case font-normal ml-1">(optional)</span>
-                    </label>
-                    <input type="email" id="email-input" placeholder="your@email.com" class="site-input mb-1"
-                        onkeydown="if(event.key==='Enter') saveEmailAndContinue()">
-                    <p id="email-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+    <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">
+        Full Name <span class="text-red-400">*</span>
+    </label>
+    <input type="text" id="name-input" placeholder="e.g. Fatima Rahman" class="site-input mb-4"
+        onkeydown="if(event.key==='Enter') document.getElementById('email-input').focus()">
+    <p id="name-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
 
-                    <button onclick="saveEmailAndContinue()"
-                        class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg tracking-widest mt-6 mb-3">
-                        Save & Continue
-                    </button>
-                    <button onclick="skipEmail()"
-                        class="w-full text-gray-400 py-2 text-[10px] font-bold uppercase tracking-widest hover:text-gray-600 transition">
-                        Skip for now
-                    </button>
-                </div>
+    <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1 mt-4">
+        Email Address
+        <span class="text-gray-300 normal-case font-normal ml-1">(optional)</span>
+    </label>
+    <input type="email" id="email-input" placeholder="your@email.com" class="site-input mb-1"
+        onkeydown="if(event.key==='Enter') saveEmailAndContinue()">
+    <p id="email-err" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+
+    <button onclick="saveEmailAndContinue()"
+        class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg tracking-widest mt-6 mb-3">
+        Save & Continue
+    </button>
+    <button onclick="skipEmail()"
+        class="w-full text-gray-400 py-2 text-[10px] font-bold uppercase tracking-widest hover:text-gray-600 transition">
+        Skip for now
+    </button>
+</div>
 
             </div>
 
@@ -274,6 +281,7 @@ let authedUser         = null;
 const redirectTo = new URLSearchParams(window.location.search).get('redirect') || 'account.html';
 
 auth.onAuthStateChanged(user => { if (user) window.location.href = redirectTo; });
+
 
 // ── Helpers ──
 function showErr(id, msg) { const el = document.getElementById(id); if(el){ el.innerText=msg; el.classList.remove('hidden'); } }
@@ -472,9 +480,15 @@ async function verifyOTP() {
     hideErr('otp-err');
     setBtnLoading('btn-verify', true, '');
     try {
+        let skipAutoRedirect = false;
+
+auth.onAuthStateChanged(user => { 
+    if (user && !skipAutoRedirect) window.location.href = redirectTo; 
+});
         const result = await confirmationResult.confirm(code);
         authedUser   = result.user;
         clearInterval(otpTimer);
+        skipAutoRedirect = true;
         await ensureUserDoc(result.user, currentPhone);
         document.getElementById('main-title').innerText = 'Almost Done';
         showStep('step-email');
@@ -521,22 +535,52 @@ async function ensureUserDoc(user, phone) {
     }
 }
 
-// ── Email step ──
 async function saveEmailAndContinue() {
+    const name  = document.getElementById('name-input').value.trim();
     const email = document.getElementById('email-input').value.trim();
     hideErr('email-err');
-    if (email) {
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('email-err','Please enter a valid email address.'); return; }
-        try {
-            if (authedUser) {
-                await db.collection('users').doc(authedUser.uid).update({ email });
-                try { await authedUser.updateEmail(email); } catch(e) {}
-            }
-        } catch(e) {}
+    hideErr('name-err');
+
+    // Only require name if this is a new user (no existing fullName)
+    const userDoc = await db.collection('users').doc(authedUser.uid).get();
+    const isNewUser = !userDoc.data().fullName;
+
+    if (isNewUser && (!name || name.length < 3)) {
+        showErr('name-err', 'Please enter your full name (min 3 characters).');
+        return;
+    }
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showErr('email-err', 'Please enter a valid email address.');
+        return;
+    }
+
+    try {
+        const updates = {};
+        if (name) updates.fullName = name;
+        if (email) {
+            updates.email = email;
+            updates.contactEmail = email;
+            try { await authedUser.updateEmail(email); } catch(e) {}
+        }
+        if (Object.keys(updates).length > 0) {
+            await db.collection('users').doc(authedUser.uid).update(updates);
+        }
+    } catch(e) {
+        console.error(e);
+    }
+
+    window.location.href = redirectTo;
+}
+
+async function skipEmail() {
+    const userDoc = await db.collection('users').doc(authedUser.uid).get();
+    if (!userDoc.data().fullName) {
+        showErr('name-err', 'Please enter your name to continue.');
+        return;
     }
     window.location.href = redirectTo;
 }
-function skipEmail() { window.location.href = redirectTo; }
 
 // ── Google login ──
 async function signInWithGoogle() {

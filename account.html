@@ -83,73 +83,6 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
         </div>
     </header>
 
-    <div id="auth-section" class="flex-grow flex items-center justify-center py-10 px-6"> 
-    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 w-full max-w-md">
-        
-        <div class="flex justify-center mb-6"> 
-            <img src="web-logo2.png" alt="Sterling You" class="h-24 object-contain">
-        </div>
-
-        <h2 id="auth-title" class="text-2xl font-bold text-[#322C2B] mb-2 text-center">Login</h2>
-        <p id="auth-subtitle" class="text-center text-xs text-gray-400 mb-6">Welcome back to Sterling You</p>
-        
-        <form id="auth-form" class="space-y-4">
-
-            <!-- Registration only fields -->
-            <div id="reg-fields" class="hidden space-y-4">
-                <div>
-                    <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Full Name <span class="text-red-400">*</span></label>
-                    <input type="text" id="user-name" minlength="3" maxlength="50" placeholder="e.g. Fatima Rahman" class="w-full border-b py-2 outline-none focus:border-[#B36A5E]">
-                    <p class="text-[9px] text-gray-400 mt-1">Minimum 3 characters</p>
-                </div>
-            </div>
-
-            <!-- Phone — always shown -->
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Phone Number <span class="text-red-400">*</span></label>
-                <input type="tel" id="user-phone" required placeholder="01XXXXXXXXX" class="w-full border-b py-2 outline-none focus:border-[#B36A5E]">
-                <p id="phone-hint" class="text-[9px] text-gray-400 mt-1 hidden">Bangladesh mobile number (01XXXXXXXXX)</p>
-            </div>
-
-<!-- Password — always shown -->
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Password <span class="text-red-400">*</span></label>
-                <div class="relative">
-                    <input type="password" id="user-pass" required class="w-full border-b py-2 outline-none focus:border-[#B36A5E] pr-8">
-                    <button type="button" onclick="togglePasswordVisibility('user-pass', this)"
-                        class="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>
-                        </svg>
-                    </button>
-                </div>
-                <p id="pass-hint" class="text-[9px] text-gray-400 mt-1 hidden">Min 8 chars, 1 uppercase, 1 number</p>
-            </div>
-
-            <!-- Email — registration only -->
-            <div id="reg-email-field" class="hidden">
-<label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Email Address</label>
-<input type="email" id="user-email" class="w-full border-b py-2 outline-none focus:border-[#B36A5E]" placeholder="you@example.com">
-            </div>
-
-            <p id="auth-error" class="hidden text-red-500 text-xs font-bold text-center"></p>
-
-            <button type="submit" id="auth-btn" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg">Login</button>
-            
-            <div class="mt-4 border-t pt-4">
-                <button type="button" onclick="signInWithGoogle()" id="google-btn" class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 py-3 rounded-xl font-bold text-xs hover:bg-gray-50 transition">
-                    <img id="google-icon" src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" width="18" alt="Google Logo">
-                    <span id="google-text">Sign in with Google</span>
-                </button>
-            </div>
-        </form>
-        
-        <p class="mt-6 text-center text-xs text-gray-500">
-            <span id="auth-toggle-text">New to Sterling You?</span> 
-            <button type="button" id="auth-toggle-btn" onclick="toggleAuth()" class="text-[#B36A5E] font-bold ml-1 hover:underline">Create Account</button>
-        </p>       
-    </div>
-</div>
 
     <div id="dashboard-section" class="hidden max-w-7xl mx-auto py-10 px-6 w-full flex-grow">
         
@@ -487,7 +420,7 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-let isLogin = true;
+
 let currentUserData = null;
 let globalOrders = [];
 
@@ -495,7 +428,6 @@ let globalOrders = [];
 let otpConfirmationResult = null;
 let otpPurpose = null; // 'register' or 'reset'
 let otpTimerInterval = null;
-let pendingRegistrationData = null;
 let recaptchaVerifier = null;
 let resetRecaptchaVerifier = null;
 let resetTimerInterval = null;
@@ -548,7 +480,6 @@ if (urlParams.get('action') === 'add') {
 
 auth.onAuthStateChanged((user) => {
     if (user) {
-        document.getElementById('auth-section').classList.add('hidden');
         document.getElementById('dashboard-section').classList.remove('hidden');
         document.getElementById('main-header').classList.remove('hidden');
         document.getElementById('main-footer').classList.remove('hidden');
@@ -556,22 +487,14 @@ auth.onAuthStateChanged((user) => {
         const targetUid = surrogateData ? JSON.parse(surrogateData).uid : user.uid;
         loadDashboard(targetUid);
     } else {
-        document.getElementById('auth-section').classList.remove('hidden');
-        document.getElementById('dashboard-section').classList.add('hidden');
-        document.getElementById('main-header').classList.add('hidden');
-        document.getElementById('main-footer').classList.add('hidden');
+        // No login form here — redirect to login.html
+        const params = new URLSearchParams(window.location.search);
+        const redirectParam = params.toString() ? '?' + params.toString() : '';
+        window.location.href = 'login.html' + redirectParam;
     }
 });
 
-// Handle Google redirect result
-auth.getRedirectResult().then(async (result) => {
-    if (result && result.user) {
-        await ensureUserDoc(result.user);
-        executeRedirect();
-    }
-}).catch(err => {
-    if (err.code !== 'auth/no-auth-event') console.error("Redirect result error:", err);
-});
+
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
@@ -619,108 +542,7 @@ function hideError(elId) {
     if (el) el.classList.add('hidden');
 }
 
-// ── AUTH TOGGLE ───────────────────────────────────────────────────────────────
 
-function toggleAuth() {
-    isLogin = !isLogin;
-    document.getElementById('auth-title').innerText = isLogin ? "Login" : "Create Account";
-    document.getElementById('auth-subtitle').innerText = isLogin ? "Welcome back to Sterling You" : "Join us for exclusive access";
-    document.getElementById('reg-fields').style.display = isLogin ? 'none' : 'block';
-    document.getElementById('reg-email-field').classList.toggle('hidden', isLogin);
-    document.getElementById('phone-hint').classList.toggle('hidden', isLogin);
-    document.getElementById('pass-hint').classList.toggle('hidden', isLogin);
-    document.getElementById('auth-toggle-text').innerText = isLogin ? "New to Sterling You?" : "Already have an account?";
-    document.getElementById('auth-toggle-btn').innerText = isLogin ? "Create Account" : "Login";
-    document.getElementById('auth-btn').innerText = isLogin ? "Login" : "Create Account";
-    hideError('auth-error');
-}
-
-// ── LOGIN / REGISTER FORM ─────────────────────────────────────────────────────
-
-document.getElementById('auth-form').onsubmit = async (e) => {
-    e.preventDefault();
-    hideError('auth-error');
-
-    const rawPhone = document.getElementById('user-phone').value;
-    const pass     = document.getElementById('user-pass').value;
-    const name     = document.getElementById('user-name') ? document.getElementById('user-name').value.trim() : '';
-    const phone    = rawPhone.trim().replace(/\s+/g, '');
-    const email    = phone.includes('@') ? phone : phone + "@sterling.com";
-
-    const btn = document.getElementById('auth-btn');
-    btn.disabled = true;
-    btn.innerText = "Please wait...";
-
-    try {
-        if (!isLogin) {
-            // ── REGISTRATION VALIDATION ──
-            if (!name || name.length < 3) throw new Error("Full name must be at least 3 characters.");
-
-            const phoneRegex = /^(\+88)?01[3-9]\d{8}$/;
-            if (!phoneRegex.test(phone)) throw new Error("Enter a valid Bangladesh mobile number (01XXXXXXXXX).");
-
-            if (pass.length < 8)          throw new Error("Password must be at least 8 characters.");
-            if (!/[A-Z]/.test(pass))      throw new Error("Password must contain at least one uppercase letter.");
-            if (!/[0-9]/.test(pass))      throw new Error("Password must contain at least one number.");
-
-            // Check phone not already registered
-            const lookup = await db.collection("phone_lookups").doc(phone).get();
-            if (lookup.exists) throw new Error("Account already exists. <a href='javascript:void(0)' onclick='toggleAuth()' class='underline text-[#B36A5E] ml-1'>Login instead</a>");
-
-            const contactEmail = document.getElementById('user-email') ? document.getElementById('user-email').value.trim() : '';
-
-            // Store pending data then send OTP
-            pendingRegistrationData = { name, phone, email, pass, contactEmail };
-            btn.disabled = false;
-            btn.innerText = "Create Account";
-
-            await sendRegistrationOTP(phone);
-
-        } else {
-            // ── LOGIN ──
-            await auth.signInWithEmailAndPassword(email, pass);
-            executeRedirect();
-        }
-
-    } catch (err) {
-        btn.disabled = false;
-        btn.innerText = isLogin ? "Login" : "Create Account";
-        let msg = err.message;
-        if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
-            msg = "Incorrect phone number or password.";
-        } else if (err.code === 'auth/invalid-email') {
-            msg = "Invalid phone number format.";
-        }
-        showError('auth-error', msg);
-    }
-};
-
-// ── GOOGLE SIGN IN ────────────────────────────────────────────────────────────
-
-window.signInWithGoogle = async () => {
-    const btn = document.getElementById('google-btn');
-    const txt = document.getElementById('google-text');
-    if (btn) btn.disabled = true;
-    if (txt) txt.innerText = 'Connecting to Google...';
-    try {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.addScope('email');
-        provider.addScope('profile');
-        const result = await auth.signInWithPopup(provider);
-        await ensureUserDoc(result.user);
-        executeRedirect();
-    } catch(e) {
-        if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
-            if (txt) txt.innerText = 'Redirecting to Google...';
-            await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
-        } else {
-            console.error("Google sign-in error:", e);
-            if (txt) txt.innerText = 'Sign in with Google';
-            if (btn) btn.disabled = false;
-            alert("Google sign-in failed: " + e.message);
-        }
-    }
-};
 
 // ── OTP MODAL ─────────────────────────────────────────────────────────────────
 
