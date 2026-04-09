@@ -438,52 +438,57 @@
 
     window.onload = () => { loadProductData(); window.loadFooterData(); };
 
-    (function trackVisit() {
+(function trackVisit() {
     try {
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const today = new Date().toISOString().split('T')[0];
         const page  = window.location.pathname.split('/').pop() || 'index.html';
 
-        // Get or create a visitor fingerprint stored in localStorage
         let visitorId = localStorage.getItem('sy_visitor_id');
         if (!visitorId) {
             visitorId = 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
             localStorage.setItem('sy_visitor_id', visitorId);
         }
 
-        // Only track once per session per page (sessionStorage prevents duplicate counts)
         const sessionKey = 'tracked_' + today + '_' + page;
         if (sessionStorage.getItem(sessionKey)) return;
         sessionStorage.setItem(sessionKey, '1');
 
-        // Write to Firestore
-        const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Increment daily page view counter
-        const docRef = db.collection("site_analytics").doc(today);
+        const dayRef = db.collection('site_analytics').doc(today);
+        const visitorRef = db.collection('site_visitors').doc(today + '_' + visitorId);
+
+        // Increment page views and per-page count
         db.runTransaction(async t => {
-            const doc = await t.get(docRef);
-            if (!doc.exists) {
-                t.set(docRef, {
+            const dayDoc = await t.get(dayRef);
+            const visitorDoc = await t.get(visitorRef);
+            const isUnique = !visitorDoc.exists;
+
+            if (!dayDoc.exists) {
+                t.set(dayRef, {
                     date: today,
                     pageViews: 1,
-                    visitors: [visitorId],
+                    uniqueVisitors: isUnique ? 1 : 0,
                     pages: { [page]: 1 }
                 });
             } else {
-                const d = doc.data();
-                const visitors = d.visitors || [];
-                const isUnique = !visitors.includes(visitorId);
-                const pages    = d.pages || {};
-                t.update(docRef, {
+                const d = dayDoc.data();
+                const pages = d.pages || {};
+                t.update(dayRef, {
                     pageViews: (d.pageViews || 0) + 1,
-                    visitors: isUnique ? [...visitors, visitorId] : visitors,
+                    uniqueVisitors: isUnique
+                        ? firebase.firestore.FieldValue.increment(1)
+                        : (d.uniqueVisitors || 0),
                     [`pages.${page}`]: (pages[page] || 0) + 1
                 });
             }
+
+            if (isUnique) {
+                t.set(visitorRef, { visitorId, date: today, firstPage: page });
+            }
         });
-    } catch(e) { /* silent fail — never break the store */ }
+    } catch(e) { /* silent fail */ }
 })();
 
 </script>

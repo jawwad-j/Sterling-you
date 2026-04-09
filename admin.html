@@ -72,6 +72,15 @@
         max-width: 100% !important;
     }
 
+    @media (max-width: 768px) {
+    #charts-main-row {
+        grid-template-columns: 1fr !important;
+    }
+    #charts-main-row > div:first-child {
+        grid-column: 1 !important;
+    }
+    }
+
     /* All tables scrollable */
     .bg-white.rounded-2xl table,
     .overflow-hidden table,
@@ -598,7 +607,7 @@ if (tabId === 'contact-settings') {
 </div>
 
     <!-- Charts Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6" id="charts-main-row">
         <div class="bg-white p-6 rounded-2xl shadow-sm lg:col-span-2">
             <h3 class="font-bold text-gray-400 text-xs uppercase mb-4">Revenue Over Time</h3>
             <div class="h-56"><canvas id="chart-revenue-time"></canvas></div>
@@ -809,29 +818,30 @@ if (tabId === 'contact-settings') {
 
 <!-- ── STOCK VALUE LOG TAB ── -->
 <div id="inv-panel-log" class="hidden">
-    <div class="flex items-center justify-between mb-4">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1 mr-4">
-            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <p class="text-[10px] font-bold uppercase text-gray-400">Total In Stock</p>
-                <h3 id="log-total-qty" class="text-xl font-bold text-indigo-600 mt-1">0 pcs</h3>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <p class="text-[10px] font-bold uppercase text-gray-400">Total Cost Value</p>
-                <h3 id="log-total-cost" class="text-xl font-bold text-red-500 mt-1">৳0</h3>
-                <p class="text-[10px] text-gray-400 mt-0.5">purchase + shipping</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <p class="text-[10px] font-bold uppercase text-gray-400">Total Sale Value</p>
-                <h3 id="log-total-sale" class="text-xl font-bold text-green-600 mt-1">৳0</h3>
-                <p class="text-[10px] text-gray-400 mt-0.5">at current price</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <p class="text-[10px] font-bold uppercase text-gray-400">Potential Profit</p>
-                <h3 id="log-total-profit" class="text-xl font-bold text-[#B36A5E] mt-1">৳0</h3>
-                <p class="text-[10px] text-gray-400 mt-0.5">if all stock sold</p>
-            </div>
+    <div class="flex justify-end mb-3">
+        <input type="text" id="log-search" onkeyup="filterInventoryLog()" placeholder="Search product..." 
+            class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-white w-64 shadow-sm">
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p class="text-[10px] font-bold uppercase text-gray-400">Total In Stock</p>
+            <h3 id="log-total-qty" class="text-xl font-bold text-indigo-600 mt-1">0 pcs</h3>
         </div>
-        <input type="text" id="log-search" onkeyup="filterInventoryLog()" placeholder="Search product..." class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-white w-48 shadow-sm shrink-0">
+        <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p class="text-[10px] font-bold uppercase text-gray-400">Total Cost Value</p>
+            <h3 id="log-total-cost" class="text-xl font-bold text-red-500 mt-1">৳0</h3>
+            <p class="text-[10px] text-gray-400 mt-0.5">purchase + shipping</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p class="text-[10px] font-bold uppercase text-gray-400">Total Sale Value</p>
+            <h3 id="log-total-sale" class="text-xl font-bold text-green-600 mt-1">৳0</h3>
+            <p class="text-[10px] text-gray-400 mt-0.5">at current price</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p class="text-[10px] font-bold uppercase text-gray-400">Potential Profit</p>
+            <h3 id="log-total-profit" class="text-xl font-bold text-[#B36A5E] mt-1">৳0</h3>
+            <p class="text-[10px] text-gray-400 mt-0.5">if all stock sold</p>
+        </div>
     </div>
     <div id="inventory-log-content" class="space-y-4">
         <div class="text-center text-gray-400 py-10"><p class="text-sm">Click the tab to load stock log</p></div>
@@ -840,32 +850,33 @@ if (tabId === 'contact-settings') {
 
 <!-- ── SOLD OUT UNITS TAB ── -->
 <div id="inv-panel-soldout" class="hidden">
-    <div class="flex items-center justify-between mb-4">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1 mr-4">
-            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <p class="text-[10px] font-bold uppercase text-gray-400">Total Units Sold</p>
-                <h3 id="sold-total-qty" class="text-xl font-bold text-[#322C2B] mt-1">0 pcs</h3>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <p class="text-[10px] font-bold uppercase text-gray-400">Total Cost of Sold</p>
-                <h3 id="sold-total-cost" class="text-xl font-bold text-red-500 mt-1">৳0</h3>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <p class="text-[10px] font-bold uppercase text-gray-400">Total Revenue</p>
-                <h3 id="sold-total-revenue" class="text-xl font-bold text-green-600 mt-1">৳0</h3>
-                <p class="text-[10px] text-gray-400 mt-0.5">from delivered orders</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <p class="text-[10px] font-bold uppercase text-gray-400">Gross Profit (COGS)</p>
-                <h3 id="sold-total-profit" class="text-xl font-bold text-[#B36A5E] mt-1">৳0</h3>
-            </div>
+    <div class="flex justify-end mb-3">
+        <input type="text" id="soldout-search" onkeyup="filterSoldOutLog()" placeholder="Search product..." 
+            class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-white w-64 shadow-sm">
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p class="text-[10px] font-bold uppercase text-gray-400">Total Units Sold</p>
+            <h3 id="sold-total-qty" class="text-xl font-bold text-[#322C2B] mt-1">0 pcs</h3>
         </div>
-        <input type="text" id="soldout-search" onkeyup="filterSoldOutLog()" placeholder="Search product..." class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-white w-48 shadow-sm shrink-0">
+        <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p class="text-[10px] font-bold uppercase text-gray-400">Total Cost of Sold</p>
+            <h3 id="sold-total-cost" class="text-xl font-bold text-red-500 mt-1">৳0</h3>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p class="text-[10px] font-bold uppercase text-gray-400">Total Revenue</p>
+            <h3 id="sold-total-revenue" class="text-xl font-bold text-green-600 mt-1">৳0</h3>
+            <p class="text-[10px] text-gray-400 mt-0.5">from delivered orders</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p class="text-[10px] font-bold uppercase text-gray-400">Gross Profit (COGS)</p>
+            <h3 id="sold-total-profit" class="text-xl font-bold text-[#B36A5E] mt-1">৳0</h3>
+        </div>
     </div>
     <div id="inventory-soldout-content" class="space-y-4">
         <div class="text-center text-gray-400 py-10"><p class="text-sm">Click the tab to load sold units</p></div>
     </div>
-</div>
+</div>     
 
 </section>
             <section id="logistics-settings" class="tab-content">

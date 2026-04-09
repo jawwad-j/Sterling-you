@@ -743,6 +743,40 @@ items: validCart.map(i => ({
             }
         }
 
+       (function trackVisit() {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const page  = 'checkout.html';
+        let visitorId = localStorage.getItem('sy_visitor_id');
+        if (!visitorId) {
+            visitorId = 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+            localStorage.setItem('sy_visitor_id', visitorId);
+        }
+        const sessionKey = 'tracked_' + today + '_' + page;
+        if (sessionStorage.getItem(sessionKey)) return;
+        sessionStorage.setItem(sessionKey, '1');
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const docRef = db.collection("site_analytics").doc(today);
+        db.runTransaction(async t => {
+            const doc = await t.get(docRef);
+            if (!doc.exists) {
+                t.set(docRef, { date: today, pageViews: 1, visitors: [visitorId], pages: { [page]: 1 } });
+            } else {
+                const d = doc.data();
+                const visitors = d.visitors || [];
+                const isUnique = !visitors.includes(visitorId);
+                const pages = d.pages || {};
+                t.update(docRef, {
+                    pageViews: (d.pageViews || 0) + 1,
+                    visitors: isUnique ? [...visitors, visitorId] : visitors,
+                    [`pages.${page}`]: (pages[page] || 0) + 1
+                });
+            }
+        });
+    } catch(e) {}
+})(); 
+
     </script>
 </body>
 </html>
