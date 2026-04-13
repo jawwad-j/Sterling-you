@@ -472,17 +472,15 @@
                     uniqueVisitors: isUnique ? 1 : 0,
                     pages: { [page]: 1 }
                 });
-            } else {
-                const d = dayDoc.data();
-                const pages = d.pages || {};
-                t.update(dayRef, {
-                    pageViews: (d.pageViews || 0) + 1,
-                    uniqueVisitors: isUnique
-                        ? firebase.firestore.FieldValue.increment(1)
-                        : (d.uniqueVisitors || 0),
-                    [`pages.${page}`]: (pages[page] || 0) + 1
-                });
-            }
+} else {
+    const d = dayDoc.data();
+    const pages = d.pages || {};
+    t.update(dayRef, {
+        pageViews: (d.pageViews || 0) + 1,
+        ...(isUnique ? { uniqueVisitors: firebase.firestore.FieldValue.increment(1) } : {}),
+        [`pages.${page}`]: (pages[page] || 0) + 1
+    });
+}
 
             if (isUnique) {
                 t.set(visitorRef, { visitorId, date: today, firstPage: page });
