@@ -8102,13 +8102,123 @@ window._executePrintAction = async function(type, oid, action) {
     }
 };
 
-function _openDocWindow(html, action, pageSize) {
+function _openDocWindow(html, action, pageSize, orderId) {
     const win = window.open('', '_blank');
+    if (!win) { alert('Please allow popups for this site.'); return; }
     win.document.open();
-    const printScript = `<script>window.addEventListener('load', function() { setTimeout(function() {` +
-        (action === 'save' ? `var s=document.createElement('style');s.textContent='@page{size:${pageSize};margin:0;}';document.head.appendChild(s);` : '') +
-        `window.print(); }, 300); });<\/script>`;
-    win.document.write(html.replace('<\/body>', printScript + '<\/body>'));
+
+    if (action === 'save') {
+        const parts = pageSize.replace(/in/g, '').trim().split(/\s+/);
+        const wIn = parseFloat(parts[0]) || 4;
+        const hIn = parseFloat(parts[1]) || 6;
+        const isAutoHeight = parts[1] === 'auto' || isNaN(parseFloat(parts[1]));
+        const safeOrderId = (orderId || 'label').replace(/[^a-zA-Z0-9_-]/g, '-');
+
+        // Wrap body content in a strictly sized container
+        // 96 DPI is the browser's CSS pixel resolution
+        const cssW = Math.round(wIn * 96);
+        const cssH = isAutoHeight ? 'auto' : Math.round(hIn * 96);
+
+        // Inject wrapper div around body content
+        const wrappedHtml = html
+            .replace('<body', '<body style="margin:0;padding:0;background:white;"')
+            .replace('<\/body>',
+                `<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+<script>
+window.addEventListener('load', function() {
+    setTimeout(function() {
+
+        const wIn   = ${wIn};
+        const hIn   = ${hIn};
+        const isAuto = ${isAutoHeight};
+        const cssW  = ${cssW};
+        const filename = '${safeOrderId}.pdf';
+
+        // Find the label wrapper and force exact CSS size
+        const el = document.getElementById('label-capture-target');
+        el.style.width    = cssW + 'px';
+        el.style.maxWidth = cssW + 'px';
+        el.style.overflow = 'hidden';
+        if (!isAuto) {
+            el.style.height    = ${isAutoHeight ? "'auto'" : Math.round(hIn * 96) + " + 'px'"};
+            el.style.maxHeight = ${isAutoHeight ? "'none'" : Math.round(hIn * 96) + " + 'px'"};
+        }
+
+        // Measure actual rendered height
+        const captureH = isAuto ? el.scrollHeight : ${isAutoHeight ? 'el.scrollHeight' : Math.round(hIn * 96)};
+
+        html2canvas(el, {
+            scale: 2,
+            width:        cssW,
+            height:       captureH,
+            windowWidth:  cssW,
+            windowHeight: captureH,
+            useCORS: true,
+            allowTaint:   true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            x: 0,
+            y: 0
+        }).then(function(canvas) {
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.98);
+            const { jsPDF } = window.jspdf;
+
+            // Exact label dimensions in mm
+            const docW = wIn * 25.4;
+            const docH = isAuto ? (captureH / 96) * 25.4 : hIn * 25.4;
+
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: [docW, docH]   // THIS is what sets the PDF page size
+            });
+
+            pdf.addImage(imgData, 'JPEG', 0, 0, docW, docH, '', 'FAST');
+
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const blob = pdf.output('blob');
+            const blobUrl = URL.createObjectURL(blob);
+
+            if (isIOS) {
+                document.body.innerHTML =
+                    '<div style="font-family:sans-serif;text-align:center;padding:40px 20px;">' +
+                    '<div style="font-size:48px;margin-bottom:16px">📄<\/div>' +
+                    '<h2 style="color:#322C2B;font-size:18px;margin-bottom:8px">' + filename + '<\/h2>' +
+                    '<p style="color:#6B7280;font-size:13px;line-height:1.6;margin-bottom:24px">' +
+                    'Tap the button below,<br>then <strong>Share → Save to Files<\/strong><\/p>' +
+                    '<a href="' + blobUrl + '" download="' + filename + '" ' +
+                    'style="display:inline-block;background:#322C2B;color:white;padding:14px 28px;' +
+                    'border-radius:12px;font-weight:bold;font-size:14px;text-decoration:none;">⬇ Save ' + filename + '<\/a><\/div>';
+            } else {
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function() { URL.revokeObjectURL(blobUrl); window.close(); }, 2000);
+            }
+        });
+    }, 1000);
+});
+<\/script><\/body>`
+            );
+
+        // Wrap entire body in capture target div
+        const finalHtml = wrappedHtml
+            .replace(/(<body[^>]*>)/, '$1<div id="label-capture-target" style="display:inline-block;background:white;padding:10px;box-sizing:border-box;">');
+            .replace('<\/body>', '<\/div><\/body>');
+
+        win.document.write(finalHtml);
+
+    } else {
+        const printScript = `<script>window.addEventListener('load', function() {
+            setTimeout(function() { window.print(); }, 300);
+        });<\/script>`;
+        win.document.write(html.replace('<\/body>', printScript + '<\/body>'));
+    }
+
     win.document.close();
 }
 
@@ -8159,10 +8269,11 @@ window._buildShippingLabel = async function(oid, action) {
     const lblDiscount = (Number(order.discountAmount) || 0) > 0 ? Number(order.discountAmount) : 0;
 
     var lbl = '<!DOCTYPE html><html><head><title>Shipping Label - ' + order.orderId + '<\/title>';
-    lbl += '<style>';
-    lbl += '@page { size: 4in 6in; margin: 0; }';
-    lbl += '* { box-sizing: border-box; margin: 0; padding: 0; }';
-    lbl += 'body { font-family: Arial, sans-serif; width: 4in; height: 6in; padding: 10px 12px; font-size: 10px; color: #000; background: white; }';
+lbl += '<style>';
+lbl += '@page { size: 4in 6in; margin: 0; }';
+lbl += '* { box-sizing: border-box; margin: 0; padding: 0; }';
+lbl += 'html, body { width: 4in; max-width: 4in; height: 6in; max-height: 6in; overflow: hidden; }';
+lbl += 'body { font-family: Arial, sans-serif; padding: 8px 10px; font-size: 10px; color: #000; background: white; }';
     lbl += '.header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px; }';
     lbl += '.brand { font-size: 18px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }';
     lbl += '.brand span { font-size: 10px; display: block; font-weight: 400; letter-spacing: 1px; margin-top: 1px; }';
@@ -8231,7 +8342,7 @@ lbl += '<\/div>';
     lbl += '<div class="footer">Sterling You \u00B7 Bashundhara, Dhaka' + (storePhone ? ' \u00B7 ' + storePhone : '') + ' \u00B7 sterlingyou.com<\/div>';
     lbl += '<\/body><\/html>';
 
-    _openDocWindow(lbl, action, '4in 6in');
+    _openDocWindow(lbl, action, '4in 6in', order.orderId);
 };
 
 window._buildPOSInvoice = async function(oid, action) {
@@ -8334,7 +8445,7 @@ pos += '<\/div>';
     pos += '<div class="center" style="font-size:8px;color:#666">Thank you for shopping with Sterling You<\/div>';
     pos += '<\/body><\/html>';
 
-    _openDocWindow(pos, action, '3in auto');
+    _openDocWindow(pos, action, '3in auto', order.orderId);
 };
 
 window.logAdminAction = async function(actionDescription) {
