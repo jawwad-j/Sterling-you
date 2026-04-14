@@ -8207,7 +8207,7 @@ window.addEventListener('load', function() {
 
         // Wrap entire body in capture target div
         const finalHtml = wrappedHtml
-            .replace(/(<body[^>]*>)/, '$1<div id="label-capture-target" style="display:inline-block;background:white;padding:10px;box-sizing:border-box;">');
+            .replace(/(<body[^>]*>)/, '$1<div id="label-capture-target" style="display:inline-block;background:white;padding:10px;box-sizing:border-box;">')
             .replace('<\/body>', '<\/div><\/body>');
 
         win.document.write(finalHtml);
