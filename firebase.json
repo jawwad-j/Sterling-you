@@ -39,12 +39,42 @@
         ]
       }
     ],
-    "rewrites": [
-      {
-        "source": "/__/auth/**",
-        "destination": "/__/auth/handler"
-      }
-    ]
+"cleanUrls": true,
+"trailingSlash": false,
+"rewrites": [
+  {
+    "source": "/__/auth/**",
+    "destination": "/__/auth/handler"
+  },
+  {
+    "source": "/home",
+    "destination": "/index.html"
+  },
+  {
+    "source": "/category",
+    "destination": "/category.html"
+  },
+  {
+    "source": "/product",
+    "destination": "/product.html"
+  },
+  {
+    "source": "/checkout",
+    "destination": "/checkout.html"
+  },
+  {
+    "source": "/account",
+    "destination": "/account.html"
+  },
+  {
+    "source": "/login",
+    "destination": "/login.html"
+  },
+  {
+    "source": "/terms",
+    "destination": "/terms.html"
+  }
+]
   },
   "functions": [
     {

@@ -301,7 +301,7 @@
             categoryName = finalType;
         }
 
-        fbq('track', 'ViewContent', { content_category: categoryName, content_type: 'product_group' });
+        fbq('track', 'ViewContent', { content_category: categoryName, content_type: 'product_group', currency: 'BDT', value: 0 });
 
         let query = db.collection("products").where("isVisible", "==", true);
         if (categoryType && categoryType !== 'All' && categoryType !== 'Sale' && categoryType !== 'New') {
