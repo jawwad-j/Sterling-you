@@ -39,9 +39,14 @@
         ]
       }
     ],
-"cleanUrls": true,
-"trailingSlash": false,
+    "cleanUrls": true,
+    "trailingSlash": false,
 "rewrites": [
+{
+  "source": "/p",
+  "function": "productPreview",
+  "region": "us-central1"
+},
   {
     "source": "/__/auth/**",
     "destination": "/__/auth/handler"

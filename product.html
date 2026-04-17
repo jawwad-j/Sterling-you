@@ -56,12 +56,12 @@
     </script>
     <meta name="description" content="Sterling You — curated luxury handbags, footwear, beauty & accessories.">
     <meta name="author" content="Sterling You">
-    <link rel="canonical" href="https://sterlingyou.com/product.html">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Sterling You | Curated Luxury">
-    <meta property="og:image" content="https://sterlingyou.com/web-logo2.png">
-    <meta property="og:url" content="https://sterlingyou.com/">
-    <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="https://sterlingyou.com/product">
+<meta property="og:type" content="product">
+<meta property="og:title" content="Sterling You | Curated Luxury">
+<meta property="og:description" content="Sterling You — curated luxury handbags, footwear, beauty & accessories.">
+<meta property="og:image" content="https://sterlingyou.com/web-logo2.png">
+<meta name="twitter:card" content="summary_large_image">
     <link rel="icon" type="image/png" href="favicon.png">
 </head>
 <body class="bg-white flex flex-col min-h-screen">
@@ -324,8 +324,10 @@
         }
     });
 
-    async function loadProductData() {
-        if (!productId) return;
+async function loadProductData() {
+    if (!productId) return;
+    // Silently update URL to /p for correct WhatsApp preview when shared
+    history.replaceState(null, '', '/p?id=' + productId);
         const doc = await db.collection("products").doc(productId).get();
         if (!doc.exists) { document.getElementById('p-name').innerText = "Product Not Found"; return; }
         const p = doc.data();

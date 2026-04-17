@@ -1,10 +1,16 @@
 {
-  "name": "sterling-you-web",
+  "name": "sterling-you-functions",
   "version": "1.0.0",
+  "main": "index.js",
   "scripts": {
-    "build": "echo 'Success'"
+    "serve": "firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "18"
   },
   "dependencies": {
-    "firebase-admin": "^13.7.0"
+    "firebase-admin": "^13.7.0",
+    "firebase-functions": "^6.0.0"
   }
 }

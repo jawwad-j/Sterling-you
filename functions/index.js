@@ -44,15 +44,22 @@ exports.productPreview = functions.https.onRequest(async (req, res) => {
     <meta property="og:title" content="${name} | Sterling You">
     <meta property="og:description" content="${desc}">
     <meta property="og:image" content="${image}">
+    <meta property="og:image:secure_url" content="${image}">
     <meta property="og:image:width" content="800">
     <meta property="og:image:height" content="1067">
-    <meta property="og:url" content="https://sterlingyou.com/product?id=${productId}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:alt" content="${name}">
     <meta property="product:price:amount" content="${price}">
     <meta property="product:price:currency" content="BDT">
     <meta name="twitter:card" content="summary_large_image">
-    <meta http-equiv="refresh" content="0;url=https://sterlingyou.com/product?id=${productId}">
+    <meta name="twitter:title" content="${name} | Sterling You">
+    <meta name="twitter:description" content="${desc}">
+    <meta name="twitter:image" content="${image}">
 </head>
-<body><p>Redirecting...</p></body>
+<body>
+<p>Redirecting...</p>
+<script>window.location.replace('https://sterlingyou.com/product?id=${productId}');</script>
+</body>
 </html>`);
     } catch(e) {
         return res.redirect('https://sterlingyou.com/product?id=' + productId);
