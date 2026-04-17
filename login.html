@@ -398,7 +398,7 @@ const MIN_GAP_MS         = 2000;
 const BD_PREFIXES        = ['013','014','015','016','017','018','019'];
 
 // ── State ──────────────────────────────────────────────────────────────────────
-const redirectTo       = new URLSearchParams(window.location.search).get('redirect') || 'account.html';
+const redirectTo = new URLSearchParams(window.location.search).get('redirect') || 'account';
 let skipAutoRedirect   = false;
 let currentPhone       = '';
 let confirmationResult = null;

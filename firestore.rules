@@ -77,9 +77,9 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     match /phone_lookups/{phone} {
-      allow read: if request.auth != null;
-      allow write: if true;
-    }
+  allow read: if true;
+  allow write: if true;
+}
     match /otp_rate_limits/{phone} {
       allow read, write: if true;
     }

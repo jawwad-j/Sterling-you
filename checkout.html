@@ -213,9 +213,8 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
 currentCheckoutUser = userDoc.data();
 currentCheckoutUser.uid = targetUid;
 
-// Phone check for Google login users
 if (!currentCheckoutUser.phone) {
-    window.location.href = 'login.html?redirect=checkout.html';
+    window.location.href = 'account?msg=addphone&from=checkout';
     return;
 }
                         
@@ -253,14 +252,14 @@ if (!currentCheckoutUser.phone) {
                         renderAddressSelection();
                         updateShippingAndTotals();
                 } else {
-                        window.location.href = "login.html?redirect=checkout.html";
+                        window.location.href = "login?redirect=checkout";
                     }
                 } catch (err) {
                     console.error("Error loading checkout data:", err);
                     document.getElementById('address-container').innerHTML = `<p class="text-sm text-red-500">Error loading addresses.</p>`;
                 }
             } else {
-                window.location.href = "login.html?redirect=checkout.html";
+                window.location.href = "login?redirect=checkout";
             }
         });
 
