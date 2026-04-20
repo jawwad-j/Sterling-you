@@ -413,7 +413,10 @@ let existingUserEmail  = ''; // phone-derived email for existing users
 
 // ── Auth guard — only fires when not in a mid-flow state ──────────────────────
 auth.onAuthStateChanged(user => {
-    if (user && !skipAutoRedirect) window.location.href = redirectTo;
+    if (user && !skipAutoRedirect) {
+        sessionStorage.removeItem('checkout_redirect_count');
+        window.location.href = redirectTo;
+    }
 });
 
 // ── reCAPTCHA ─────────────────────────────────────────────────────────────────
