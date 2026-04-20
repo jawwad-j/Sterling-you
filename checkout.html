@@ -202,8 +202,10 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
         let currentCheckoutUser = null; 
         let isSurrogateActive = false;
 
+let authHandled = false;
 auth.onAuthStateChanged(async (user) => {
-    if (user === undefined) return; // still loading
+    if (authHandled) return;
+    authHandled = true;
     if (user) {
                 const surrogateData = sessionStorage.getItem('surrogate_session');
                 const targetUid = surrogateData ? JSON.parse(surrogateData).uid : user.uid;
