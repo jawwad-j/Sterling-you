@@ -204,76 +204,81 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
 
 let authHandled = false;
 auth.onAuthStateChanged(async (user) => {
-    if (authHandled) return;
-    authHandled = true;
-    if (user) {
-                const surrogateData = sessionStorage.getItem('surrogate_session');
-                const targetUid = surrogateData ? JSON.parse(surrogateData).uid : user.uid;
-                if (surrogateData) isSurrogateActive = true;
+    if (!user) {
+        window.location.href = 'login?redirect=checkout';
+        return;
+    }
 
-                try {
-                    const userDoc = await db.collection("users").doc(targetUid).get();
+    const surrogateData = sessionStorage.getItem('surrogate_session');
+    const targetUid = surrogateData ? JSON.parse(surrogateData).uid : user.uid;
+    if (surrogateData) isSurrogateActive = true;
 
-                    if (userDoc.exists) {
-currentCheckoutUser = userDoc.data();
-currentCheckoutUser.uid = targetUid;
+    try {
+        const userDoc = await db.collection("users").doc(targetUid).get();
 
-if (!currentCheckoutUser.phone) {
-    document.getElementById('address-container').innerHTML = `
-        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-5 text-center">
-            <p class="text-sm font-bold text-[#322C2B] mb-2">Phone number required</p>
-            <p class="text-xs text-gray-500 mb-4">Please add your phone number to your account before checking out.</p>
-            <a href="account?from=checkout" class="inline-block bg-[#322C2B] text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#B36A5E] transition">
-                Go to Account Settings
-            </a>
-        </div>`;
-    return;
-}
-                        
-                        // FIX: Extract addresses from ALL possible fields (shippingAddress, billingAddress, and addresses array)
-                        let rawAddresses = [];
-                        
-                        if (currentCheckoutUser.shippingAddress) {
-                            let s = typeof currentCheckoutUser.shippingAddress === 'string' ? { detail: currentCheckoutUser.shippingAddress } : { ...currentCheckoutUser.shippingAddress };
-                            s.tag = s.tag || 'Shipping Address';
-                            rawAddresses.push(s);
-                        }
-                        if (currentCheckoutUser.billingAddress) {
-                            let b = typeof currentCheckoutUser.billingAddress === 'string' ? { detail: currentCheckoutUser.billingAddress } : { ...currentCheckoutUser.billingAddress };
-                            b.tag = b.tag || 'Billing Address';
-                            rawAddresses.push(b);
-                        }
-                        if (Array.isArray(currentCheckoutUser.addresses)) {
-                            currentCheckoutUser.addresses.forEach(a => rawAddresses.push({...a}));
-                        }
+        if (!userDoc.exists) {
+            // User authenticated but no Firestore doc — sign out and go to login
+            await auth.signOut();
+            window.location.href = 'login?redirect=checkout';
+            return;
+        }
 
-                        // FIX: Deduplicate addresses so the user doesn't see repeating options
-                        userAddresses = [];
-                        rawAddresses.forEach(ra => {
-                            let dText = (ra.fullDisplay || ra.detail || "").trim().toLowerCase();
-                            if (dText && !userAddresses.some(ua => (ua.fullDisplay || ua.detail || "").trim().toLowerCase() === dText)) {
-                                userAddresses.push(ra);
-                            }
-                        });
+        currentCheckoutUser = userDoc.data();
+        currentCheckoutUser.uid = targetUid;
 
-                        // GUARANTEE every address has a unique ID so the Select match never fails
-                        userAddresses.forEach((a, i) => {
-                            if (!a.id) a.id = 'temp_addr_' + i;
-                        });
+        if (!currentCheckoutUser.phone) {
+            document.getElementById('address-container').innerHTML = `
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-5 text-center">
+                    <p class="text-sm font-bold text-[#322C2B] mb-2">Phone number required</p>
+                    <p class="text-xs text-gray-500 mb-4">Please add your phone number to your account before checking out.</p>
+                    <a href="account?from=checkout" class="inline-block bg-[#322C2B] text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#B36A5E] transition">
+                        Go to Account Settings
+                    </a>
+                    <br><br>
+                    <button onclick="auth.signOut().then(()=>window.location.href='login?redirect=checkout')" 
+                        style="pointer-events:all"
+                        class="text-xs text-gray-400 underline">
+                        Sign in with a different account
+                    </button>
+                </div>`;
+            return;
+        }
 
-                        renderAddressSelection();
-                        updateShippingAndTotals();
-                } else {
-                        window.location.href = "login?redirect=checkout";
-                    }
-                } catch (err) {
-                    console.error("Error loading checkout data:", err);
-                    document.getElementById('address-container').innerHTML = `<p class="text-sm text-red-500">Error loading addresses.</p>`;
-                }
-            } else {
-                window.location.href = "login?redirect=checkout";
+        let rawAddresses = [];
+        if (currentCheckoutUser.shippingAddress) {
+            let s = typeof currentCheckoutUser.shippingAddress === 'string' ? { detail: currentCheckoutUser.shippingAddress } : { ...currentCheckoutUser.shippingAddress };
+            s.tag = s.tag || 'Shipping Address';
+            rawAddresses.push(s);
+        }
+        if (currentCheckoutUser.billingAddress) {
+            let b = typeof currentCheckoutUser.billingAddress === 'string' ? { detail: currentCheckoutUser.billingAddress } : { ...currentCheckoutUser.billingAddress };
+            b.tag = b.tag || 'Billing Address';
+            rawAddresses.push(b);
+        }
+        if (Array.isArray(currentCheckoutUser.addresses)) {
+            currentCheckoutUser.addresses.forEach(a => rawAddresses.push({...a}));
+        }
+
+        userAddresses = [];
+        rawAddresses.forEach(ra => {
+            let dText = (ra.fullDisplay || ra.detail || "").trim().toLowerCase();
+            if (dText && !userAddresses.some(ua => (ua.fullDisplay || ua.detail || "").trim().toLowerCase() === dText)) {
+                userAddresses.push(ra);
             }
         });
+
+        userAddresses.forEach((a, i) => {
+            if (!a.id) a.id = 'temp_addr_' + i;
+        });
+
+        renderAddressSelection();
+        updateShippingAndTotals();
+
+    } catch (err) {
+        console.error("Error loading checkout data:", err);
+        document.getElementById('address-container').innerHTML = `<p class="text-sm text-red-500">Error loading addresses. Please refresh.</p>`;
+    }
+});
 
         (function() {
     try {
