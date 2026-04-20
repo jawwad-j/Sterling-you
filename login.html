@@ -562,8 +562,9 @@ async function loginWithPassword() {
     skipAutoRedirect = true;
 
     try {
-        await auth.signInWithEmailAndPassword(existingUserEmail, pass);
-        window.location.href = redirectTo;
+await auth.signInWithEmailAndPassword(existingUserEmail, pass);
+sessionStorage.removeItem('checkout_redirect_count');
+window.location.href = redirectTo;
     } catch(e) {
         skipAutoRedirect = false;
         let msg = 'Incorrect password. Please try again.';
@@ -709,8 +710,9 @@ async function verifyOTP() {
             showStep('step-new-user');
             setTimeout(() => { const el = document.getElementById('new-name'); if(el) el.focus(); }, 300);
 
-        } else if (otpPurpose === 'existing_otp_login') {
-            window.location.href = redirectTo;
+} else if (otpPurpose === 'existing_otp_login') {
+    sessionStorage.removeItem('checkout_redirect_count');
+    window.location.href = redirectTo;
 
         } else if (otpPurpose === 'forgot_password') {
             setTitle('New Password', 'Choose a strong password.');
@@ -783,6 +785,7 @@ await db.collection('users').doc(currentUid).set({
     name: name  // save name so login page can show it without auth
 });
 
+sessionStorage.removeItem('checkout_redirect_count');
         window.location.href = redirectTo;
 
     } catch(e) {
@@ -812,6 +815,7 @@ async function saveNewPassword() {
                 await authedUser.updatePassword(pass);
             } else { throw e; }
         });
+        sessionStorage.removeItem('checkout_redirect_count');
         window.location.href = redirectTo;
     } catch(e) {
         console.error(e);
@@ -864,7 +868,9 @@ async function signInWithGoogle() {
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
         }
+        sessionStorage.removeItem('checkout_redirect_count');
         window.location.href = redirectTo;
+
     } catch(e) {
         skipAutoRedirect = false;
         if (e.code !== 'auth/popup-closed-by-user') showErr('phone-err','Google sign-in failed. Please try again.');

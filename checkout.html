@@ -58,6 +58,8 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
 <link rel="shortcut icon" href="favicon.png">
 
 </head>
+
+
 <body class="bg-gray-50 min-h-screen pb-20">
 
     <div class="bg-white py-4 shadow-sm mb-6">
@@ -200,8 +202,9 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
         let currentCheckoutUser = null; 
         let isSurrogateActive = false;
 
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
+auth.onAuthStateChanged(async (user) => {
+    if (user === undefined) return; // still loading
+    if (user) {
                 const surrogateData = sessionStorage.getItem('surrogate_session');
                 const targetUid = surrogateData ? JSON.parse(surrogateData).uid : user.uid;
                 if (surrogateData) isSurrogateActive = true;
@@ -799,6 +802,16 @@ items: validCart.map(i => ({
         });
     } catch(e) { /* silent fail */ }
 })(); 
+
+// Prevent redirect loop — clear if we've been redirected more than once
+const redirectCount = parseInt(sessionStorage.getItem('checkout_redirect_count') || '0');
+if (redirectCount > 1) {
+    sessionStorage.removeItem('checkout_redirect_count');
+    document.getElementById('address-container').innerHTML = 
+        '<p class="text-sm text-red-400">Session error. Please <a href="/login" class="underline text-[#B36A5E] font-bold">login again</a>.</p>';
+} else {
+    sessionStorage.setItem('checkout_redirect_count', redirectCount + 1);
+}
 
     </script>
 </body>
