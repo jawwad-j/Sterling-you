@@ -391,30 +391,36 @@ document.querySelector('link[rel="canonical"]') && (document.querySelector('link
 async function loadRelatedProducts(cat, sub) {
     const grid = document.getElementById('related-grid');
     if (!grid) return;
-    let snap = { docs: [] };
     try {
-        snap = await db.collection("products")
+        const snap = await db.collection("products")
             .where("category", "==", cat)
             .where("isVisible", "==", true)
-            .limit(8).get();
-        if (!snap.docs.length) {
-            snap = await db.collection("products")
-                .where("category", "==", cat)
-                .limit(8).get();
+            .limit(10).get();
+
+        let products = snap.docs
+            .filter(d => d.id !== productId)
+            .map(d => ({ id: d.id, ...d.data() }));
+
+        // Prioritize same subcategory
+        if (sub) {
+            const same = products.filter(p => p.subcategory === sub);
+            const others = products.filter(p => p.subcategory !== sub);
+            products = [...same, ...others];
         }
-    } catch(e) {
-        console.error("Related products error:", e);
-        return;
 
-        console.log("Related products found:", snap.docs.length, "for category:", cat);
-    }
+        products = products.slice(0, 4);
 
-        grid.innerHTML = snap.docs.filter(d => d.id !== productId).slice(0, 4).map(doc => {
-            const d = doc.data(), pr = Number(d.price), old = Number(d.originalPrice || 0), hasD = old > pr;
+        if (!products.length) {
+            grid.innerHTML = '<p class="col-span-full text-center text-gray-400 italic">No related products found.</p>';
+            return;
+        }
+
+        grid.innerHTML = products.map(d => {
+            const pr = Number(d.price), old = Number(d.originalPrice || 0), hasD = old > pr;
             const perc = hasD ? Math.round(((old - pr) / old) * 100) : 0;
             const relStock = (d.stock !== undefined && d.stock !== null && d.stock !== "") ? Number(d.stock) : 999;
             const isLow = relStock > 0 && relStock <= 5, isOut = relStock <= 0;
-            const relId = String(doc.id).trim();
+            const relId = String(d.id).trim();
             const focusVal = d.imageFocus || '50% 50%';
             const pStr = JSON.stringify({ id: relId, name: d.name.replace(/'/g, "\\'").replace(/"/g, '&quot;'), price: pr, originalPrice: old, image: d.image, stock: relStock }).replace(/"/g, '&quot;');
             return `<a href="product.html?id=${relId}" style="pointer-events:all" class="product-card group block animate-fadeIn relative">
@@ -437,7 +443,10 @@ async function loadRelatedProducts(cat, sub) {
                 </div>
             </a>`;
         }).join('');
+    } catch(e) {
+        console.error("Related products error:", e);
     }
+}
 
     let searchTimeout;
     window.handleLiveSearch = (q) => {
