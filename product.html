@@ -381,10 +381,9 @@ async function loadProductData() {
 
         document.title = p.name + ' | Sterling You';
         document.querySelector('meta[name="description"]').content = p.shortDesc || p.name;
-        document.querySelector('meta[property="og:title"]').content = p.name + ' | Sterling You';
-        document.querySelector('meta[property="og:image"]').content = p.image;
-        document.querySelector('meta[property="og:url"]').content = 'https://sterlingyou.com/product.html?id=' + productId;
-        document.querySelector('link[rel="canonical"]').href = 'https://sterlingyou.com/product.html?id=' + productId;
+        document.querySelector('meta[property="og:title"]') && (document.querySelector('meta[property="og:title"]').content = p.name + ' | Sterling You');
+document.querySelector('meta[property="og:image"]') && (document.querySelector('meta[property="og:image"]').content = p.image);
+document.querySelector('link[rel="canonical"]') && (document.querySelector('link[rel="canonical"]').href = 'https://sterlingyou.com/product?id=' + productId);
 
         loadRelatedProducts(p.category, p.subcategory);
     }
@@ -394,15 +393,22 @@ async function loadRelatedProducts(cat, sub) {
     if (!grid) return;
     let snap = { docs: [] };
     try {
-        if (sub) {
-            snap = await db.collection("products").where("subcategory", "==", sub).where("isVisible", "==", true).limit(6).get();
-        }
-        if (snap.docs.length < 2) {
-            snap = await db.collection("products").where("category", "==", cat).where("isVisible", "==", true).limit(6).get();
+        snap = await db.collection("products")
+            .where("category", "==", cat)
+            .where("isVisible", "==", true)
+            .limit(8).get();
+        if (!snap.docs.length) {
+            snap = await db.collection("products")
+                .where("category", "==", cat)
+                .limit(8).get();
         }
     } catch(e) {
-        snap = await db.collection("products").where("category", "==", cat).where("isVisible", "==", true).limit(6).get();
+        console.error("Related products error:", e);
+        return;
+
+        console.log("Related products found:", snap.docs.length, "for category:", cat);
     }
+
         grid.innerHTML = snap.docs.filter(d => d.id !== productId).slice(0, 4).map(doc => {
             const d = doc.data(), pr = Number(d.price), old = Number(d.originalPrice || 0), hasD = old > pr;
             const perc = hasD ? Math.round(((old - pr) / old) * 100) : 0;
