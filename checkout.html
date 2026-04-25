@@ -16,6 +16,9 @@
         @keyframes modalPop { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
     </style>
 
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>emailjs.init('2TAdXFg4p3bYGexd7');</script>
+
     <!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
@@ -741,6 +744,21 @@ items: validCart.map(i => ({
             content_ids: validCart.map(item => item.id),
             content_type: 'product'
         });
+
+        // Send order notification email
+try {
+    await emailjs.send('service_qr9m3ds', 'template_razbuuu', {
+        order_id: orderData.orderId,
+        customer_name: currentCheckoutUser.fullName,
+        customer_phone: currentCheckoutUser.phone,
+        total: total.toLocaleString(),
+        shipping: shippingFeeCharged,
+        items: validCart.map(i => `${i.name} x${i.quantity}`).join(', '),
+        address: orderData.shippingAddress.fullDisplay || orderData.shippingAddress.detail || ''
+    });
+} catch(e) {
+    console.error('Email notification failed:', e);
+}
 
                 // FIX: Clear both the cart AND the surrogate session to prevent the "same address" bug on next manual order
                 localStorage.removeItem('cart');
