@@ -60,6 +60,15 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
 <link rel="apple-touch-icon" href="favicon.png">
 <link rel="shortcut icon" href="favicon.png">
 
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-EPT9FZHCYL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-EPT9FZHCYL');
+</script>
+
 </head>
 
 
@@ -275,7 +284,21 @@ auth.onAuthStateChanged(async (user) => {
         });
 
         renderAddressSelection();
-        updateShippingAndTotals();
+updateShippingAndTotals();
+
+// GA4 begin_checkout
+try {
+    gtag('event', 'begin_checkout', {
+        currency: 'BDT',
+        value: cart.reduce((s, i) => s + (i.price * (i.quantity || 1)), 0),
+        items: cart.map(i => ({
+            item_id: String(i.id),
+            item_name: i.name,
+            price: Number(i.price) || 0,
+            quantity: Number(i.quantity) || 1
+        }))
+    });
+} catch(e) {}
 
     } catch (err) {
         console.error("Error loading checkout data:", err);
@@ -735,6 +758,22 @@ items: validCart.map(i => ({
                 batch.update(userRef, { totalSpend: firebase.firestore.FieldValue.increment(total), lastOrderDate: new Date().toISOString() });
                 
                 await batch.commit();
+
+                // GA4 purchase
+try {
+    gtag('event', 'purchase', {
+        transaction_id: orderData.orderId,
+        currency: 'BDT',
+        value: total,
+        shipping: shippingFeeCharged,
+        items: validCart.map(i => ({
+            item_id: String(i.id),
+            item_name: i.name,
+            price: Number(i.price) || 0,
+            quantity: Number(i.quantity) || 1
+        }))
+    });
+} catch(e) {}
 
                 // ✅ ADD META PIXEL PURCHASE TRACKING HERE
         fbq('track', 'Purchase', {

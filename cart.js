@@ -432,5 +432,18 @@ window.loadFooterData = async function() {
             if (ad && d.address) ad.innerText = d.address;
         }
     } catch(e) { console.error("Contact info error:", e); }
+// GA4 add_to_cart
+try {
+    gtag('event', 'add_to_cart', {
+        currency: 'BDT',
+        value: Number(product.price) || 0,
+        items: [{
+            item_id: String(product.id),
+            item_name: product.name,
+            price: Number(product.price) || 0,
+            quantity: 1
+        }]
+    });
+} catch(e) {}
 
 };
