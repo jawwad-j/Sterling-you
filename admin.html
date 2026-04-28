@@ -4623,35 +4623,57 @@ window.getOrderTime = function(o) {
 // ── VISITOR STATS ──────────────────────────────────────────────────────────
 window.loadVisitorStats = async function(from, to) {
     try {
-        const fromStr = from.toISOString().split('T')[0];
-        const toStr   = to.toISOString().split('T')[0];
+        const fromStr = from.toISOString().split('T')[0].replace(/-/g, '');
+        const toStr   = to.toISOString().split('T')[0].replace(/-/g, '');
 
-        const snap = await db.collection("site_analytics")
-            .where("date", ">=", fromStr)
-            .where("date", "<=", toStr)
-            .get();
+        const startDate = from.toISOString().split('T')[0];
+        const endDate   = to.toISOString().split('T')[0];
 
-        let totalPageViews  = 0;
-        const allVisitorIds = new Set();
+        const res  = await fetch(`https://us-central1-sterling-erp.cloudfunctions.net/ga4Stats?startDate=${startDate}&endDate=${endDate}`);
+        const json = await res.json();
 
-let totalUniqueVisitors = 0;
-snap.forEach(doc => {
-    const d = doc.data();
-    totalPageViews += Number(d.pageViews) || 0;
-    if (d.uniqueVisitors !== undefined) {
-        totalUniqueVisitors += Number(d.uniqueVisitors) || 0;
-    } else {
-        (d.visitors || []).forEach(v => allVisitorIds.add(v));
-    }
-});
+        if (!json.success || !json.data) throw new Error('GA4 fetch failed');
+
+        let totalPageViews    = 0;
+        let totalUniqueUsers  = 0;
+
+        json.data.forEach(row => {
+            const dateStr = row.date; // format: YYYYMMDD
+            const rowFrom = parseInt(fromStr);
+            const rowTo   = parseInt(toStr);
+            const rowDate = parseInt(dateStr);
+
+            if (rowDate >= rowFrom && rowDate <= rowTo) {
+                totalPageViews   += row.pageViews   || 0;
+                totalUniqueUsers += row.totalUsers  || 0;
+            }
+        });
 
         const pvEl = document.getElementById('qs-pageviews');
         const uvEl = document.getElementById('qs-unique-visitors');
         if (pvEl) pvEl.innerText = totalPageViews.toLocaleString();
-        if (uvEl) uvEl.innerText = (totalUniqueVisitors || allVisitorIds.size).toLocaleString();
+        if (uvEl) uvEl.innerText = totalUniqueUsers.toLocaleString();
 
     } catch(e) {
-        console.error("Visitor stats error:", e);
+        console.error("GA4 visitor stats error:", e);
+        // Fallback to Firestore if GA4 fails
+        try {
+            const fromStr2 = from.toISOString().split('T')[0];
+            const toStr2   = to.toISOString().split('T')[0];
+            const snap = await db.collection("site_analytics")
+                .where("date", ">=", fromStr2)
+                .where("date", "<=", toStr2)
+                .get();
+            let pv = 0, uv = 0;
+            snap.forEach(doc => {
+                pv += Number(doc.data().pageViews)     || 0;
+                uv += Number(doc.data().uniqueVisitors) || 0;
+            });
+            const pvEl = document.getElementById('qs-pageviews');
+            const uvEl = document.getElementById('qs-unique-visitors');
+            if (pvEl) pvEl.innerText = pv.toLocaleString();
+            if (uvEl) uvEl.innerText = uv.toLocaleString();
+        } catch(e2) { console.error("Fallback stats error:", e2); }
     }
 };
 

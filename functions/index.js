@@ -1,7 +1,8 @@
-// v2 - productPreview added
 const functions = require("firebase-functions");
+const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const cors = require("cors")({ origin: true });
+const { BetaAnalyticsDataClient } = require('@google-analytics/data');
 admin.initializeApp();
 
 exports.superAdminResetStaffPassword = functions.https.onCall(async (data, context) => {
@@ -23,7 +24,7 @@ exports.superAdminResetStaffPassword = functions.https.onCall(async (data, conte
     return { message: "Password updated successfully. No email was sent." };
 });
 
-exports.productPreview = functions.https.onRequest(async (req, res) => {
+exports.productPreview = onRequest(async (req, res) => {
     const productId = req.query.id;
     if (!productId) return res.redirect('https://sterlingyou.com/product');
     try {
@@ -65,3 +66,50 @@ exports.productPreview = functions.https.onRequest(async (req, res) => {
         return res.redirect('https://sterlingyou.com/product?id=' + productId);
     }
 });
+
+exports.ga4Stats = onRequest(
+    { secrets: ["GA4_SERVICE_ACCOUNT"] },
+    async (req, res) => {
+        res.set('Access-Control-Allow-Origin', 'https://sterlingyou.com');
+        res.set('Access-Control-Allow-Methods', 'GET');
+
+        try {
+            const serviceAccount = JSON.parse(process.env.GA4_SERVICE_ACCOUNT);
+            const analyticsClient = new BetaAnalyticsDataClient({
+                credentials: {
+                    client_email: serviceAccount.client_email,
+                    private_key: serviceAccount.private_key
+                }
+            });
+
+            const { startDate, endDate } = req.query;
+
+            const [response] = await analyticsClient.runReport({
+                property: `properties/530239079`,
+                dateRanges: [{ startDate: startDate || '30daysAgo', endDate: endDate || 'today' }],
+                metrics: [
+                    { name: 'screenPageViews' },
+                    { name: 'totalUsers' },
+                    { name: 'newUsers' },
+                    { name: 'sessions' }
+                ],
+                dimensions: [{ name: 'date' }],
+                orderBys: [{ dimension: { dimensionName: 'date' } }]
+            });
+
+            const data = response.rows?.map(row => ({
+                date: row.dimensionValues[0].value,
+                pageViews: parseInt(row.metricValues[0].value),
+                totalUsers: parseInt(row.metricValues[1].value),
+                newUsers: parseInt(row.metricValues[2].value),
+                sessions: parseInt(row.metricValues[3].value)
+            })) || [];
+
+            res.json({ success: true, data });
+
+        } catch(e) {
+            console.error('GA4 error:', e);
+            res.status(500).json({ success: false, error: e.message });
+        }
+    }
+);
