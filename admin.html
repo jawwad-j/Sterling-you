@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sterling Enterprise | ERP & CRM</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins="></script>
+<style>
+  /* Tailwind will only load what's needed */
+</style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
@@ -2733,7 +2736,7 @@ window.previewBannerImage = function(input) {
                 prev.src = URL.createObjectURL(blob);
                 prev.classList.remove('hidden');
                 ph.classList.add('hidden');
-            }, 'image/jpeg', 0.8);
+            }, 'image/webp', 0.82);
         };
     };
     reader.readAsDataURL(file);
@@ -5620,7 +5623,7 @@ window.processGalleryImage = function(input, previewId, slot) {
                     document.getElementById('placeholder' + slot).classList.add('hidden'); 
                     document.getElementById('compress-msg').classList.add('hidden');
                     window.updateFocusPickerImage(blobUrl, slot);
-                }, 'image/jpeg', 0.7); 
+                }, 'image/webp', 0.82); 
             } 
         }; 
         reader.readAsDataURL(file); 
