@@ -4,7 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sterling You | Elevate Your Everyday</title>
-    <script src="https://cdn.tailwindcss.com?plugins="></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://www.gstatic.com">
+<link rel="preconnect" href="https://firebasestorage.googleapis.com">
+<link rel="dns-prefetch" href="https://connect.facebook.net">
+<link rel="preload" as="image" href="ComingSoonPageLogo.png" fetchpriority="high">
+<link rel="preload" as="image" href="web-logo2.png">
+
+   <script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  future: { hoverOnlyWhenSupported: true },
+}
+</script>
 <style>
   /* Tailwind will only load what's needed */
 </style>
@@ -12,8 +25,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap" onload="this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap"></noscript>
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;500;700&display=swap');
+        
         body { font-family: 'Montserrat', sans-serif; }
         .font-serif { font-family: 'Playfair Display', serif; }
         .active-filter { color: #B36A5E !important; border-bottom: 2px solid #B36A5E !important; }
@@ -154,7 +171,7 @@
 
 <main>
     <header class="py-16 text-center">
-        <img src="ComingSoonPageLogo.png" alt="Sterling You" class="h-24 md:h-32 w-auto mx-auto mb-6" onerror="this.style.display='none'">
+        <img src="ComingSoonPageLogo.png" alt="Sterling You" width="300" height="128" class="h-24 md:h-32 w-auto mx-auto mb-6" onerror="this.style.display='none'">
         <p class="text-xs font-bold tracking-[0.3em] uppercase text-gray-400">Elevate Your Everyday</p>
     </header>
 
@@ -383,7 +400,7 @@
             return `
             <a href="product.html?id=${productId}" style="pointer-events:all" class="product-card group cursor-pointer animate-fadeIn block">
                 <div class="relative overflow-hidden bg-gray-50 mb-3 aspect-[3/4] img-watermark-wrap">
-                    <img src="${p.image}" loading="lazy" style="object-position:${focusVal};width:100%;height:100%;object-fit:cover;" class="group-hover:scale-105 transition duration-700">
+                    <img src="${p.image}&w=400" loading="lazy" style="object-position:${focusVal};width:100%;height:100%;object-fit:cover;" class="group-hover:scale-105 transition duration-700">
                     <div class="absolute top-3 left-3 flex flex-col gap-2 z-10">
                         <span class="bg-white text-[#322C2B] px-3 py-1 text-[9px] font-bold uppercase shadow-sm">New</span>
                         ${hasDiscount ? `<span class="bg-[#B36A5E] text-white px-3 py-1 text-[9px] font-bold uppercase shadow-sm">SALE ${discountPercent}% OFF</span>` : ''}

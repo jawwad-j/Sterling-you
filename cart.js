@@ -448,3 +448,9 @@ window.loadFooterData = async function() {
     } catch(e) { console.error("Contact info error:", e); }
 
 };
+
+window.imgUrl = function(url, size) {
+    if (!url) return '';
+    // Add size hint for future CDN integration
+    return url;
+};
