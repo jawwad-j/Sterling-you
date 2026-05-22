@@ -176,32 +176,75 @@
         gap: 8px !important;
     }
 
-/* CRM — card layout on mobile */
+/* CRM — compact card layout on mobile */
 @media (max-width: 768px) {
+    /* Hide table header */
     #crm-table thead { display: none !important; }
+
+    /* Each row becomes a card */
     #crm-table tr {
-        display: flex !important;
-        flex-wrap: wrap !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        grid-template-rows: auto !important;
         padding: 10px 12px !important;
         border-bottom: 2px solid #F3F4F6 !important;
-        gap: 4px !important;
+        gap: 2px 8px !important;
+        background: white !important;
     }
+
     #crm-table tr td {
         display: block !important;
         padding: 1px 0 !important;
         border: none !important;
         white-space: normal !important;
         font-size: 11px !important;
+    }
+
+    /* Name + tag — full width, top */
+    #crm-table tr td:nth-child(1) {
+        grid-column: 1 / -1 !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        margin-bottom: 2px !important;
+    }
+
+    /* Phone — full width */
+    #crm-table tr td:nth-child(2) {
+        grid-column: 1 / -1 !important;
+        font-size: 11px !important;
+        color: #6B7280 !important;
+        font-family: monospace !important;
+    }
+
+    /* Joined | Last Order — side by side */
+    #crm-table tr td:nth-child(3)::before { content: "Joined: "; font-weight: 700; font-size: 9px; color: #9CA3AF; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+    #crm-table tr td:nth-child(4)::before { content: "Last Order: "; font-weight: 700; font-size: 9px; color: #9CA3AF; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* Spend | Orders — side by side */
+    #crm-table tr td:nth-child(5)::before { content: "Total Spend: "; font-weight: 700; font-size: 9px; color: #9CA3AF; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+    #crm-table tr td:nth-child(6)::before { content: "Orders: "; font-weight: 700; font-size: 9px; color: #9CA3AF; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* Return Rate | Status — side by side */
+    #crm-table tr td:nth-child(7)::before { content: "Return Rate: "; font-weight: 700; font-size: 9px; color: #9CA3AF; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+    #crm-table tr td:nth-child(8)::before { content: "Status: "; font-weight: 700; font-size: 9px; color: #9CA3AF; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* Fix filter bar overflow */
+    #crm .flex.items-center.gap-3.bg-white {
+        flex-wrap: wrap !important;
+        padding: 8px !important;
+        gap: 6px !important;
+    }
+    #crm-date-from, #crm-date-to {
+        width: calc(50% - 20px) !important;
+        font-size: 10px !important;
+    }
+    #crm-search {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+    #crm .flex.items-center.gap-3 button {
         width: 100% !important;
     }
-    #crm-table tr td:nth-child(1) { font-size: 13px !important; font-weight: 700 !important; }
-    #crm-table tr td:nth-child(2),
-    #crm-table tr td:nth-child(3),
-    #crm-table tr td:nth-child(4) { width: auto !important; flex: 1 !important; }
-    #crm-table tr td:nth-child(5),
-    #crm-table tr td:nth-child(6),
-    #crm-table tr td:nth-child(7),
-    #crm-table tr td:nth-child(8) { width: auto !important; display: inline-block !important; margin-right: 8px !important; }
 }
 
 #crm-table {
