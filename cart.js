@@ -337,12 +337,26 @@ window.requestProduct = async (pid, pname) => {
     try {
         const userDoc = await firebase.firestore().collection("users").doc(user.uid).get();
         const userData = userDoc.data();
-        await firebase.firestore().collection("product_requests").add({
-            productId: pid, productName: pname, userId: user.uid,
-            userName: userData.fullName || "Unknown", userPhone: userData.phone || "Unknown",
-            requestDate: new Date().toISOString(), status: "New"
-        });
-        alert("Request sent! We will notify you when stock is available.");
+await firebase.firestore().collection("product_requests").add({
+    productId: pid, productName: pname, userId: user.uid,
+    userName: userData.fullName || "Unknown", userPhone: userData.phone || "Unknown",
+    requestDate: new Date().toISOString(), status: "New"
+});
+
+// Send email notification to admin
+try {
+    await emailjs.send('service_qr9m3ds', 'template_razbuuu', {
+        order_id: 'STOCK REQUEST',
+        customer_name: userData.fullName || "Unknown",
+        customer_phone: userData.phone || "Unknown",
+        total: '0',
+        shipping: '0',
+        items: pname,
+        address: 'Product Request — Not an order'
+    });
+} catch(e) { console.error('Request notification failed:', e); }
+
+alert("Request sent! We will notify you when stock is available.");
     } catch (e) { console.error(e); alert("Error sending request."); }
 };
 
