@@ -4,7 +4,7 @@ const headerHTML = `
     <div id="top-bar" class="bg-[#322C2B] text-white py-2 overflow-hidden transition-all duration-300">
         <div class="max-w-7xl mx-auto px-6 md:px-10">
             <p class="text-[11px] tracking-[0.2em] uppercase font-light text-left">
-                Free Shipping on orders over ৳5,000
+                Free Shipping on orders over ৳9,500
             </p>
         </div>
     </div>

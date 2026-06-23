@@ -315,17 +315,24 @@ window.renderActionButtons = (product) => {
         if (!isNaN(parsedStock)) currentStock = parsedStock;
     }
 
+    const isPreorder      = product.isPreorder === true || product.isPreorder === 'true';
+    const preorderAdvance = Number(product.preorderAdvance) || 510;
+
     const pStr = JSON.stringify({
         id: String(product.id).trim(),
         name: cleanName,
         price: Number(product.price) || 0,
         originalPrice: Number(product.originalPrice || product.price) || 0,
         image: product.image || '',
-        stock: currentStock
+        stock: currentStock,
+        isPreorder: isPreorder,
+        preorderAdvance: preorderAdvance
     }).replace(/"/g, '&quot;');
     
     if (currentStock > 0) {
         return `<button onclick="addToCart(${pStr})" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg">Add to Cart</button>`;
+    } else if (isPreorder) {
+        return `<button onclick="openPreorderModal(${pStr})" class="w-full text-white py-3 rounded-xl font-bold uppercase text-xs transition shadow-lg" style="background:#B36A5E" onmouseover="this.style.background='#322C2B'" onmouseout="this.style.background='#B36A5E'">Pre-order Now</button>`;
     } else {
         return `<button onclick="requestProduct('${String(product.id).trim()}', '${cleanName}')" class="w-full bg-gray-200 text-gray-600 py-3 rounded-xl font-bold uppercase text-xs hover:bg-gray-300 transition">Request Restock</button>`;
     }
@@ -467,4 +474,312 @@ window.imgUrl = function(url, size) {
     if (!url) return '';
     // Add size hint for future CDN integration
     return url;
+};
+
+// ============================================================
+//  PRE-ORDER SYSTEM
+// ============================================================
+window._preorderSettings = { globalEta: '', bkashNumber: '', currentBatch: '' };
+
+window.loadPreorderSettings = async function() {
+    try {
+        const doc = await db.collection("settings").doc("preorder").get();
+        if (doc.exists) {
+            const d = doc.data();
+            window._preorderSettings = {
+                globalEta:    d.globalEta    || '',
+                bkashNumber:  d.bkashNumber  || '',
+                currentBatch: d.currentBatch || ''
+            };
+        }
+    } catch(e) { console.error("Preorder settings load error:", e); }
+    return window._preorderSettings;
+};
+
+// Secondary Firebase app so creating a customer account never disturbs the
+// visitor's own session.
+async function poGetSecondaryApp() {
+    try { return firebase.app("SecondaryPreorder"); }
+    catch(e) { return firebase.initializeApp(firebase.app().options, "SecondaryPreorder"); }
+}
+
+async function poCreateCustomer(name, phone) {
+    const fakeEmail = phone.replace(/\s+/g, '') + '@sterling.com';
+    const tempPass  = 'Sterling' + Date.now().toString().slice(-5);
+    let uid;
+    try {
+        const sapp = await poGetSecondaryApp();
+        const cred = await sapp.auth().createUserWithEmailAndPassword(fakeEmail, tempPass);
+        uid = cred.user.uid;
+        await sapp.auth().signOut();
+    } catch(authErr) {
+        if (authErr.code === 'auth/email-already-in-use') {
+            try {
+                const lk = await db.collection("phone_lookups").doc(phone).get();
+                uid = (lk.exists && lk.data().uid) ? lk.data().uid : ('po_' + Date.now());
+            } catch(e) { uid = 'po_' + Date.now(); }
+        } else { throw authErr; }
+    }
+    
+    await db.collection("users").doc(uid).set({
+        fullName: name, phone: phone, email: fakeEmail,
+        crmTags: 'Good', isBlocked: false, addresses: [], paymentMethods: [],
+        totalSpend: 0, source: 'preorder_web',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    await db.collection("phone_lookups").doc(phone).set({ uid: uid, name: name }, { merge: true });
+    return uid;
+}
+
+function injectPreorderModal() {
+    if (document.getElementById('preorder-modal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'preorder-modal';
+    modal.className = 'hidden fixed inset-0 bg-black/60 z-[10050] items-center justify-center p-4 backdrop-blur-sm';
+    modal.style.fontFamily = "'Montserrat', sans-serif";
+    modal.innerHTML = `
+      <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
+        <div class="p-4 border-b flex items-center gap-3 bg-gray-50">
+          <img id="po-product-img" src="" class="w-12 h-14 object-cover rounded-lg border border-gray-100 bg-gray-100">
+          <div class="flex-1 min-w-0">
+            <p class="text-[9px] font-bold uppercase tracking-widest" style="color:#B36A5E">Pre-order</p>
+            <p id="po-product-name" class="text-sm font-bold text-[#322C2B] truncate"></p>
+          </div>
+          <button onclick="closePreorderModal()" class="text-gray-400 hover:text-black text-2xl leading-none">&times;</button>
+        </div>
+
+        <!-- STEP 1: phone -->
+        <div id="po-step-1" class="p-6 space-y-4">
+          <p class="text-xs text-gray-500 leading-relaxed">Enter your number to start your pre-order. If you've ordered before, we'll fill in your details.</p>
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Contact Number</label>
+            <input type="tel" id="po-phone" placeholder="01XXXXXXXXX" class="w-full border-b border-gray-300 py-2 text-sm outline-none focus:border-[#B36A5E]" onkeydown="if(event.key==='Enter'){event.preventDefault();poLookupPhone();}">
+          </div>
+          <p id="po-error" class="hidden text-red-500 text-[11px] font-bold"></p>
+          <button id="po-lookup-btn" onclick="poLookupPhone()" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-lg tracking-widest">Continue</button>
+        </div>
+
+        <!-- STEP 2: details -->
+        <div id="po-step-2" class="hidden p-6 space-y-4">
+          <p id="po-returning-note" class="hidden text-[11px] font-bold px-3 py-2 rounded-lg" style="color:#322C2B;background:#F5ECE9;border:1px solid #E5D3CD">Welcome back! Please confirm your delivery address below.</p>
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Full Name</label>
+            <input type="text" id="po-name" placeholder="Your name" class="w-full border-b border-gray-300 py-2 text-sm outline-none focus:border-[#B36A5E]">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Delivery Address</label>
+            <textarea id="po-address" rows="2" placeholder="House, road, area, district..." class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-[#B36A5E] resize-none"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Quantity</label>
+              <input type="number" id="po-qty" value="1" min="1" oninput="poRecalcAdvance()" class="w-full border-b border-gray-300 py-2 text-sm outline-none focus:border-[#B36A5E] text-center font-bold">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Advance (৳)</label>
+              <input type="number" id="po-advance" class="w-full border-b border-gray-300 py-2 text-sm outline-none focus:border-[#B36A5E] text-center font-bold">
+            </div>
+          </div>
+          <p id="po-advance-hint" class="text-[10px] text-gray-400"></p>
+          <p id="po-error-2" class="hidden text-red-500 text-[11px] font-bold"></p>
+          <div class="flex gap-3 pt-1">
+            <button onclick="poBackToStep1()" class="flex-1 text-[10px] font-bold uppercase text-gray-400 border border-gray-200 py-3 rounded-xl hover:bg-gray-50 transition tracking-widest">Back</button>
+            <button id="po-submit-btn" onclick="poSubmitForm()" class="flex-1 text-white py-3 rounded-xl font-bold uppercase text-[10px] transition shadow-lg tracking-widest" style="background:#B36A5E" onmouseover="this.style.background='#322C2B'" onmouseout="this.style.background='#B36A5E'">Confirm Pre-order</button>
+          </div>
+        </div>
+
+        <!-- STEP 3: bKash -->
+        <div id="po-step-3" class="hidden p-6 space-y-4">
+          <div class="rounded-xl p-4 text-center" style="background:#F5ECE9;border:1px solid #E5D3CD">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-1" style="color:#B36A5E">Pre-order Recorded ✓</p>
+            <p class="text-xs text-gray-600">Send your advance via bKash to confirm:</p>
+          </div>
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center space-y-1">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Send Money to bKash</p>
+            <p id="po-bkash-number" class="text-xl font-bold text-[#322C2B] tracking-wide"></p>
+            <p class="text-[10px] text-gray-400">Amount: <span id="po-bkash-amount" class="font-bold" style="color:#B36A5E"></span></p>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">bKash Transaction ID <span class="normal-case font-normal text-gray-300">(optional)</span></label>
+            <input type="text" id="po-txn" placeholder="e.g. 9XY7ABCD12" class="w-full border-b border-gray-300 py-2 text-sm outline-none focus:border-[#B36A5E]">
+          </div>
+          <button onclick="poSubmitTxn()" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-lg tracking-widest">Done</button>
+          <p class="text-[10px] text-gray-400 text-center">We'll call you to confirm and notify you when stock arrives.</p>
+        </div>
+
+        <!-- DONE -->
+        <div id="po-step-done" class="hidden p-8 text-center space-y-3">
+          <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto text-2xl" style="background:#F5ECE9">✨</div>
+          <h3 class="text-lg font-bold text-[#322C2B]">Thank you!</h3>
+          <p class="text-sm text-gray-500">Your pre-order is in. We'll be in touch shortly.</p>
+          <button onclick="closePreorderModal()" class="bg-[#322C2B] text-white px-6 py-2.5 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition tracking-widest">Close</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+}
+document.addEventListener('DOMContentLoaded', injectPreorderModal);
+
+window.openPreorderModal = function(product) {
+    injectPreorderModal();
+    window._poProduct   = product;
+    window._poIsNew     = false;
+    window._poUserId    = null;
+    window._poPhone     = null;
+    window._poPreorderId = null;
+
+    document.getElementById('po-product-name').innerText = product.name || 'Pre-order';
+    document.getElementById('po-product-img').src = product.image || '';
+
+    document.getElementById('po-step-1').classList.remove('hidden');
+    document.getElementById('po-step-2').classList.add('hidden');
+    document.getElementById('po-step-3').classList.add('hidden');
+    document.getElementById('po-step-done').classList.add('hidden');
+
+    document.getElementById('po-phone').value = '';
+    document.getElementById('po-name').value = '';
+    document.getElementById('po-address').value = '';
+    document.getElementById('po-qty').value = 1;
+    document.getElementById('po-advance').value = '';
+    document.getElementById('po-txn').value = '';
+    document.getElementById('po-error').classList.add('hidden');
+    document.getElementById('po-error-2').classList.add('hidden');
+    document.getElementById('po-returning-note').classList.add('hidden');
+
+    const modal = document.getElementById('preorder-modal');
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+};
+
+window.closePreorderModal = function() {
+    const modal = document.getElementById('preorder-modal');
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+    document.body.style.overflow = '';
+};
+
+window.poBackToStep1 = function() {
+    document.getElementById('po-step-2').classList.add('hidden');
+    document.getElementById('po-step-1').classList.remove('hidden');
+};
+
+window.poLookupPhone = async function() {
+    const phone = (document.getElementById('po-phone').value || '').trim();
+    const err   = document.getElementById('po-error');
+    err.classList.add('hidden');
+    if (!phone || phone.length < 6) { err.innerText = 'Please enter a valid phone number.'; err.classList.remove('hidden'); return; }
+    window._poPhone = phone;
+
+    const btn = document.getElementById('po-lookup-btn');
+    btn.innerText = 'Checking...'; btn.disabled = true;
+    try {
+        // Read ONLY the public phone_lookups doc — never the locked users collection.
+        let foundName = '';
+        let foundUid  = null;
+        try {
+            const lk = await db.collection("phone_lookups").doc(phone).get();
+            if (lk.exists) { foundUid = lk.data().uid || null; foundName = lk.data().name || ''; }
+        } catch(e) { /* fall through as a new customer — never block the sale */ }
+
+        if (foundUid || foundName) {
+            window._poIsNew  = false;
+            window._poUserId = foundUid;
+            if (foundName) document.getElementById('po-name').value = foundName;
+            // Address is always typed fresh on the storefront.
+            const note = document.getElementById('po-returning-note');
+            note.innerText = 'Welcome back! Please confirm your delivery address below.';
+            note.classList.remove('hidden');
+        } else {
+            window._poIsNew  = true;
+            window._poUserId = null;
+            document.getElementById('po-returning-note').classList.add('hidden');
+        }
+
+        document.getElementById('po-step-1').classList.add('hidden');
+        document.getElementById('po-step-2').classList.remove('hidden');
+        poRecalcAdvance();
+    } catch(e) {
+        err.innerText = 'Lookup failed. Please try again.'; err.classList.remove('hidden');
+    } finally {
+        btn.innerText = 'Continue'; btn.disabled = false;
+    }
+};
+
+window.poRecalcAdvance = function() {
+    const qty    = Math.max(1, Number(document.getElementById('po-qty').value) || 1);
+    const perBag = Math.max(510, Number(window._poProduct.preorderAdvance) || 510);
+    const min    = perBag * qty;
+    const adv    = document.getElementById('po-advance');
+    adv.min = min;
+    if (!adv.value || Number(adv.value) < min) adv.value = min;
+    document.getElementById('po-advance-hint').innerText =
+        'Minimum ৳' + min.toLocaleString() + ' (' + qty + ' × ৳' + perBag.toLocaleString() + '). You may pay more.';
+};
+
+function poErr2(msg) {
+    const e = document.getElementById('po-error-2');
+    e.innerText = msg; e.classList.remove('hidden');
+}
+
+window.poSubmitForm = async function() {
+    const name    = (document.getElementById('po-name').value || '').trim();
+    const address = (document.getElementById('po-address').value || '').trim();
+    const qty     = Math.max(1, Number(document.getElementById('po-qty').value) || 1);
+    const advance = Number(document.getElementById('po-advance').value) || 0;
+    const perBag  = Math.max(510, Number(window._poProduct.preorderAdvance) || 510);
+    const minAdv  = perBag * qty;
+
+    document.getElementById('po-error-2').classList.add('hidden');
+    if (!name)    { poErr2('Please enter your name.'); return; }
+    if (!address) { poErr2('Please enter your delivery address.'); return; }
+    if (advance < minAdv) { poErr2('Advance must be at least ৳' + minAdv.toLocaleString() + '.'); return; }
+
+    const btn = document.getElementById('po-submit-btn');
+    btn.innerText = 'Submitting...'; btn.disabled = true;
+    try {
+        // Storefront is anonymous — never touch the locked `users` collection.
+        // Capture the name in the public phone_lookups doc; the real CRM account
+        // is created admin-side via "Save as Customer".
+        const uid = window._poUserId || null;
+        try { await db.collection("phone_lookups").doc(window._poPhone).set({ name: name }, { merge: true }); } catch(e) {}
+
+        const ref = await db.collection("preorders").add({
+            customerName:    name,
+            customerPhone:   window._poPhone,
+            customerAddress: address,
+            userId:          uid || null,
+            productId:       window._poProduct.id,
+            productName:     window._poProduct.name,
+            productImage:    window._poProduct.image || '',
+            productPrice:    Number(window._poProduct.price) || 0,
+            quantity:        qty,
+            advanceAmount:   advance,
+            bkashTxnId:      null,
+            batch:           window._preorderSettings.currentBatch || '',
+            status:          'Pending',
+            source:          'web',
+            createdAt:       new Date().toISOString()
+        });
+        window._poPreorderId = ref.id;
+
+        try { fbq('track', 'Lead', { content_name: window._poProduct.name, value: advance, currency: 'BDT' }); } catch(e) {}
+
+        document.getElementById('po-step-2').classList.add('hidden');
+        document.getElementById('po-step-3').classList.remove('hidden');
+        document.getElementById('po-bkash-number').innerText = window._preorderSettings.bkashNumber || 'Contact us';
+        document.getElementById('po-bkash-amount').innerText = '৳' + advance.toLocaleString();
+    } catch(e) {
+        poErr2('Could not submit: ' + e.message);
+    } finally {
+        btn.innerText = 'Confirm Pre-order'; btn.disabled = false;
+    }
+};
+
+window.poSubmitTxn = async function() {
+    const txn = (document.getElementById('po-txn').value || '').trim();
+    try {
+        if (txn && window._poPreorderId) {
+            await db.collection("preorders").doc(window._poPreorderId).update({ bkashTxnId: txn });
+        }
+    } catch(e) {}
+    document.getElementById('po-step-3').classList.add('hidden');
+    document.getElementById('po-step-done').classList.remove('hidden');
 };

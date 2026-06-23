@@ -294,6 +294,7 @@
 
     // --- CATEGORY LOGIC ---
     async function loadCategoryProducts() {
+        if (window.loadPreorderSettings) { try { await window.loadPreorderSettings(); } catch(e){} }
         const grid  = document.getElementById('product-grid');
         const title = document.getElementById('page-title');
         let categoryName = "";
@@ -353,14 +354,19 @@
             const perc = hasD ? Math.round(((old - pr) / old) * 100) : 0;
             const isOutOfStock = p.stock <= 0;
             const isLowStock   = p.stock > 0 && p.stock <= 5;
+            const isPreorder   = p.isPreorder === true;
+            const canPreorder  = isOutOfStock && isPreorder;
             const productId    = String(p.id).trim();
             const focusVal     = p.imageFocus || 'center';
+            const poEta        = (window._preorderSettings && window._preorderSettings.globalEta) || '';
 
             const pStr = JSON.stringify({
                 id: productId,
                 name: p.name.replace(/'/g, "\\'").replace(/"/g, '&quot;'),
                 price: pr, originalPrice: old,
-                image: p.image, stock: p.stock
+                image: p.image, stock: p.stock,
+                isPreorder: isPreorder,
+                preorderAdvance: Number(p.preorderAdvance) || 510
             }).replace(/"/g, '&quot;');
 
             return `
@@ -371,12 +377,14 @@
                         ${p.isNew ? '<span class="bg-white/90 text-[9px] font-bold px-2 py-1 uppercase tracking-widest shadow-sm">New</span>' : ''}
                         ${hasD ? `<span class="bg-[#B36A5E] text-white text-[9px] font-bold px-2 py-1 uppercase tracking-widest shadow-sm whitespace-nowrap">SALE ${perc}% OFF</span>` : ''}
                         ${isLowStock  ? `<span class="bg-red-600 text-white text-[9px] font-bold px-2 py-1 uppercase tracking-widest shadow-sm animate-pulse">Low Stock</span>` : ''}
-                        ${isOutOfStock ? `<span class="bg-gray-900 text-white px-2 py-1 text-[9px] font-bold uppercase shadow-sm tracking-widest">Sold Out</span>` : ''}
+                        ${canPreorder ? `<span class="text-white px-2 py-1 text-[9px] font-bold uppercase shadow-sm tracking-widest" style="background:#B36A5E">Pre-order</span>` : (isOutOfStock ? `<span class="bg-gray-900 text-white px-2 py-1 text-[9px] font-bold uppercase shadow-sm tracking-widest">Sold Out</span>` : '')}
                     </div>
                     <div class="add-to-cart-container absolute bottom-0 left-0 w-full z-20">
-                        ${isOutOfStock
+                        ${canPreorder
+                            ? `<button onclick="event.preventDefault(); openPreorderModal(${pStr});" style="pointer-events:all;background:#B36A5E" class="w-full text-white py-3 text-[10px] font-bold tracking-widest uppercase transition-colors">Pre-order Now</button>`
+                            : (isOutOfStock
                             ? `<button onclick="event.preventDefault(); requestProduct('${productId}','${p.name.replace(/'/g,"\\'")}');" style="pointer-events:all" class="w-full bg-gray-400 text-white py-3 text-[10px] font-bold tracking-widest uppercase hover:bg-gray-500 transition-colors">Request Stock</button>`
-                            : `<button onclick="event.preventDefault(); addToCart(${pStr});" style="pointer-events:all" class="w-full bg-[#322C2B]/95 text-white py-3 text-[10px] font-bold tracking-widest uppercase hover:bg-[#B36A5E] transition-colors">Add To Cart</button>`}
+                            : `<button onclick="event.preventDefault(); addToCart(${pStr});" style="pointer-events:all" class="w-full bg-[#322C2B]/95 text-white py-3 text-[10px] font-bold tracking-widest uppercase hover:bg-[#B36A5E] transition-colors">Add To Cart</button>`)}
                     </div>
                 </div>
                 <h3 class="text-[11px] font-bold uppercase tracking-widest text-[#322C2B] group-hover:text-[#B36A5E] transition-colors">${p.name}</h3>
@@ -384,6 +392,7 @@
                     <p class="text-[12px] text-[#B36A5E] font-bold">৳${pr.toLocaleString()}</p>
                     ${hasD ? `<p class="text-[10px] text-gray-400 line-through">৳${old.toLocaleString()}</p>` : ''}
                 </div>
+                ${canPreorder && poEta ? `<p class="text-[9px] font-medium mt-1 italic" style="color:#B36A5E">${poEta}</p>` : ''}
             </a>`;
         }).join('');
     }

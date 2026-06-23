@@ -235,6 +235,7 @@
         try {
             if (tabId === 'orders' && typeof window.loadOrders === 'function') { window.loadOrders(); window.loadInvoiceSettings(); }
             if (tabId === 'inventory' && typeof window.loadInventory === 'function') window.loadInventory();
+            if (tabId === 'preorders' && typeof window.loadPreorders === 'function') window.loadPreorders();
             if (tabId === 'crm' && typeof window.loadCRMUsers === 'function') window.loadCRMUsers();
             if (tabId === 'dashboard' && typeof window.initCharts === 'function') setTimeout(() => window.initCharts(), 50);
             if (tabId === 'queries' && typeof window.loadQueries === 'function') window.loadQueries();
@@ -297,6 +298,7 @@ if (tabId === 'contact-settings') {
             <button onclick="mobileSwitchTab('orders')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">📦 Order Pipeline</button>
             <button onclick="mobileSwitchTab('crm')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">👥 Customer CRM</button>
             <button onclick="mobileSwitchTab('inventory')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">🛠 Inventory</button>
+            <button onclick="mobileSwitchTab('preorders')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">📦 Pre-orders</button>
             <button onclick="mobileSwitchTab('logistics-settings')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">🚚 Logistics</button>
             <button onclick="mobileSwitchTab('queries')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">💬 Queries</button>
             <button onclick="mobileSwitchTab('banners')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">🖼 Banners</button>
@@ -395,6 +397,7 @@ if (tabId === 'contact-settings') {
                 <button id="nav-orders" onclick="switchTab('orders')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📦 Order Pipeline</button>
                 <button id="nav-crm" onclick="switchTab('crm')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">👥 Customer CRM</button>
                 <button id="nav-inventory" onclick="switchTab('inventory')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🛠 Inventory</button>
+                <button id="nav-preorders" onclick="switchTab('preorders')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📦 Pre-orders</button>
                 <button id="nav-logistics" onclick="switchTab('logistics-settings')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🚚 Logistics</button>
                 <button id="nav-support" onclick="switchTab('support')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📜 Policy Manager</button>
                 <button id="nav-banners" onclick="switchTab('banners')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🖼 Category Banners</button>
@@ -798,6 +801,39 @@ if (tabId === 'contact-settings') {
 
     <!-- ── PRODUCTS TAB ── -->
     <div id="inv-panel-stock">
+
+        <!-- Pre-order Settings -->
+        <div class="bg-white rounded-2xl shadow-sm border border-emerald-100 mb-6 overflow-hidden">
+            <div class="px-5 py-3 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2">
+                <span class="text-emerald-600 text-sm">📦</span>
+                <h3 class="text-xs font-bold uppercase tracking-widest text-emerald-700">Pre-order Settings</h3>
+                <span class="text-[10px] text-gray-400 normal-case font-normal">— shown on the storefront for all pre-order products</span>
+            </div>
+            <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-1">Global Pre-order ETA</label>
+                    <input type="text" id="preorder_eta" placeholder="e.g. Next batch ships after June 25, 2026"
+                        class="w-full border-b border-gray-300 py-2 text-sm outline-none focus:border-[#B36A5E]">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-1">bKash Business Number</label>
+                    <input type="text" id="preorder_bkash" placeholder="e.g. 01XXXXXXXXX"
+                        class="w-full border-b border-gray-300 py-2 text-sm outline-none focus:border-[#B36A5E]">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-1">Current Batch Label</label>
+                    <input type="text" id="preorder_batch" placeholder="e.g. JULY SHIPMENT 1"
+                        class="w-full border-b border-gray-300 py-2 text-sm outline-none focus:border-[#B36A5E]">
+                </div>
+                <div class="md:col-span-3">
+                    <button onclick="savePreorderSettings()" id="btn-save-preorder"
+                        class="bg-[#322C2B] text-white px-6 py-2.5 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-md">
+                        Save Pre-order Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
             <table class="w-full text-left">
                 <thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400">
@@ -880,6 +916,73 @@ if (tabId === 'contact-settings') {
 </div>     
 
 </section>
+            <section id="preorders" class="tab-content">
+                <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-[#322C2B]">Pre-orders</h2>
+                        <p id="preorder-total-count" class="text-xs text-gray-400 mt-1">Loading...</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+                        <input type="text" id="preorder-search" onkeyup="renderPreorders()" placeholder="Search name or phone..." class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] w-48">
+                        <select id="preorder-batch-filter" onchange="renderPreorders()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-white">
+                            <option value="">All Batches</option>
+                        </select>
+                        <select id="preorder-status-filter" onchange="renderPreorders()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-white">
+                            <option value="">All Statuses</option>
+                            <option value="awaiting">⚠ Awaiting Payment</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Converted">Converted</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                        <button onclick="loadPreorders()" class="bg-[#322C2B] text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-[#B36A5E] transition">Refresh</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                        <p class="text-[10px] font-bold uppercase text-gray-400">Total Pre-orders</p>
+                        <h3 id="preorder-stat-total" class="text-xl font-bold text-[#322C2B] mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-orange-100 shadow-sm">
+                        <p class="text-[10px] font-bold uppercase text-orange-500">Awaiting Payment</p>
+                        <h3 id="preorder-stat-awaiting" class="text-xl font-bold text-orange-500 mt-1">0</h3>
+                        <p class="text-[10px] text-gray-400 mt-0.5">your call list</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                        <p class="text-[10px] font-bold uppercase text-gray-400">Pending Advance</p>
+                        <h3 id="preorder-stat-advance" class="text-xl font-bold text-[#B36A5E] mt-1">৳0</h3>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-green-100 shadow-sm">
+                        <p class="text-[10px] font-bold uppercase text-green-600">Confirmed</p>
+                        <h3 id="preorder-stat-confirmed" class="text-xl font-bold text-green-600 mt-1">0</h3>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400">
+                                <tr>
+                                    <th class="p-3">Product</th>
+                                    <th>Customer</th>
+                                    <th>Phone</th>
+                                    <th>Address</th>
+                                    <th class="text-center">Qty</th>
+                                    <th>Advance</th>
+                                    <th>Txn ID</th>
+                                    <th>Batch</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="preorders-table-body" class="text-xs"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
             <section id="logistics-settings" class="tab-content">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold text-[#322C2B]">Logistics & Shipping Rules</h2>
@@ -1263,6 +1366,17 @@ if (tabId === 'contact-settings') {
     <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" id="p_isNew" checked class="accent-[#B36A5E] w-4 h-4"> <span class="text-xs font-bold uppercase text-gray-600">New Arrival</span></label>
     <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" id="p_isVisible" checked class="accent-[#B36A5E] w-4 h-4"> <span class="text-xs font-bold uppercase text-gray-600">Visible on Store</span></label>
     <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer border-[#10B981] bg-green-50"><input type="checkbox" id="p_isFreeDelivery" class="accent-[#10B981] w-4 h-4"> <span class="text-xs font-bold uppercase text-green-700">Free Delivery Available</span></label>
+    <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer border-emerald-300 bg-emerald-50">
+        <input type="checkbox" id="p_isPreorder" class="accent-emerald-600 w-4 h-4">
+        <div>
+            <span class="text-xs font-bold uppercase text-emerald-700">Available for Pre-order</span>
+            <p class="text-[10px] text-gray-400 mt-0.5 normal-case font-normal">When stock hits 0, shows a Pre-order button instead of Sold Out. Excluded from low-stock alerts.</p>
+        </div>
+    </label>
+    <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-500 px-1">Min Advance per Bag (৳)
+        <input type="number" id="p_preorderAdvance" placeholder="510" class="w-full mt-1 border-b border-gray-300 py-2 outline-none focus:border-[#B36A5E]">
+        <span class="text-[9px] text-gray-400 font-normal normal-case">Leave blank to use default ৳510.</span>
+    </label>
     <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer border-gray-300 bg-gray-50">
         <input type="checkbox" id="p_skipLowStock" class="accent-gray-500 w-4 h-4">
         <div>
@@ -1883,6 +1997,7 @@ if (typeof loadInventory === 'function') loadInventory();
 team: document.getElementById('nav-team'),
 profile: document.getElementById('nav-profile'),
 banners: document.getElementById('nav-banners'),
+preorders: document.getElementById('nav-preorders'),
             };
 
             Object.values(els).forEach(el => { if(el) el.classList.add('hidden'); });
@@ -1892,9 +2007,9 @@ banners: document.getElementById('nav-banners'),
             } else if (r === 'admin') {
                 Object.values(els).forEach(el => { if(el && el !== els.team) el.classList.remove('hidden'); });
             } else if (r === 'sales') {
-                [els.dashboard, els.orders, els.crm, els.queries, els.profile].forEach(el => { if(el) el.classList.remove('hidden'); });
+                [els.dashboard, els.orders, els.crm, els.queries, els.preorders, els.profile].forEach(el => { if(el) el.classList.remove('hidden'); });
             } else if (r === 'operations') {
-                [els.dashboard, els.orders, els.inventory, els.logistics, els.profile].forEach(el => { if(el) el.classList.remove('hidden'); });
+                [els.dashboard, els.orders, els.inventory, els.logistics, els.preorders, els.profile].forEach(el => { if(el) el.classList.remove('hidden'); });
             }
         }
 
@@ -5408,6 +5523,7 @@ if (ctx1) {
         async function loadInventory() {
             if (window.isInventoryLoading) return;
             window.isInventoryLoading = true;
+            if (typeof window.loadPreorderSettingsAdmin === 'function') window.loadPreorderSettingsAdmin();
 
             const tbody = document.getElementById('inventory-table-body');
             if (!tbody) { window.isInventoryLoading = false; return; }
@@ -5435,7 +5551,7 @@ reqSnap.forEach(doc => {
 snap.docs.forEach(doc => {
     const p = doc.data();
     p.id = doc.id;
-    if (p.stock < 5 && !p.skipLowStock) lowStockCount++;
+    if (p.stock < 5 && !p.skipLowStock && !p.isPreorder) lowStockCount++;
     p.reqCount = reqCountMap[p.id] || 0;
     tempInventoryArray.push(p);
 });
@@ -5565,7 +5681,7 @@ snap.docs.forEach(doc => {
                     '<button onclick="viewRequests(\'' + p.id + '\')" class="text-[#B36A5E] font-bold text-[10px] underline uppercase">View ' + p.reqCount + ' Active<\/button>' :
                     '<button onclick="viewRequests(\'' + p.id + '\')" class="text-gray-400 font-bold text-[10px] underline uppercase hover:text-gray-600">History<\/button>';
 
-                htmlRows += '<tr class="border-b ' + (p.stock < 5 ? 'bg-red-50' : '') + ' hover:bg-gray-50 transition">' +
+                htmlRows += '<tr class="border-b ' + ((p.stock < 5 && !p.isPreorder) ? 'bg-red-50' : '') + ' hover:bg-gray-50 transition">' +
                                 '<td class="p-4 flex items-center gap-2">' +
                                     '<img src="' + (p.image || 'placeholder.png') + '" class="w-8 h-8 object-cover rounded shadow-sm">' +
                                     '<span class="font-medium">' + p.name + '<\/span>' +
@@ -5576,12 +5692,13 @@ snap.docs.forEach(doc => {
     (p.subcategory ? '<span class="bg-[#fdf0ee] text-[#B36A5E] px-2 py-1 rounded text-[10px] ml-1">' + p.subcategory + '</span>' : '') +
 '</td>' +
                                 '<td class="font-bold">৳' + fmt(p.price) + '<\/td>' +
-                                '<td><span class="font-bold ' + (p.stock < 5 ? 'text-red-600' : '') + '">' + p.stock + '<\/span><\/td>' +
+                                '<td><span class="font-bold ' + ((p.stock < 5 && !p.isPreorder) ? 'text-red-600' : '') + '">' + p.stock + '<\/span><\/td>' +
                                 '<td class="p-4">' + reqDisplay + '<\/td>' +
                                 '<td>' +
                                     '<span class="px-2 py-1 rounded-full text-[9px] font-bold uppercase ' + (p.isVisible ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500') + '">' +
                                         (p.isVisible ? 'Live' : 'Hidden') +
                                     '<\/span>' +
+                                    (p.isPreorder ? '<span class="ml-1 px-2 py-1 rounded-full text-[9px] font-bold uppercase bg-emerald-100 text-emerald-600">Pre-order<\/span>' : '') +
                                 '<\/td>' +
                                 '<td class="p-4">' +
                                     '<div class="flex gap-2">' +
@@ -5664,7 +5781,9 @@ const productData = {
     supplierShippingCost: supplierShippingCost,
     weightKg: weightKg,
     isFreeDelivery: isFreeDelivery,
-    category: document.getElementById('p_category').value, 
+    isPreorder: document.getElementById('p_isPreorder').checked,
+    preorderAdvance: Number(document.getElementById('p_preorderAdvance').value) || 510,
+    category: document.getElementById('p_category').value,
     subcategory: document.getElementById('p_subcategory').value,
     stock: currentStock, 
     shortDesc: document.getElementById('p_shortDesc').value, 
@@ -5725,6 +5844,8 @@ window.editProduct = async function(id) {
     document.getElementById('p_supplierShipping').value = p.supplierShippingCost || ''; 
     document.getElementById('p_weight').value = p.weightKg || ''; 
     document.getElementById('p_isFreeDelivery').checked = p.isFreeDelivery || false; 
+    document.getElementById('p_isPreorder').checked = p.isPreorder || false;
+    document.getElementById('p_preorderAdvance').value = p.preorderAdvance || ''; 
     document.getElementById('p_stock').value = p.stock || 0; 
     document.getElementById('p_shortDesc').value = p.shortDesc || ''; 
     document.getElementById('p_longDesc').value = p.longDesc || ''; 
@@ -7562,7 +7683,7 @@ window.renderDashLowStock = async function() {
         }
     }
 
-    const lowItems = window.inventoryDataCache.filter(p => (Number(p.stock) || 0) < 5 && !p.skipLowStock);
+    const lowItems = window.inventoryDataCache.filter(p => (Number(p.stock) || 0) < 5 && !p.skipLowStock && !p.isPreorder);
 
     if (lowItems.length === 0) {
         lowStockEl.innerHTML = '<p class="text-xs text-green-600 font-bold text-center py-4">✓ All products well stocked</p>';
@@ -7599,6 +7720,44 @@ window.loadAnnouncementBar = async function() {
             if (el) el.value = doc.data().announcementBar;
         }
     } catch(e) { console.error(e); }
+};
+
+// ── PRE-ORDER SETTINGS (ETA / bKash / Batch) ──
+window.loadPreorderSettingsAdmin = async function() {
+    try {
+        const doc = await db.collection("settings").doc("preorder").get();
+        if (doc.exists) {
+            const d = doc.data();
+            const eta = document.getElementById('preorder_eta');
+            const bk  = document.getElementById('preorder_bkash');
+            const bt  = document.getElementById('preorder_batch');
+            if (eta) eta.value = d.globalEta    || '';
+            if (bk)  bk.value  = d.bkashNumber  || '';
+            if (bt)  bt.value  = d.currentBatch || '';
+        }
+    } catch(e) { console.error("Preorder settings load error:", e); }
+};
+
+window.savePreorderSettings = async function() {
+    const eta   = (document.getElementById('preorder_eta').value || '').trim();
+    const bkash = (document.getElementById('preorder_bkash').value || '').trim();
+    const batch = (document.getElementById('preorder_batch').value || '').trim();
+    const btn   = document.getElementById('btn-save-preorder');
+    btn.innerText = 'Saving...'; btn.disabled = true;
+    try {
+        await db.collection("settings").doc("preorder").set({
+            globalEta:    eta,
+            bkashNumber:  bkash,
+            currentBatch: batch,
+            updatedAt:    new Date().toISOString()
+        }, { merge: true });
+        await window.logAdminAction('Updated pre-order settings (ETA / bKash / batch)');
+        alert('✅ Pre-order settings saved.');
+    } catch(e) {
+        alert('Error: ' + e.message);
+    } finally {
+        btn.innerText = 'Save Pre-order Settings'; btn.disabled = false;
+    }
 };
 
 // ── DRAG-TO-REPOSITION FOCAL POINT PICKER ──
@@ -8611,6 +8770,233 @@ window.openActivityModal = async function(uid, fullName) {
         <div id="query-modal-content" class="p-6 overflow-y-auto flex-1"></div>
     </div>
 </div>
+
+<script>
+// ============================================================
+//  PRE-ORDERS MANAGEMENT PANEL
+// ============================================================
+window._preordersCache = [];
+
+function _poIsSuperAdmin() {
+    const r = (window.currentAdminUser && window.currentAdminUser.role) ||
+              (typeof currentUserRole !== 'undefined' ? currentUserRole : '');
+    return r === 'super_admin';
+}
+
+window.loadPreorders = async function() {
+    const tbody = document.getElementById('preorders-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="11" class="p-10 text-center"><div class="loader mx-auto"></div></td></tr>';
+    try {
+        const snap = await db.collection("preorders").get();
+        window._preordersCache = [];
+        snap.forEach(doc => { const d = doc.data(); d.id = doc.id; window._preordersCache.push(d); });
+        window._preordersCache.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+        const batchSel = document.getElementById('preorder-batch-filter');
+        if (batchSel) {
+            const cur = batchSel.value;
+            const batches = [...new Set(window._preordersCache.map(p => p.batch).filter(Boolean))].sort();
+            batchSel.innerHTML = '<option value="">All Batches</option>' +
+                batches.map(b => '<option value="' + b + '">' + b + '</option>').join('');
+            batchSel.value = cur;
+        }
+        window.renderPreorders();
+    } catch(e) {
+        console.error("Preorders load error:", e);
+        tbody.innerHTML = '<tr><td colspan="11" class="p-10 text-center text-red-500">Error loading pre-orders: ' + e.message + '</td></tr>';
+    }
+};
+
+window.renderPreorders = function() {
+    const tbody = document.getElementById('preorders-table-body');
+    if (!tbody) return;
+
+    const searchVal = (document.getElementById('preorder-search')?.value || '').toLowerCase().trim();
+    const batchVal  = document.getElementById('preorder-batch-filter')?.value || '';
+    const statusVal = document.getElementById('preorder-status-filter')?.value || '';
+    const isSuper   = _poIsSuperAdmin();
+
+    const all = window._preordersCache;
+
+    const list = all.filter(p => {
+        const matchSearch = !searchVal ||
+            (p.customerName || '').toLowerCase().includes(searchVal) ||
+            (p.customerPhone || '').toLowerCase().includes(searchVal);
+        const matchBatch = !batchVal || p.batch === batchVal;
+        let matchStatus = true;
+        if (statusVal === 'awaiting') matchStatus = (p.status === 'Pending') && !p.bkashTxnId;
+        else if (statusVal)           matchStatus = (p.status || 'Pending') === statusVal;
+        return matchSearch && matchBatch && matchStatus;
+    });
+
+    // ── Stats (from full cache) ──
+    const awaiting       = all.filter(p => p.status === 'Pending' && !p.bkashTxnId).length;
+    const pendingAdvance = all.filter(p => p.status === 'Pending').reduce((s, p) => s + (Number(p.advanceAmount) || 0), 0);
+    const confirmed      = all.filter(p => p.status === 'Confirmed').length;
+
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+    set('preorder-stat-total', all.length);
+    set('preorder-stat-awaiting', awaiting);
+    set('preorder-stat-advance', '৳' + fmt(pendingAdvance));
+    set('preorder-stat-confirmed', confirmed);
+    set('preorder-total-count', list.length + ' showing · ' + all.length + ' total');
+
+    if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" class="p-8 text-center text-gray-400">No pre-orders match your filters.</td></tr>';
+        return;
+    }
+
+    let html = '';
+    list.forEach(p => {
+        const status   = p.status || 'Pending';
+        const awaitPay = status === 'Pending' && !p.bkashTxnId;
+
+        let statusBadge;
+        if (status === 'Confirmed')      statusBadge = '<span class="bg-green-100 text-green-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase">Confirmed</span>';
+        else if (status === 'Converted') statusBadge = '<span class="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase">Converted</span>';
+        else if (status === 'Cancelled') statusBadge = '<span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase">Cancelled</span>';
+        else statusBadge = awaitPay
+            ? '<span class="bg-orange-100 text-orange-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase">Awaiting Pay</span>'
+            : '<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-[9px] font-bold uppercase">Pending</span>';
+
+        const dateStr    = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '—';
+        const txnDisplay = p.bkashTxnId
+            ? '<span class="font-mono text-[10px] text-green-600 font-bold">' + p.bkashTxnId + '</span>'
+            : '<span class="text-gray-300 text-[10px]">—</span>';
+        const linkedBadge = p.userId
+            ? '<span class="ml-1 text-[8px] bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded font-bold uppercase">CRM</span>' : '';
+        const addr = (p.customerAddress || '').replace(/"/g, '&quot;');
+
+        let actions = '';
+        if (status === 'Pending')
+            actions += '<button onclick="preorderMarkConfirmed(\'' + p.id + '\')" class="text-green-600 font-bold uppercase text-[9px] hover:underline bg-green-50 px-2 py-1 rounded border border-green-100">Confirm</button>';
+        if (!p.userId)
+            actions += '<button onclick="preorderSaveAsCustomer(\'' + p.id + '\')" class="text-blue-600 font-bold uppercase text-[9px] hover:underline bg-blue-50 px-2 py-1 rounded border border-blue-100">Save Customer</button>';
+        actions += '<button onclick="preorderDelete(\'' + p.id + '\')" class="text-red-400 font-bold uppercase text-[9px] hover:underline bg-red-50 px-2 py-1 rounded border border-red-100">Delete</button>';
+        if (isSuper && p.userId)
+            actions += '<button onclick="preorderDeleteCustomer(\'' + p.id + '\')" class="text-red-700 font-bold uppercase text-[9px] hover:underline bg-red-50 px-2 py-1 rounded border border-red-200">Del Customer</button>';
+
+        html += '<tr class="border-b hover:bg-gray-50 transition ' + (awaitPay ? 'bg-orange-50/40' : '') + '">' +
+            '<td class="p-3"><div class="flex items-center gap-2"><img src="' + (p.productImage || 'placeholder.png') + '" class="w-8 h-9 object-cover rounded shadow-sm shrink-0" onerror="this.src=\'placeholder.png\'"><span class="font-medium text-xs">' + (p.productName || '—') + '</span></div></td>' +
+            '<td class="text-xs font-bold text-[#322C2B] whitespace-nowrap">' + (p.customerName || '—') + linkedBadge + '</td>' +
+            '<td><a href="tel:' + (p.customerPhone || '') + '" class="font-mono text-xs text-[#B36A5E] hover:underline whitespace-nowrap">' + (p.customerPhone || '—') + '</a></td>' +
+            '<td class="text-xs text-gray-500 max-w-[160px] truncate" title="' + addr + '">' + (p.customerAddress || '—') + '</td>' +
+            '<td class="text-center font-bold text-xs">' + (p.quantity || 1) + '</td>' +
+            '<td class="font-bold text-xs whitespace-nowrap">৳' + fmt(p.advanceAmount) + '</td>' +
+            '<td>' + txnDisplay + '</td>' +
+            '<td class="text-[10px] text-gray-500 whitespace-nowrap">' + (p.batch || '—') + '</td>' +
+            '<td class="text-[10px] text-gray-500 whitespace-nowrap">' + dateStr + '</td>' +
+            '<td>' + statusBadge + '</td>' +
+            '<td class="p-3"><div class="flex flex-wrap gap-1">' + actions + '</div></td>' +
+        '</tr>';
+    });
+    tbody.innerHTML = html;
+};
+
+window.preorderMarkConfirmed = async function(id) {
+    const p = window._preordersCache.find(x => x.id === id);
+    if (!confirm('Mark this pre-order as Confirmed (advance verified)?')) return;
+    try {
+        await db.collection("preorders").doc(id).update({ status: 'Confirmed', confirmedAt: new Date().toISOString() });
+        await window.logAdminAction('Confirmed pre-order: ' + (p ? p.customerName + ' (' + p.customerPhone + ')' : id));
+        window.loadPreorders();
+    } catch(e) { alert('Error: ' + e.message); }
+};
+
+// Mirrors createManualCustomer — full Auth account + users doc + phone_lookup
+window.preorderSaveAsCustomer = async function(id) {
+    const p = window._preordersCache.find(x => x.id === id);
+    if (!p) return;
+    const phoneVal = (p.customerPhone || '').trim();
+    const nameVal  = (p.customerName || 'Customer').trim();
+    if (!phoneVal) return alert('This pre-order has no phone number.');
+    if (!confirm('Create a customer account for ' + nameVal + ' (' + phoneVal + ')?\nThey will appear in CRM and can log in later via phone OTP.')) return;
+
+    try {
+        let uid = null;
+        const fakeEmail = phoneVal.replace(/\s+/g, '') + '@sterling.com';
+        const tempPass  = 'Sterling' + Date.now().toString().slice(-4);
+
+        try {
+            const cred = await secondaryApp.auth().createUserWithEmailAndPassword(fakeEmail, tempPass);
+            uid = cred.user.uid;
+            await secondaryApp.auth().signOut();
+        } catch(authErr) {
+            if (authErr.code === 'auth/email-already-in-use') {
+                const ex = await db.collection("users").where("phone", "==", phoneVal).limit(1).get();
+                if (!ex.empty) uid = ex.docs[0].id;
+                else {
+                    const lk = await db.collection("phone_lookups").doc(phoneVal).get();
+                    if (lk.exists) uid = lk.data().uid; else throw authErr;
+                }
+            } else throw authErr;
+        }
+
+        const addrArr = p.customerAddress ? [{
+            id: Date.now().toString() + 'S',
+            tag: 'Shipping Address',
+            detail: p.customerAddress,
+            fullDisplay: p.customerAddress,
+            isDefault: true
+        }] : [];
+
+        await db.collection("users").doc(uid).set({
+            fullName: nameVal, phone: phoneVal, email: fakeEmail,
+            crmTags: 'Good', isBlocked: false,
+            addresses: addrArr, paymentMethods: [],
+            totalSpend: 0, source: 'preorder_web',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        await db.collection("phone_lookups").doc(phoneVal).set({ uid: uid, name: nameVal }, { merge: true });
+        await db.collection("preorders").doc(id).update({ userId: uid, savedAsCustomer: true });
+
+        await window.logAdminAction('Saved pre-order customer to CRM: ' + nameVal + ' (' + phoneVal + ')');
+        alert('✅ Customer saved to CRM. They can log in later via phone OTP / password reset.');
+        window.loadPreorders();
+        if (typeof window.loadCRMUsers === 'function') window.loadCRMUsers();
+    } catch(e) {
+        alert('Error saving customer: ' + e.message);
+    }
+};
+
+// Any admin can delete a pre-order record
+window.preorderDelete = async function(id) {
+    const p = window._preordersCache.find(x => x.id === id);
+    if (!confirm('Delete this pre-order permanently? This cannot be undone.')) return;
+    try {
+        await db.collection("preorders").doc(id).delete();
+        await window.logAdminAction('Deleted pre-order: ' + (p ? p.customerName + ' (' + p.customerPhone + ')' : id));
+        window.loadPreorders();
+    } catch(e) { alert('Error: ' + e.message); }
+};
+
+// Super-admin only — removes CRM record; refuses if non-cancelled orders exist
+window.preorderDeleteCustomer = async function(id) {
+    if (!_poIsSuperAdmin()) return alert('Only a Super Admin can delete customers.');
+    const p = window._preordersCache.find(x => x.id === id);
+    if (!p || !p.userId) return alert('No linked customer account to delete.');
+    try {
+        const ordSnap = await db.collection("orders").where("userId", "==", p.userId).get();
+        const active  = ordSnap.docs.map(d => d.data()).filter(o => (o.status || 'Pending') !== 'Cancelled');
+        if (active.length > 0)
+            return alert('Cannot delete: this customer has ' + active.length + ' non-cancelled order(s). Order history must be preserved.');
+
+        if (!confirm('SUPER ADMIN: Permanently delete the CRM profile for ' + p.customerName + '?\nRemoves their users record + phone lookup. (Their dormant login account stays.)')) return;
+
+        await db.collection("users").doc(p.userId).delete();
+        if (p.customerPhone) {
+            try { await db.collection("phone_lookups").doc(p.customerPhone.trim()).delete(); } catch(e) {}
+        }
+        await db.collection("preorders").doc(id).update({ userId: null, savedAsCustomer: false });
+        await window.logAdminAction('Deleted customer profile (super admin): ' + p.customerName + ' (' + p.customerPhone + ')');
+        alert('Customer profile deleted.');
+        window.loadPreorders();
+        if (typeof window.loadCRMUsers === 'function') window.loadCRMUsers();
+    } catch(e) { alert('Error: ' + e.message); }
+};
+</script>
 
 
 </body>

@@ -338,6 +338,7 @@ async function loadProductData() {
     if (!productId) return;
     // Silently update URL to /p for correct WhatsApp preview when shared
     history.replaceState(null, '', '/p?id=' + productId);
+        if (window.loadPreorderSettings) { try { await window.loadPreorderSettings(); } catch(e){} }
         const doc = await db.collection("products").doc(productId).get();
         if (!doc.exists) { document.getElementById('p-name').innerText = "Product Not Found"; return; }
         const p = doc.data();
@@ -352,7 +353,9 @@ async function loadProductData() {
 
         const priceEl = document.getElementById('p-price');
         priceEl.innerText = `৳${pr.toLocaleString()}`;
-        if (stock <= 0) priceEl.innerHTML += ` <span class="text-red-500 text-sm font-bold uppercase ml-2">(Out of Stock)</span>`;
+        if (stock <= 0) priceEl.innerHTML += p.isPreorder
+            ? ` <span class="text-sm font-bold uppercase ml-2" style="color:#B36A5E">(Pre-order)</span>`
+            : ` <span class="text-red-500 text-sm font-bold uppercase ml-2">(Out of Stock)</span>`;
 
         document.getElementById('p-short-desc').innerText = p.shortDesc || "";
         document.getElementById('p-long-desc').innerHTML = p.longDesc ? p.longDesc.replace(/\n/g, '<br>') : "";
@@ -367,7 +370,13 @@ async function loadProductData() {
         const alertBox = document.getElementById('stock-alert');
         if (stock > 0 && stock <= 5) { alertBox.classList.remove('hidden'); alertBox.classList.add('flex'); document.getElementById('stock-count').innerText = stock; }
 
-        document.getElementById('add-to-cart-wrapper').innerHTML = window.renderActionButtons({ id: String(doc.id).trim(), name: p.name, price: pr, originalPrice: old, image: p.image, stock: stock });
+        const _poEta = (window._preorderSettings && window._preorderSettings.globalEta) || '';
+        const _isPo  = (stock <= 0) && (p.isPreorder === true);
+        const _btnHtml = window.renderActionButtons({ id: String(doc.id).trim(), name: p.name, price: pr, originalPrice: old, image: p.image, stock: stock, isPreorder: p.isPreorder === true, preorderAdvance: Number(p.preorderAdvance) || 510 });
+        document.getElementById('add-to-cart-wrapper').innerHTML =
+            (_isPo && _poEta
+                ? `<div class="mb-3 rounded-xl p-3" style="background:#F5ECE9;border:1px solid #E5D3CD"><p class="text-[10px] font-bold uppercase tracking-widest mb-0.5" style="color:#B36A5E">Available for Pre-order</p><p class="text-xs" style="color:#322C2B">${_poEta}</p></div>`
+                : '') + _btnHtml;
 
         thumbFocus[1] = p.imageFocus  || '50% 50%';
         thumbFocus[2] = p.imageFocus2 || '50% 50%';

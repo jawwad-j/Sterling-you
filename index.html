@@ -335,6 +335,7 @@
     }
 
     async function connectStorefrontToCloud() {
+        if (window.loadPreorderSettings) { try { await window.loadPreorderSettings(); } catch(e){} }
         const productGrid = document.getElementById('product-grid');
         productGrid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-400">Loading...</div>`;
         const catSnap = await db.collection("categories").get();
@@ -374,9 +375,12 @@
             const hasDiscount = oldPrice > price;
             const discountPercent = hasDiscount ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
             const isOutOfStock = p.stock <= 0;
+            const isPreorder   = p.isPreorder === true;
+            const canPreorder  = isOutOfStock && isPreorder;
             const productId = String(p.id).trim();
             const focusVal = p.imageFocus || 'center';
-            const pStr = JSON.stringify({ id: productId, name: p.name.replace(/'/g, "\\'").replace(/"/g, '&quot;'), price: p.price, originalPrice: oldPrice, image: p.image, stock: p.stock }).replace(/"/g, '&quot;');
+            const poEta    = (window._preorderSettings && window._preorderSettings.globalEta) || '';
+            const pStr = JSON.stringify({ id: productId, name: p.name.replace(/'/g, "\\'").replace(/"/g, '&quot;'), price: p.price, originalPrice: oldPrice, image: p.image, stock: p.stock, isPreorder: isPreorder, preorderAdvance: Number(p.preorderAdvance) || 510 }).replace(/"/g, '&quot;');
             return `
             <a href="product.html?id=${productId}" style="pointer-events:all" class="product-card group cursor-pointer animate-fadeIn block">
                 <div class="relative overflow-hidden bg-gray-50 mb-3 aspect-[3/4] img-watermark-wrap">
@@ -384,12 +388,14 @@
                     <div class="absolute top-3 left-3 flex flex-col gap-2 z-10">
                         <span class="bg-white text-[#322C2B] px-3 py-1 text-[9px] font-bold uppercase shadow-sm">New</span>
                         ${hasDiscount ? `<span class="bg-[#B36A5E] text-white px-3 py-1 text-[9px] font-bold uppercase shadow-sm">SALE ${discountPercent}% OFF</span>` : ''}
-                        ${isOutOfStock ? `<span class="bg-gray-900 text-white px-3 py-1 text-[9px] font-bold uppercase shadow-sm">Sold Out</span>` : ''}
+                        ${canPreorder ? `<span class="text-white px-3 py-1 text-[9px] font-bold uppercase shadow-sm" style="background:#B36A5E">Pre-order</span>` : (isOutOfStock ? `<span class="bg-gray-900 text-white px-3 py-1 text-[9px] font-bold uppercase shadow-sm">Sold Out</span>` : '')}
                     </div>
                     <div class="add-to-cart-container absolute bottom-0 left-0 w-full z-20">
-                        ${isOutOfStock
+                        ${canPreorder
+                            ? `<button onclick="event.preventDefault(); openPreorderModal(${pStr});" style="pointer-events:all" class="w-full text-white py-3 text-[10px] font-bold tracking-widest uppercase transition-colors" style="background:#B36A5E" onmouseover="this.style.background='#322C2B'" onmouseout="this.style.background='#B36A5E'">Pre-order Now</button>`
+                            : (isOutOfStock
                             ? `<button onclick="event.preventDefault(); requestProduct('${productId}','${p.name.replace(/'/g,"\\'")}');" style="pointer-events:all" class="w-full bg-gray-400 text-white py-3 text-[10px] font-bold tracking-widest uppercase">Request Stock</button>`
-                            : `<button onclick="event.preventDefault(); addToCart(${pStr});" style="pointer-events:all" class="w-full bg-[#322C2B]/95 text-white py-3 text-[10px] font-bold tracking-widest uppercase hover:bg-[#B36A5E] transition-colors">Add To Cart</button>`}
+                            : `<button onclick="event.preventDefault(); addToCart(${pStr});" style="pointer-events:all" class="w-full bg-[#322C2B]/95 text-white py-3 text-[10px] font-bold tracking-widest uppercase hover:bg-[#B36A5E] transition-colors">Add To Cart</button>`)}
                     </div>
                 </div>
                 <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-1">${p.category}</p>
@@ -398,6 +404,7 @@
                     <span class="text-[13px] font-bold text-[#322C2B]">৳${price.toLocaleString()}</span>
                     ${hasDiscount ? `<span class="text-[11px] text-gray-400 line-through">৳${oldPrice.toLocaleString()}</span>` : ''}
                 </div>
+                ${canPreorder && poEta ? `<p class="text-[9px] font-medium mt-1 italic" style="color:#B36A5E">${poEta}</p>` : ''}
             </a>`;
         }).join('');
     }
