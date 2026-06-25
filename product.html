@@ -205,6 +205,7 @@
             <div id="add-to-cart-wrapper">
                 <button class="w-full md:w-64 bg-gray-300 text-white py-4 rounded-full font-bold uppercase tracking-widest cursor-not-allowed text-[11px]">Loading...</button>
             </div>
+            <div id="product-video-wrapper" class="hidden"></div>
             <div class="pt-8 space-y-8 border-t border-gray-100">
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400">Detailed Description</h3>
@@ -272,7 +273,7 @@
     </div>
 </div>
 
-<script src="cart.js"></script>
+<script src="cart.js?v=4"></script>
 <script>
     const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -359,6 +360,21 @@ async function loadProductData() {
 
         document.getElementById('p-short-desc').innerText = p.shortDesc || "";
         document.getElementById('p-long-desc').innerHTML = p.longDesc ? p.longDesc.replace(/\n/g, '<br>') : "";
+
+        const videoWrap = document.getElementById('product-video-wrapper');
+        if (videoWrap) {
+            const vurl = (p.productVideo || '').trim();
+            if (vurl) {
+                videoWrap.innerHTML = `<a href="${vurl}" target="_blank" rel="noopener" style="pointer-events:all" class="w-full md:w-64 flex items-center justify-center gap-2 border-2 border-[#B36A5E] text-[#B36A5E] py-3.5 rounded-full font-bold uppercase tracking-widest text-[11px] hover:bg-[#B36A5E] hover:text-white transition">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    Watch Product Video
+                </a>`;
+                videoWrap.classList.remove('hidden');
+            } else {
+                videoWrap.innerHTML = '';
+                videoWrap.classList.add('hidden');
+            }
+        }
 
         if (old > pr) {
             const op = document.getElementById('p-old-price');

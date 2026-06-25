@@ -296,9 +296,9 @@ if (tabId === 'contact-settings') {
         <nav class="flex-1 p-3 space-y-1">
             <button onclick="mobileSwitchTab('dashboard')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">📊 Dashboard</button>
             <button onclick="mobileSwitchTab('orders')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">📦 Order Pipeline</button>
+            <button onclick="mobileSwitchTab('preorders')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">⏳ Pre-orders</button>
             <button onclick="mobileSwitchTab('crm')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">👥 Customer CRM</button>
             <button onclick="mobileSwitchTab('inventory')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">🛠 Inventory</button>
-            <button onclick="mobileSwitchTab('preorders')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">📦 Pre-orders</button>
             <button onclick="mobileSwitchTab('logistics-settings')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">🚚 Logistics</button>
             <button onclick="mobileSwitchTab('queries')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">💬 Queries</button>
             <button onclick="mobileSwitchTab('banners')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">🖼 Banners</button>
@@ -395,9 +395,9 @@ if (tabId === 'contact-settings') {
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
                 <button id="nav-dashboard" onclick="switchTab('dashboard')" class="sidebar-item active w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📊 Dashboard</button>
                 <button id="nav-orders" onclick="switchTab('orders')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📦 Order Pipeline</button>
+                <button id="nav-preorders" onclick="switchTab('preorders')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">⏳ Pre-orders</button>
                 <button id="nav-crm" onclick="switchTab('crm')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">👥 Customer CRM</button>
                 <button id="nav-inventory" onclick="switchTab('inventory')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🛠 Inventory</button>
-                <button id="nav-preorders" onclick="switchTab('preorders')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📦 Pre-orders</button>
                 <button id="nav-logistics" onclick="switchTab('logistics-settings')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🚚 Logistics</button>
                 <button id="nav-support" onclick="switchTab('support')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📜 Policy Manager</button>
                 <button id="nav-banners" onclick="switchTab('banners')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🖼 Category Banners</button>
@@ -929,11 +929,12 @@ if (tabId === 'contact-settings') {
                         </select>
                         <select id="preorder-status-filter" onchange="renderPreorders()" class="border p-2 rounded-lg text-xs outline-none focus:border-[#B36A5E] bg-white">
                             <option value="">All Statuses</option>
-                            <option value="awaiting">⚠ Awaiting Payment</option>
-                            <option value="Pending">Pending</option>
+                            <option value="unpaid">⚠ Pending — Unpaid (call list)</option>
+                            <option value="Pending">Pending (all)</option>
                             <option value="Confirmed">Confirmed</option>
-                            <option value="Converted">Converted</option>
+                            <option value="Converted">Converted to Order</option>
                             <option value="Cancelled">Cancelled</option>
+                            <option value="Refunded">Refunded</option>
                         </select>
                         <button onclick="loadPreorders()" class="bg-[#322C2B] text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-[#B36A5E] transition">Refresh</button>
                     </div>
@@ -959,22 +960,33 @@ if (tabId === 'contact-settings') {
                     </div>
                 </div>
 
+                <div class="flex items-center gap-2 mb-4 bg-white border border-gray-200 rounded-xl p-1 shadow-sm w-fit">
+                    <button id="po-stage-pending" onclick="setPreorderStage('pending')" class="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition bg-[#322C2B] text-white">Stage 1 · Pending Confirmation <span id="po-stage-pending-count" class="ml-1 opacity-70"></span></button>
+                    <button id="po-stage-confirmed" onclick="setPreorderStage('confirmed')" class="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition text-gray-500">Stage 2 · Confirmed <span id="po-stage-confirmed-count" class="ml-1 opacity-70"></span></button>
+                    <button id="po-stage-cancelled" onclick="setPreorderStage('cancelled')" class="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition text-gray-500">Cancelled / Refunded <span id="po-stage-cancelled-count" class="ml-1 opacity-70"></span></button>
+                </div>
+
+                <div id="preorder-move-bar" class="hidden items-center justify-between gap-4 bg-[#322C2B] text-white rounded-2xl shadow-sm mb-4 px-5 py-3 flex">
+                    <span class="text-xs font-bold uppercase tracking-widest"><span id="preorder-selected-count">0 selected</span> · ready to ship</span>
+                    <button id="btn-move-preorders" onclick="moveSelectedPreordersToOrders()" class="bg-[#10B981] text-white px-5 py-2 rounded-xl font-bold uppercase text-[10px] hover:bg-green-600 transition shadow-lg">→ Move to Orders (Stage 1)</button>
+                </div>
+
                 <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left">
+                        <table class="w-full text-left" style="min-width:860px">
                             <thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400">
                                 <tr>
-                                    <th class="p-3">Product</th>
-                                    <th>Customer</th>
-                                    <th>Phone</th>
-                                    <th>Address</th>
-                                    <th class="text-center">Qty</th>
-                                    <th>Advance</th>
-                                    <th>Txn ID</th>
-                                    <th>Batch</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th class="p-3 w-8"><input type="checkbox" id="preorder-select-all" onchange="togglePreorderSelectAll(this.checked)" class="accent-[#B36A5E] w-4 h-4 cursor-pointer" title="Select all Confirmed"></th>
+                                    <th class="p-3 whitespace-nowrap">Product</th>
+                                    <th class="whitespace-nowrap">Customer</th>
+                                    <th class="whitespace-nowrap">Phone</th>
+                                    <th class="text-center whitespace-nowrap">Qty</th>
+                                    <th class="whitespace-nowrap">Advance</th>
+                                    <th class="whitespace-nowrap">Txn ID</th>
+                                    <th class="whitespace-nowrap">Batch</th>
+                                    <th class="whitespace-nowrap">Date</th>
+                                    <th class="whitespace-nowrap">Status</th>
+                                    <th class="whitespace-nowrap">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="preorders-table-body" class="text-xs"></tbody>
@@ -1391,6 +1403,7 @@ if (tabId === 'contact-settings') {
                         <label class="block text-[11px] font-bold uppercase text-gray-500">Short Description<textarea id="p_shortDesc" class="w-full mt-1 border rounded-lg p-2 text-xs h-16 outline-none focus:border-[#B36A5E]"></textarea></label>
                         <label class="block text-[11px] font-bold uppercase text-gray-500">Special Instructions<textarea id="p_instructions" class="w-full mt-1 border rounded-lg p-2 text-xs h-20 outline-none focus:border-[#B36A5E]"></textarea></label>
                         <label class="block text-[11px] font-bold uppercase text-gray-500">Detailed Description<textarea id="p_longDesc" class="w-full mt-1 border rounded-lg p-2 text-xs h-32 outline-none focus:border-[#B36A5E]"></textarea></label>
+                        <label class="block text-[11px] font-bold uppercase text-gray-500">Product Video URL <span class="text-[9px] text-gray-400 font-normal normal-case">(Facebook reel / any video link — a "Watch" button shows on the product page only when filled)</span><input type="url" id="p_productVideo" placeholder="https://www.facebook.com/share/r/..." class="w-full mt-1 border rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></label>
                         
 <p class="text-[10px] font-bold tracking-widest uppercase text-gray-400 mt-4">Product Gallery</p>
 <div class="mb-2">
@@ -4127,6 +4140,7 @@ if (shipToggleBtn) {
                 }).join('');
 
                 var itemTotalSum = (order.items || []).reduce(function(acc, i) { return acc + (i.price * (i.quantity || 1)); }, 0);
+                var advancePaid = Number(order.advancePaid) || 0;
                 var modalShipping = 0;
                 if (order.customerShippingFee !== undefined) modalShipping = order.customerShippingFee;
                 else if (order.shippingFee !== undefined) modalShipping = order.shippingFee;
@@ -4172,6 +4186,16 @@ if (shipToggleBtn) {
                                     ' class="w-20 border border-gray-200 rounded px-2 py-0.5 text-xs font-bold text-[#322C2B] text-center outline-none focus:border-[#B36A5E] bg-white">' +
                                 '<\/div>' +
                             '<\/div>' +
+                            (advancePaid > 0 ?
+                                '<div class="flex justify-between items-center text-[11px] py-1 border-t border-gray-200 mt-1 pt-1">' +
+                                    '<span class="text-green-600 font-medium">Advance Paid (bKash)<\/span>' +
+                                    '<span class="font-bold text-green-600">-\u09F3' + fmt(advancePaid) + '<\/span>' +
+                                '<\/div>' +
+                                '<div class="flex justify-between items-center text-[11px] py-1 border-t border-gray-200 mt-1 pt-1">' +
+                                    '<span class="text-[#322C2B] font-bold uppercase tracking-wide">COD Collectable<\/span>' +
+                                    '<span id="verify-cod-collectable" class="font-bold text-[#322C2B]">\u09F3' + fmt(Math.max(0, (Number(order.totalAmount) || itemTotalSum) - advancePaid)) + '<\/span>' +
+                                '<\/div>'
+                            : '') +
                         '<\/div>' +
 
                         '<div class="bg-gray-50 p-3 rounded-lg border border-gray-100 space-y-3">' +
@@ -4286,6 +4310,13 @@ window.recalcVerifyTotal = function() {
 
     const newTotal   = adjustedTotal - discountAmount;
     const hasChange  = discountAmount > 0 || shippingDiff !== 0;
+
+    // Keep the COD collectable (effective total − advance) in sync as fees/discounts change
+    const _advCollect = Number(order.advancePaid) || 0;
+    if (_advCollect > 0) {
+        const collectEl = document.getElementById('verify-cod-collectable');
+        if (collectEl) collectEl.innerText = '\u09F3' + fmt(Math.max(0, newTotal - _advCollect));
+    }
 
     if (!hasChange) {
         totalEl.innerText = '—';
@@ -5788,6 +5819,7 @@ const productData = {
     stock: currentStock, 
     shortDesc: document.getElementById('p_shortDesc').value, 
     longDesc: document.getElementById('p_longDesc').value, 
+    productVideo: document.getElementById('p_productVideo').value.trim(), 
     instructions: document.getElementById('p_instructions').value, 
     isNew: document.getElementById('p_isNew').checked, 
     isVisible: document.getElementById('p_isVisible').checked, 
@@ -5849,6 +5881,7 @@ window.editProduct = async function(id) {
     document.getElementById('p_stock').value = p.stock || 0; 
     document.getElementById('p_shortDesc').value = p.shortDesc || ''; 
     document.getElementById('p_longDesc').value = p.longDesc || ''; 
+    document.getElementById('p_productVideo').value = p.productVideo || ''; 
     document.getElementById('p_instructions').value = p.instructions || ''; 
 document.getElementById('p_isNew').checked = p.isNew; 
 document.getElementById('p_isVisible').checked = p.isVisible; 
@@ -6571,14 +6604,18 @@ console.log('Total weight calculated:', totalWeight);
 
     // ── Live final total = original + shipping change - discount ──
     const liveTotal  = Math.round((originalTotal + shippingDiff - discountAmount) * 100) / 100;
-    const codCharge  = Math.round(liveTotal * (codPercent / 100) * 100) / 100;
+    // Advance already paid by bKash is NOT collected on delivery — courier's COD fee
+    // applies only to the cash actually collected from the customer.
+    const advancePaidLive = Number(order.advancePaid) || 0;
+    const codCollectable  = Math.max(0, Math.round((liveTotal - advancePaidLive) * 100) / 100);
+    const codCharge  = Math.round(codCollectable * (codPercent / 100) * 100) / 100;
 
 // Net margin = customer shipping fee - courier cost - cod charge
     const customerShipping = editedShipping;
     const netMargin = Math.round((customerShipping - courierCost - codCharge) * 100) / 100;
 
     costEl.innerText  = '৳' + fmt(courierCost);
-    codEl.innerText   = '৳' + fmt(codCharge) + ' (' + codPercent + '%)';
+    codEl.innerText   = '৳' + fmt(codCharge) + ' (' + codPercent + '% of ৳' + fmt(codCollectable) + ')';
     marginEl.innerText = (netMargin >= 0 ? '+' : '') + '৳' + fmt(netMargin);
     marginEl.className = 'text-sm font-bold ' + (netMargin >= 0 ? 'text-green-600' : 'text-red-500');
 
@@ -8448,7 +8485,8 @@ window._buildShippingLabel = async function(oid, action) {
     let itemTotal = (order.items || []).reduce((s, i) => s + ((Number(i.price) || 0) * (Number(i.quantity) || 1)), 0);
     let shipping  = Number(order.customerShippingFee) || Number(order.shippingFee) || Number(order.shippingCost) || 0;
     if (shipping === 0 && Number(order.totalAmount) > itemTotal) shipping = Number(order.totalAmount) - itemTotal;
-    const collectableAmount = Number(order.totalAmount) || (itemTotal + shipping);
+    const advancePaid       = Number(order.advancePaid) || 0;
+    const collectableAmount = (Number(order.totalAmount) || (itemTotal + shipping)) - advancePaid;
     const logisticsPartner  = order.logisticsPartner || '\u2014';
     const specialNote       = order.deliveryInstructions || '';
     const lblDiscount = (Number(order.discountAmount) || 0) > 0 ? Number(order.discountAmount) : 0;
@@ -8506,6 +8544,7 @@ lbl += '<\/div>';
     lbl += '<tr><td>Product Amount<\/td><td>\u09F3' + fmt(itemTotal) + '<\/td><\/tr>';
     lbl += (lblDiscount > 0 ? '<tr><td>Discount<\/td><td>-\u09F3' + fmt(lblDiscount) + '<\/td><\/tr>' : '');
     lbl += '<tr><td>Shipping Fee<\/td><td>\u09F3' + fmt(shipping) + '<\/td><\/tr>';
+    lbl += (advancePaid > 0 ? '<tr><td>Advance Paid<\/td><td>-\u09F3' + fmt(advancePaid) + '<\/td><\/tr>' : '');
     lbl += '<tr><td>Payment<\/td><td>' + (order.paymentMethod || 'Cash on Delivery') + '<\/td><\/tr>';
     lbl += (order.deliveryZone ? '<tr><td>Zone<\/td><td>' + order.deliveryZone + '<\/td><\/tr>' : '');
     lbl += '<\/table>';
@@ -8564,6 +8603,7 @@ var itemsHtml = (order.items || []).map(function(i) {
     if (shipping === 0 && Number(order.totalAmount) > itemTotal) shipping = Number(order.totalAmount) - itemTotal;
     const orderLevelDiscount = (Number(order.discountAmount) || 0) > 0 ? Number(order.discountAmount) : 0;
     const grandTotal = Number(order.totalAmount) || 0;
+    const advancePaid = Number(order.advancePaid) || 0;
 
     var orderDateStr = 'N/A';
     if (order.orderDate && order.orderDate.toDate) orderDateStr = order.orderDate.toDate().toLocaleDateString();
@@ -8617,6 +8657,10 @@ pos += '<\/div>';
     pos += '<\/table>';
     pos += '<div class="divider-solid"><\/div>';
     pos += '<table><tr class="grand-row"><td>TOTAL<\/td><td style="text-align:right">\u09F3' + fmt(grandTotal) + '<\/td><\/tr><\/table>';
+    if (advancePaid > 0) {
+        pos += '<table><tr><td class="label">Advance Paid<\/td><td style="text-align:right">-\u09F3' + fmt(advancePaid) + '<\/td><\/tr>';
+        pos += '<tr class="grand-row"><td>COLLECT NOW<\/td><td style="text-align:right">\u09F3' + fmt(Math.max(0, grandTotal - advancePaid)) + '<\/td><\/tr><\/table>';
+    }
     pos += '<div class="divider"><\/div>';
     if (order.logisticsPartner) pos += '<div style="margin-bottom:4px"><div class="label">SHIPPED BY<\/div><div style="font-weight:700">' + order.logisticsPartner + '<\/div><\/div>';
     if (order.deliveryInstructions) pos += '<div style="margin-bottom:4px"><div class="label">DELIVERY NOTE<\/div><div>' + order.deliveryInstructions + '<\/div><\/div>';
@@ -8771,11 +8815,85 @@ window.openActivityModal = async function(uid, fullName) {
     </div>
 </div>
 
+<div id="preorderEditModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[400] p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+        <div class="p-5 border-b bg-gray-50 flex justify-between items-center shrink-0">
+            <h3 id="po-edit-title" class="font-bold text-[#322C2B] text-sm">Edit Pre-order</h3>
+            <button onclick="preorderCloseEdit()" class="text-gray-400 text-xl hover:text-black leading-none">&times;</button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1 space-y-4">
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Customer Name</label>
+                <input type="text" id="po-edit-name" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E]">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Phone</label>
+                <input type="tel" id="po-edit-phone" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E]">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Delivery Address</label>
+                <textarea id="po-edit-address" rows="2" class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-[#B36A5E] resize-none"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Quantity</label>
+                    <input type="number" id="po-edit-qty" min="1" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] text-center font-bold">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Advance (৳)</label>
+                    <input type="number" id="po-edit-advance" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] text-center font-bold">
+                </div>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">bKash Transaction ID</label>
+                <input type="text" id="po-edit-txn" placeholder="Record it here when the customer pays" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E]">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Batch</label>
+                <input type="text" id="po-edit-batch" list="po-edit-batch-list" placeholder="e.g. JULY SHIPMENT 1" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E]">
+                <datalist id="po-edit-batch-list"></datalist>
+                <p class="text-[10px] text-gray-400 mt-1">Move an item to the next batch here if it doesn't arrive in the current shipment.</p>
+            </div>
+            <button id="po-edit-save-btn" onclick="preorderSaveEdit()" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-md">Save Changes</button>
+            <button id="po-edit-confirm-btn" onclick="preorderSaveAndConfirm()" class="hidden w-full bg-[#10B981] text-white py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-green-600 transition shadow-md">✓ Save & Confirm Pre-order</button>
+
+            <div class="border-t border-dashed border-red-200 pt-4 mt-2">
+                <p class="text-[10px] font-bold uppercase text-red-500 tracking-widest mb-1">Refund Advance</p>
+                <p class="text-[10px] text-gray-400 mb-3">Use this if the supplier can't fulfil the product. Marks the pre-order as Refunded.</p>
+                <div class="mb-3">
+                    <label class="block text-[9px] font-bold uppercase text-gray-400 mb-1">Refund Amount (৳)</label>
+                    <input type="number" id="po-edit-refund-amount" class="w-full border border-red-200 rounded-lg p-2 text-sm outline-none focus:border-red-400 text-center font-bold">
+                </div>
+                <label class="block text-[9px] font-bold uppercase text-gray-400 mb-1">Refund Reason / Remark (required)</label>
+                <textarea id="po-edit-refund-reason" rows="2" placeholder="e.g. Supplier out of stock — colour discontinued" class="w-full border border-red-200 rounded-lg p-2 text-sm outline-none focus:border-red-400 resize-none mb-3"></textarea>
+                <button id="po-edit-refund-btn" onclick="preorderRefund()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-red-700 transition shadow-md">Process Refund</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // ============================================================
 //  PRE-ORDERS MANAGEMENT PANEL
 // ============================================================
-window._preordersCache = [];
+window._preordersCache       = [];
+window._selectedPreorderIds  = new Set();
+window._poEditId             = null;
+window._poStage              = 'pending';   // pending | confirmed | cancelled
+
+window.setPreorderStage = function(stage) {
+    window._poStage = stage;
+    window._selectedPreorderIds = new Set();
+    const selAll = document.getElementById('preorder-select-all');
+    if (selAll) selAll.checked = false;
+    [['pending','po-stage-pending'],['confirmed','po-stage-confirmed'],['cancelled','po-stage-cancelled']].forEach(([s, id]) => {
+        const b = document.getElementById(id);
+        if (!b) return;
+        if (s === stage) { b.classList.add('bg-[#322C2B]','text-white'); b.classList.remove('text-gray-500'); }
+        else             { b.classList.remove('bg-[#322C2B]','text-white'); b.classList.add('text-gray-500'); }
+    });
+    window.renderPreorders();
+};
 
 function _poIsSuperAdmin() {
     const r = (window.currentAdminUser && window.currentAdminUser.role) ||
@@ -8792,6 +8910,10 @@ window.loadPreorders = async function() {
         window._preordersCache = [];
         snap.forEach(doc => { const d = doc.data(); d.id = doc.id; window._preordersCache.push(d); });
         window._preordersCache.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+        window._selectedPreorderIds = new Set();
+        const selAll = document.getElementById('preorder-select-all');
+        if (selAll) selAll.checked = false;
 
         const batchSel = document.getElementById('preorder-batch-filter');
         if (batchSel) {
@@ -8824,11 +8946,29 @@ window.renderPreorders = function() {
             (p.customerName || '').toLowerCase().includes(searchVal) ||
             (p.customerPhone || '').toLowerCase().includes(searchVal);
         const matchBatch = !batchVal || p.batch === batchVal;
+
+        // Stage gate
+        const st = p.status || 'Pending';
+        let matchStage = true;
+        if (window._poStage === 'pending')        matchStage = (st === 'Pending');
+        else if (window._poStage === 'confirmed') matchStage = (st === 'Confirmed' || st === 'Converted');
+        else if (window._poStage === 'cancelled') matchStage = (st === 'Cancelled' || st === 'Refunded');
+
         let matchStatus = true;
-        if (statusVal === 'awaiting') matchStatus = (p.status === 'Pending') && !p.bkashTxnId;
-        else if (statusVal)           matchStatus = (p.status || 'Pending') === statusVal;
-        return matchSearch && matchBatch && matchStatus;
+        if (statusVal === 'unpaid' || statusVal === 'awaiting') matchStatus = (st === 'Pending') && !p.bkashTxnId;
+        else if (statusVal)                                     matchStatus = st === statusVal;
+
+        return matchSearch && matchBatch && matchStage && matchStatus;
     });
+
+    // Stage tab counts (from full cache)
+    const cPending   = all.filter(p => (p.status || 'Pending') === 'Pending').length;
+    const cConfirmed = all.filter(p => p.status === 'Confirmed' || p.status === 'Converted').length;
+    const cCancelled = all.filter(p => p.status === 'Cancelled' || p.status === 'Refunded').length;
+    const setc = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = '(' + v + ')'; };
+    setc('po-stage-pending-count', cPending);
+    setc('po-stage-confirmed-count', cConfirmed);
+    setc('po-stage-cancelled-count', cCancelled);
 
     // ── Stats (from full cache) ──
     const awaiting       = all.filter(p => p.status === 'Pending' && !p.bkashTxnId).length;
@@ -8844,6 +8984,7 @@ window.renderPreorders = function() {
 
     if (list.length === 0) {
         tbody.innerHTML = '<tr><td colspan="11" class="p-8 text-center text-gray-400">No pre-orders match your filters.</td></tr>';
+        window.updatePreorderSelectionBar();
         return;
     }
 
@@ -8851,11 +8992,13 @@ window.renderPreorders = function() {
     list.forEach(p => {
         const status   = p.status || 'Pending';
         const awaitPay = status === 'Pending' && !p.bkashTxnId;
+        const sel      = window._selectedPreorderIds.has(p.id);
 
         let statusBadge;
         if (status === 'Confirmed')      statusBadge = '<span class="bg-green-100 text-green-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase">Confirmed</span>';
         else if (status === 'Converted') statusBadge = '<span class="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase">Converted</span>';
-        else if (status === 'Cancelled') statusBadge = '<span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase">Cancelled</span>';
+        else if (status === 'Refunded')  statusBadge = '<span class="bg-pink-100 text-pink-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase" title="Refunded ৳' + fmt(p.refundAmount) + (p.refundReason ? ' — ' + p.refundReason : '') + '">Refunded ৳' + fmt(p.refundAmount) + '</span>';
+        else if (status === 'Cancelled') statusBadge = '<span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase" title="' + ((p.cancelReason || 'No payment taken').replace(/"/g,'&quot;')) + '">Cancelled</span>';
         else statusBadge = awaitPay
             ? '<span class="bg-orange-100 text-orange-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase">Awaiting Pay</span>'
             : '<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-[9px] font-bold uppercase">Pending</span>';
@@ -8866,22 +9009,37 @@ window.renderPreorders = function() {
             : '<span class="text-gray-300 text-[10px]">—</span>';
         const linkedBadge = p.userId
             ? '<span class="ml-1 text-[8px] bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded font-bold uppercase">CRM</span>' : '';
-        const addr = (p.customerAddress || '').replace(/"/g, '&quot;');
+        
+
+        const cbCell = (status === 'Confirmed')
+            ? '<td class="p-3"><input type="checkbox" class="preorder-checkbox accent-[#B36A5E] w-4 h-4 cursor-pointer" data-id="' + p.id + '" ' + (sel ? 'checked' : '') + ' onchange="togglePreorderSelect(this)"></td>'
+            : '<td class="p-3"></td>';
 
         let actions = '';
-        if (status === 'Pending')
-            actions += '<button onclick="preorderMarkConfirmed(\'' + p.id + '\')" class="text-green-600 font-bold uppercase text-[9px] hover:underline bg-green-50 px-2 py-1 rounded border border-green-100">Confirm</button>';
-        if (!p.userId)
+        if (status === 'Pending') {
+            actions += '<button onclick="preorderOpenConfirm(\'' + p.id + '\')" class="text-green-600 font-bold uppercase text-[9px] hover:underline bg-green-50 px-2 py-1 rounded border border-green-100">Confirm</button>';
+            actions += '<button onclick="preorderOpenEdit(\'' + p.id + '\')" class="text-gray-600 font-bold uppercase text-[9px] hover:underline bg-gray-50 px-2 py-1 rounded border border-gray-200">Edit</button>';
+            actions += '<button onclick="preorderCancel(\'' + p.id + '\')" class="text-red-500 font-bold uppercase text-[9px] hover:underline bg-red-50 px-2 py-1 rounded border border-red-100">Cancel</button>';
+        } else if (status === 'Confirmed') {
+            actions += '<button onclick="preorderRevert(\'' + p.id + '\')" class="text-yellow-700 font-bold uppercase text-[9px] hover:underline bg-yellow-50 px-2 py-1 rounded border border-yellow-100">↩ Revert</button>';
+            actions += '<button onclick="preorderOpenEdit(\'' + p.id + '\')" class="text-gray-600 font-bold uppercase text-[9px] hover:underline bg-gray-50 px-2 py-1 rounded border border-gray-200">Edit</button>';
+            actions += '<button onclick="preorderCancel(\'' + p.id + '\')" class="text-red-500 font-bold uppercase text-[9px] hover:underline bg-red-50 px-2 py-1 rounded border border-red-100">Cancel</button>';
+        } else if (status === 'Converted') {
+            actions += '<span class="text-blue-600 font-bold text-[9px] uppercase bg-blue-50 px-2 py-1 rounded border border-blue-100">→ ' + (p.convertedOrderCode || 'Order') + '</span>';
+        } else if (status === 'Cancelled' || status === 'Refunded') {
+            actions += '<button onclick="preorderRestore(\'' + p.id + '\')" class="text-gray-600 font-bold uppercase text-[9px] hover:underline bg-gray-50 px-2 py-1 rounded border border-gray-200">↩ Restore</button>';
+        }
+        if (!p.userId && status !== 'Refunded' && status !== 'Cancelled' && status !== 'Converted')
             actions += '<button onclick="preorderSaveAsCustomer(\'' + p.id + '\')" class="text-blue-600 font-bold uppercase text-[9px] hover:underline bg-blue-50 px-2 py-1 rounded border border-blue-100">Save Customer</button>';
         actions += '<button onclick="preorderDelete(\'' + p.id + '\')" class="text-red-400 font-bold uppercase text-[9px] hover:underline bg-red-50 px-2 py-1 rounded border border-red-100">Delete</button>';
         if (isSuper && p.userId)
             actions += '<button onclick="preorderDeleteCustomer(\'' + p.id + '\')" class="text-red-700 font-bold uppercase text-[9px] hover:underline bg-red-50 px-2 py-1 rounded border border-red-200">Del Customer</button>';
 
-        html += '<tr class="border-b hover:bg-gray-50 transition ' + (awaitPay ? 'bg-orange-50/40' : '') + '">' +
+        html += '<tr class="border-b hover:bg-gray-50 transition ' + (sel ? 'bg-blue-50' : (awaitPay ? 'bg-orange-50/40' : '')) + '">' +
+            cbCell +
             '<td class="p-3"><div class="flex items-center gap-2"><img src="' + (p.productImage || 'placeholder.png') + '" class="w-8 h-9 object-cover rounded shadow-sm shrink-0" onerror="this.src=\'placeholder.png\'"><span class="font-medium text-xs">' + (p.productName || '—') + '</span></div></td>' +
             '<td class="text-xs font-bold text-[#322C2B] whitespace-nowrap">' + (p.customerName || '—') + linkedBadge + '</td>' +
             '<td><a href="tel:' + (p.customerPhone || '') + '" class="font-mono text-xs text-[#B36A5E] hover:underline whitespace-nowrap">' + (p.customerPhone || '—') + '</a></td>' +
-            '<td class="text-xs text-gray-500 max-w-[160px] truncate" title="' + addr + '">' + (p.customerAddress || '—') + '</td>' +
             '<td class="text-center font-bold text-xs">' + (p.quantity || 1) + '</td>' +
             '<td class="font-bold text-xs whitespace-nowrap">৳' + fmt(p.advanceAmount) + '</td>' +
             '<td>' + txnDisplay + '</td>' +
@@ -8892,76 +9050,369 @@ window.renderPreorders = function() {
         '</tr>';
     });
     tbody.innerHTML = html;
+    window.updatePreorderSelectionBar();
 };
 
+// ── MULTI-SELECT ──
+window.togglePreorderSelect = function(cb) {
+    const id = cb.getAttribute('data-id');
+    if (cb.checked) window._selectedPreorderIds.add(id);
+    else            window._selectedPreorderIds.delete(id);
+    const row = cb.closest('tr');
+    if (row) row.classList.toggle('bg-blue-50', cb.checked);
+    window.updatePreorderSelectionBar();
+};
+
+window.togglePreorderSelectAll = function(checked) {
+    document.querySelectorAll('.preorder-checkbox').forEach(cb => {
+        cb.checked = checked;
+        const id = cb.getAttribute('data-id');
+        if (checked) window._selectedPreorderIds.add(id);
+        else         window._selectedPreorderIds.delete(id);
+        const row = cb.closest('tr');
+        if (row) row.classList.toggle('bg-blue-50', checked);
+    });
+    window.updatePreorderSelectionBar();
+};
+
+window.updatePreorderSelectionBar = function() {
+    const bar = document.getElementById('preorder-move-bar');
+    const cnt = document.getElementById('preorder-selected-count');
+    const n   = window._selectedPreorderIds.size;
+    if (cnt) cnt.innerText = n + ' selected';
+    if (bar) bar.classList.toggle('hidden', n === 0 || window._poStage !== 'confirmed');
+};
+
+// ── CUSTOMER CREATION (shared by Confirm, Save Customer, Move) ──
+window._poEnsureCustomer = async function(p) {
+    if (p.userId) return p.userId;
+    const phoneVal = (p.customerPhone || '').trim();
+    const nameVal  = (p.customerName  || 'Customer').trim();
+    if (!phoneVal) throw new Error('No phone number on this pre-order.');
+
+    let uid = null;
+    const fakeEmail = phoneVal.replace(/\s+/g, '') + '@sterling.com';
+    const tempPass  = 'Sterling' + Date.now().toString().slice(-4);
+    try {
+        const cred = await secondaryApp.auth().createUserWithEmailAndPassword(fakeEmail, tempPass);
+        uid = cred.user.uid;
+        await secondaryApp.auth().signOut();
+    } catch(authErr) {
+        if (authErr.code === 'auth/email-already-in-use') {
+            const ex = await db.collection("users").where("phone", "==", phoneVal).limit(1).get();
+            if (!ex.empty) uid = ex.docs[0].id;
+            else {
+                const lk = await db.collection("phone_lookups").doc(phoneVal).get();
+                if (lk.exists) uid = lk.data().uid; else throw authErr;
+            }
+        } else throw authErr;
+    }
+
+    const addrArr = p.customerAddress ? [{
+        id: Date.now().toString() + 'S', tag: 'Shipping Address',
+        detail: p.customerAddress, fullDisplay: p.customerAddress, isDefault: true
+    }] : [];
+
+    await db.collection("users").doc(uid).set({
+        fullName: nameVal, phone: phoneVal, email: fakeEmail,
+        crmTags: 'Good', isBlocked: false, addresses: addrArr, paymentMethods: [],
+        totalSpend: 0, source: 'preorder_web',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    await db.collection("phone_lookups").doc(phoneVal).set({ uid: uid, name: nameVal }, { merge: true });
+    await db.collection("preorders").doc(p.id).update({ userId: uid, savedAsCustomer: true });
+    p.userId = uid;
+    return uid;
+};
+
+// ── CONFIRM (auto-creates customer, stays in pre-order pipeline) ──
 window.preorderMarkConfirmed = async function(id) {
     const p = window._preordersCache.find(x => x.id === id);
-    if (!confirm('Mark this pre-order as Confirmed (advance verified)?')) return;
+    if (!p) return;
+    if (!confirm('Confirm this pre-order?\nThis verifies the advance and creates a CRM customer if none exists. It stays in the pre-order pipeline until you move it to Orders.')) return;
     try {
+        if (!p.userId) {
+            try { await window._poEnsureCustomer(p); }
+            catch(ce) { if (!confirm('Could not auto-create customer (' + ce.message + ').\nConfirm anyway without linking a customer?')) return; }
+        }
         await db.collection("preorders").doc(id).update({ status: 'Confirmed', confirmedAt: new Date().toISOString() });
-        await window.logAdminAction('Confirmed pre-order: ' + (p ? p.customerName + ' (' + p.customerPhone + ')' : id));
+        await window.logAdminAction('Confirmed pre-order: ' + p.customerName + ' (' + p.customerPhone + ')');
+        window.loadPreorders();
+        if (typeof window.loadCRMUsers === 'function') window.loadCRMUsers();
+    } catch(e) { alert('Error: ' + e.message); }
+};
+
+// ── CANCEL (voided, no money taken — for unpaid / fake-txn orders) ──
+window.preorderCancel = async function(id) {
+    const p = window._preordersCache.find(x => x.id === id);
+    if (!p) return;
+    const reason = prompt('Cancel this pre-order?\nNo money is recorded as refunded (use Refund instead if an advance was actually paid).\n\nOptional reason:', p.bkashTxnId ? '' : 'No payment received');
+    if (reason === null) return;   // user hit Cancel on the prompt
+    try {
+        await db.collection("preorders").doc(id).update({
+            status: 'Cancelled',
+            cancelReason: reason || 'No reason given',
+            cancelledAt: new Date().toISOString(),
+            confirmedAt: firebase.firestore.FieldValue.delete()
+        });
+        await window.logAdminAction('Cancelled pre-order: ' + p.customerName + ' (' + p.customerPhone + ')' + (reason ? ' — ' + reason : ''));
         window.loadPreorders();
     } catch(e) { alert('Error: ' + e.message); }
 };
 
-// Mirrors createManualCustomer — full Auth account + users doc + phone_lookup
+// ── RESTORE a cancelled/refunded pre-order back to Pending ──
+window.preorderRestore = async function(id) {
+    const p = window._preordersCache.find(x => x.id === id);
+    if (!confirm('Restore this pre-order back to the Pending list?')) return;
+    try {
+        await db.collection("preorders").doc(id).update({
+            status: 'Pending',
+            cancelReason:  firebase.firestore.FieldValue.delete(),
+            cancelledAt:   firebase.firestore.FieldValue.delete(),
+            refundAmount:  firebase.firestore.FieldValue.delete(),
+            refundReason:  firebase.firestore.FieldValue.delete(),
+            refundedAt:    firebase.firestore.FieldValue.delete()
+        });
+        await window.logAdminAction('Restored pre-order to Pending: ' + (p ? p.customerName + ' (' + p.customerPhone + ')' : id));
+        window.loadPreorders();
+    } catch(e) { alert('Error: ' + e.message); }
+};
+
+// ── REVERT a confirmation ──
+window.preorderRevert = async function(id) {
+    const p = window._preordersCache.find(x => x.id === id);
+    if (!confirm('Revert this pre-order back to Pending? This undoes the confirmation.')) return;
+    try {
+        await db.collection("preorders").doc(id).update({
+            status: 'Pending',
+            confirmedAt: firebase.firestore.FieldValue.delete()
+        });
+        await window.logAdminAction('Reverted pre-order to Pending: ' + (p ? p.customerName + ' (' + p.customerPhone + ')' : id));
+        window.loadPreorders();
+    } catch(e) { alert('Error: ' + e.message); }
+};
+
+// ── MOVE selected Confirmed pre-orders → Order Pipeline Stage 1 ──
+window.moveSelectedPreordersToOrders = async function() {
+    const ids = [...window._selectedPreorderIds];
+    const selected = window._preordersCache.filter(p => ids.includes(p.id) && p.status === 'Confirmed');
+    if (!selected.length) return alert('Select at least one Confirmed pre-order to move.');
+    if (!confirm('Move ' + selected.length + ' pre-order(s) into the Order Pipeline at Stage 1 (Verification)?\nThe advance already paid will be deducted from the COD collectable on the label.')) return;
+
+    const btn = document.getElementById('btn-move-preorders');
+    if (btn) { btn.innerText = 'Moving...'; btn.disabled = true; }
+
+    let moved = 0, failed = 0;
+    for (const p of selected) {
+        try {
+            const uid = await window._poEnsureCustomer(p);
+
+            let prod = {};
+            try { const pd = await db.collection("products").doc(String(p.productId)).get(); if (pd.exists) prod = pd.data(); } catch(e) {}
+
+            const qty   = Number(p.quantity) || 1;
+            const price = Number(p.productPrice) || Number(prod.price) || 0;
+
+            const item = {
+                id: p.productId,
+                name: p.productName || prod.name || 'Pre-order item',
+                price: price, quantity: qty,
+                image: p.productImage || prod.image || '',
+                sku: prod.sku || '', category: prod.category || '', subcategory: prod.subcategory || '',
+                weightKg: Number(prod.weightKg) || 0,
+                purchasePrice: Number(prod.purchasePrice) || 0,
+                supplierShippingCost: Number(prod.supplierShippingCost) || 0,
+                originalPrice: Number(prod.originalPrice) || price
+            };
+
+            const addrObj = { detail: p.customerAddress || '', fullDisplay: p.customerAddress || '', tag: 'Shipping Address' };
+            const orderId = 'PO-' + Date.now().toString().slice(-7) + Math.floor(10 + Math.random() * 89);
+
+            const orderDoc = {
+                orderId: orderId,
+                orderDate: new Date().toISOString(),
+                status: 'Pending',
+                userId: uid,
+                userName: p.customerName || 'Customer',
+                userPhone: p.customerPhone || '',
+                items: [item],
+                totalAmount: price * qty,        // shipping added at Stage 1 verify
+                customerShippingFee: 0,
+                advancePaid: Number(p.advanceAmount) || 0,
+                paymentMethod: 'Cash on Delivery',
+                shippingAddress: addrObj,
+                billingAddress: addrObj,
+                receiverInfo: { type: 'Me', relation: 'Self', name: null, phone: null },
+                source: 'preorder',
+                preorderId: p.id,
+                preorderBatch: p.batch || '',
+                lastUpdate: new Date().toISOString()
+            };
+
+            const ref = await db.collection("orders").add(orderDoc);
+            await db.collection("preorders").doc(p.id).update({
+                status: 'Converted', convertedOrderId: ref.id, convertedOrderCode: orderId, convertedAt: new Date().toISOString()
+            });
+            moved++;
+        } catch(e) { console.error('Move failed for', p.id, e); failed++; }
+    }
+
+    await window.logAdminAction('Moved ' + moved + ' pre-order(s) to Order Pipeline Stage 1' + (failed ? ' (' + failed + ' failed)' : ''));
+    window._selectedPreorderIds = new Set();
+    if (btn) { btn.innerText = '→ Move to Orders (Stage 1)'; btn.disabled = false; }
+    alert('✅ Moved ' + moved + ' pre-order(s) to Stage 1.' + (failed ? '\n' + failed + ' failed — check console.' : ''));
+    window.loadPreorders();
+    if (typeof window.loadOrders === 'function')   window.loadOrders();
+    if (typeof window.loadCRMUsers === 'function') window.loadCRMUsers();
+};
+
+// ── SAVE AS CUSTOMER (standalone) ──
 window.preorderSaveAsCustomer = async function(id) {
     const p = window._preordersCache.find(x => x.id === id);
     if (!p) return;
-    const phoneVal = (p.customerPhone || '').trim();
-    const nameVal  = (p.customerName || 'Customer').trim();
-    if (!phoneVal) return alert('This pre-order has no phone number.');
-    if (!confirm('Create a customer account for ' + nameVal + ' (' + phoneVal + ')?\nThey will appear in CRM and can log in later via phone OTP.')) return;
-
+    if (!p.customerPhone) return alert('This pre-order has no phone number.');
+    if (!confirm('Create a customer account for ' + p.customerName + ' (' + p.customerPhone + ')?\nThey will appear in CRM and can log in later via phone OTP.')) return;
     try {
-        let uid = null;
-        const fakeEmail = phoneVal.replace(/\s+/g, '') + '@sterling.com';
-        const tempPass  = 'Sterling' + Date.now().toString().slice(-4);
+        await window._poEnsureCustomer(p);
+        await window.logAdminAction('Saved pre-order customer to CRM: ' + p.customerName + ' (' + p.customerPhone + ')');
+        alert('✅ Customer saved to CRM.');
+        window.loadPreorders();
+        if (typeof window.loadCRMUsers === 'function') window.loadCRMUsers();
+    } catch(e) { alert('Error saving customer: ' + e.message); }
+};
 
-        try {
-            const cred = await secondaryApp.auth().createUserWithEmailAndPassword(fakeEmail, tempPass);
-            uid = cred.user.uid;
-            await secondaryApp.auth().signOut();
-        } catch(authErr) {
-            if (authErr.code === 'auth/email-already-in-use') {
-                const ex = await db.collection("users").where("phone", "==", phoneVal).limit(1).get();
-                if (!ex.empty) uid = ex.docs[0].id;
-                else {
-                    const lk = await db.collection("phone_lookups").doc(phoneVal).get();
-                    if (lk.exists) uid = lk.data().uid; else throw authErr;
-                }
-            } else throw authErr;
+// Open the same modal in "confirm" mode — edit fields, then save & confirm in one click
+window.preorderOpenConfirm = function(id) {
+    window.preorderOpenEdit(id);
+    document.getElementById('po-edit-title').innerText = 'Confirm Pre-order — ' +
+        ((window._preordersCache.find(x => x.id === id) || {}).customerName || '');
+    document.getElementById('po-edit-save-btn').classList.add('hidden');
+    document.getElementById('po-edit-confirm-btn').classList.remove('hidden');
+};
+
+window.preorderSaveAndConfirm = async function() {
+    const id = window._poEditId; if (!id) return;
+    const btn = document.getElementById('po-edit-confirm-btn');
+    btn.innerText = 'Confirming...'; btn.disabled = true;
+    try {
+        // 1. Save the edited fields
+        const name    = document.getElementById('po-edit-name').value.trim();
+        const phone   = document.getElementById('po-edit-phone').value.trim();
+        const address = document.getElementById('po-edit-address').value.trim();
+        const qty     = Math.max(1, Number(document.getElementById('po-edit-qty').value) || 1);
+        const advance = Number(document.getElementById('po-edit-advance').value) || 0;
+        const txn     = document.getElementById('po-edit-txn').value.trim();
+        const batch   = document.getElementById('po-edit-batch').value.trim();
+
+        await db.collection("preorders").doc(id).update({
+            customerName: name, customerPhone: phone, customerAddress: address,
+            quantity: qty, advanceAmount: advance, bkashTxnId: txn || null, batch: batch || ''
+        });
+
+        // Refresh local copy so customer-creation uses the edited values
+        const p = window._preordersCache.find(x => x.id === id);
+        if (p) Object.assign(p, { customerName: name, customerPhone: phone, customerAddress: address, quantity: qty, advanceAmount: advance, bkashTxnId: txn || null, batch: batch || '' });
+
+        // 2. Auto-create CRM customer (best-effort), then confirm
+        if (p && !p.userId) {
+            try { await window._poEnsureCustomer(p); }
+            catch(ce) { if (!confirm('Could not auto-create customer (' + ce.message + ').\nConfirm anyway without linking a customer?')) { btn.innerText = '✓ Save & Confirm Pre-order'; btn.disabled = false; return; } }
         }
 
-        const addrArr = p.customerAddress ? [{
-            id: Date.now().toString() + 'S',
-            tag: 'Shipping Address',
-            detail: p.customerAddress,
-            fullDisplay: p.customerAddress,
-            isDefault: true
-        }] : [];
+        await db.collection("preorders").doc(id).update({ status: 'Confirmed', confirmedAt: new Date().toISOString() });
+        await window.logAdminAction('Confirmed pre-order (with edits): ' + name + ' (' + phone + ')');
 
-        await db.collection("users").doc(uid).set({
-            fullName: nameVal, phone: phoneVal, email: fakeEmail,
-            crmTags: 'Good', isBlocked: false,
-            addresses: addrArr, paymentMethods: [],
-            totalSpend: 0, source: 'preorder_web',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-
-        await db.collection("phone_lookups").doc(phoneVal).set({ uid: uid, name: nameVal }, { merge: true });
-        await db.collection("preorders").doc(id).update({ userId: uid, savedAsCustomer: true });
-
-        await window.logAdminAction('Saved pre-order customer to CRM: ' + nameVal + ' (' + phoneVal + ')');
-        alert('✅ Customer saved to CRM. They can log in later via phone OTP / password reset.');
+        window.preorderCloseEdit();
         window.loadPreorders();
         if (typeof window.loadCRMUsers === 'function') window.loadCRMUsers();
     } catch(e) {
-        alert('Error saving customer: ' + e.message);
+        alert('Error: ' + e.message);
+    } finally {
+        btn.innerText = '✓ Save & Confirm Pre-order'; btn.disabled = false;
     }
 };
 
-// Any admin can delete a pre-order record
+// ── EDIT (address / batch / qty / advance / txn) ──
+window.preorderOpenEdit = function(id) {
+    const p = window._preordersCache.find(x => x.id === id);
+    if (!p) return;
+    window._poEditId = id;
+    document.getElementById('po-edit-name').value          = p.customerName    || '';
+    document.getElementById('po-edit-phone').value         = p.customerPhone   || '';
+    document.getElementById('po-edit-address').value       = p.customerAddress || '';
+    document.getElementById('po-edit-qty').value           = p.quantity        || 1;
+    document.getElementById('po-edit-advance').value       = p.advanceAmount   || '';
+    document.getElementById('po-edit-txn').value           = p.bkashTxnId      || '';
+    document.getElementById('po-edit-batch').value         = p.batch           || '';
+    document.getElementById('po-edit-refund-amount').value = p.advanceAmount   || '';
+    document.getElementById('po-edit-refund-reason').value = '';
+    document.getElementById('po-edit-title').innerText     = 'Edit Pre-order — ' + (p.customerName || '');
+
+    const dl = document.getElementById('po-edit-batch-list');
+    if (dl) {
+        const batches = [...new Set(window._preordersCache.map(x => x.batch).filter(Boolean))].sort();
+        dl.innerHTML = batches.map(b => '<option value="' + b + '">').join('');
+    }
+
+    // Default to edit mode (confirm mode re-toggles these afterwards)
+    document.getElementById('po-edit-save-btn').classList.remove('hidden');
+    document.getElementById('po-edit-confirm-btn').classList.add('hidden');
+
+    const m = document.getElementById('preorderEditModal');
+    m.classList.remove('hidden'); m.classList.add('flex');
+};
+
+window.preorderCloseEdit = function() {
+    const m = document.getElementById('preorderEditModal');
+    m.classList.add('hidden'); m.classList.remove('flex');
+    window._poEditId = null;
+};
+
+window.preorderSaveEdit = async function() {
+    const id = window._poEditId; if (!id) return;
+    const name    = document.getElementById('po-edit-name').value.trim();
+    const phone   = document.getElementById('po-edit-phone').value.trim();
+    const address = document.getElementById('po-edit-address').value.trim();
+    const qty     = Math.max(1, Number(document.getElementById('po-edit-qty').value) || 1);
+    const advance = Number(document.getElementById('po-edit-advance').value) || 0;
+    const txn     = document.getElementById('po-edit-txn').value.trim();
+    const batch   = document.getElementById('po-edit-batch').value.trim();
+    const btn     = document.getElementById('po-edit-save-btn');
+    btn.innerText = 'Saving...'; btn.disabled = true;
+    try {
+        await db.collection("preorders").doc(id).update({
+            customerName: name, customerPhone: phone, customerAddress: address,
+            quantity: qty, advanceAmount: advance, bkashTxnId: txn || null, batch: batch || ''
+        });
+        await window.logAdminAction('Edited pre-order: ' + name + ' (' + phone + ')');
+        window.preorderCloseEdit();
+        window.loadPreorders();
+    } catch(e) { alert('Error: ' + e.message); }
+    finally { btn.innerText = 'Save Changes'; btn.disabled = false; }
+};
+
+// ── REFUND advance (supplier can't fulfil) ──
+window.preorderRefund = async function() {
+    const id = window._poEditId; if (!id) return;
+    const p      = window._preordersCache.find(x => x.id === id);
+    const amount = Number(document.getElementById('po-edit-refund-amount').value) || 0;
+    const reason = document.getElementById('po-edit-refund-reason').value.trim();
+    if (!reason) return alert('Please enter a refund reason / remark.');
+    if (!confirm('Refund ৳' + fmt(amount) + ' for this pre-order?\nThis marks it as Refunded and removes it from the active pipeline.')) return;
+    const btn = document.getElementById('po-edit-refund-btn');
+    btn.innerText = 'Processing...'; btn.disabled = true;
+    try {
+        await db.collection("preorders").doc(id).update({
+            status: 'Refunded', refundAmount: amount, refundReason: reason, refundedAt: new Date().toISOString()
+        });
+        await window.logAdminAction('Refunded pre-order: ' + (p ? p.customerName + ' (' + p.customerPhone + ')' : id) + ' — ৳' + fmt(amount) + ' — Reason: ' + reason);
+        window.preorderCloseEdit();
+        window.loadPreorders();
+    } catch(e) { alert('Error: ' + e.message); }
+    finally { btn.innerText = 'Process Refund'; btn.disabled = false; }
+};
+
+// ── DELETE pre-order record ──
 window.preorderDelete = async function(id) {
     const p = window._preordersCache.find(x => x.id === id);
     if (!confirm('Delete this pre-order permanently? This cannot be undone.')) return;
@@ -8972,7 +9423,7 @@ window.preorderDelete = async function(id) {
     } catch(e) { alert('Error: ' + e.message); }
 };
 
-// Super-admin only — removes CRM record; refuses if non-cancelled orders exist
+// ── DELETE linked CRM customer (super admin only) ──
 window.preorderDeleteCustomer = async function(id) {
     if (!_poIsSuperAdmin()) return alert('Only a Super Admin can delete customers.');
     const p = window._preordersCache.find(x => x.id === id);
@@ -8982,13 +9433,10 @@ window.preorderDeleteCustomer = async function(id) {
         const active  = ordSnap.docs.map(d => d.data()).filter(o => (o.status || 'Pending') !== 'Cancelled');
         if (active.length > 0)
             return alert('Cannot delete: this customer has ' + active.length + ' non-cancelled order(s). Order history must be preserved.');
-
         if (!confirm('SUPER ADMIN: Permanently delete the CRM profile for ' + p.customerName + '?\nRemoves their users record + phone lookup. (Their dormant login account stays.)')) return;
 
         await db.collection("users").doc(p.userId).delete();
-        if (p.customerPhone) {
-            try { await db.collection("phone_lookups").doc(p.customerPhone.trim()).delete(); } catch(e) {}
-        }
+        if (p.customerPhone) { try { await db.collection("phone_lookups").doc(p.customerPhone.trim()).delete(); } catch(e) {} }
         await db.collection("preorders").doc(id).update({ userId: null, savedAsCustomer: false });
         await window.logAdminAction('Deleted customer profile (super admin): ' + p.customerName + ' (' + p.customerPhone + ')');
         alert('Customer profile deleted.');
