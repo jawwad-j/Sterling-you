@@ -200,7 +200,7 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
         </div>
     </div>
 
-    <script src="cart.js"></script>
+    <script src="cart.js?v=4"></script>
 
 <script>
         const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
@@ -217,7 +217,7 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
 let authHandled = false;
 auth.onAuthStateChanged(async (user) => {
     if (!user) {
-        window.location.href = 'login?redirect=checkout';
+        window.location.href = 'login.html?redirect=checkout.html';
         return;
     }
 
@@ -229,9 +229,8 @@ auth.onAuthStateChanged(async (user) => {
         const userDoc = await db.collection("users").doc(targetUid).get();
 
         if (!userDoc.exists) {
-            // User authenticated but no Firestore doc — sign out and go to login
             await auth.signOut();
-            window.location.href = 'login?redirect=checkout';
+            window.location.href = 'login.html?redirect=checkout.html';
             return;
         }
 
@@ -505,7 +504,11 @@ observer.observe(document.body, { childList: true, subtree: false });
         function renderAddressSelection() {
             const container = document.getElementById('address-container');
             if (!userAddresses || userAddresses.length === 0) {
-                container.innerHTML = `<p class="text-sm text-red-400">No addresses saved. <a href="account.html?tab=addresses&from=checkout" class="underline font-bold text-[#B36A5E]">Add one now.</a></p>`;
+                container.innerHTML = `<div class="bg-[#fdf9f8] border border-[#B36A5E]/30 rounded-xl p-5 text-center">
+                    <p class="text-sm font-bold text-[#322C2B] mb-1">One last step</p>
+                    <p class="text-xs text-gray-500 mb-4">Add your delivery address to place the order.</p>
+                    <a href="account.html?tab=addresses&from=checkout&action=add" class="inline-block bg-[#322C2B] text-white px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-[#B36A5E] transition">+ Add Delivery Address</a>
+                </div>`;
                 return;
             }
 
@@ -872,7 +875,7 @@ const redirectCount = parseInt(sessionStorage.getItem('checkout_redirect_count')
 if (redirectCount > 1) {
     sessionStorage.removeItem('checkout_redirect_count');
     document.getElementById('address-container').innerHTML = 
-        '<p class="text-sm text-red-400">Session error. Please <a href="/login" class="underline text-[#B36A5E] font-bold">login again</a>.</p>';
+        '<p class="text-sm text-red-400">Session error. Please <a href="login.html?redirect=checkout.html" class="underline text-[#B36A5E] font-bold">login again</a>.</p>';
 } else {
     sessionStorage.setItem('checkout_redirect_count', redirectCount + 1);
 }
