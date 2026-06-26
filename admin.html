@@ -7263,9 +7263,11 @@ const returnDeductions = [];
 window.calcNetPayout = function(o) {
     if (o._isReturnDeduction) return o._returnNetDeduction || 0;
     const total       = Number(o.totalAmount)  || 0;
+    const advancePaid = Number(o.advancePaid)  || 0;
     const courierCost = Number(o.courierCost)  || 0;
     const codCharge   = Number(o.codCharge)    || 0;
-    return Math.round((total - courierCost - codCharge) * 100) / 100;
+    // Courier only collected (total − advance) as COD, so that's what it owes you back
+    return Math.round((total - advancePaid - courierCost - codCharge) * 100) / 100;
 };
 
 window.renderPayoutTable = function() {
