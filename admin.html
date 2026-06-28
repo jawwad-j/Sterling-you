@@ -692,7 +692,7 @@ if (tabId === 'contact-settings') {
                 <div>
                     <h3 class="font-bold text-lg mb-4 flex items-center gap-2">🟠 Stage 2: Logistics <span id="count-processing" class="bg-orange-500 text-white text-[10px] px-2 py-1 rounded-full">0</span></h3>
                     <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-orange-50 relative">
-                        <div class="max-h-[960px] overflow-y-auto w-full">
+                        <div class="max-h-[960px] overflow-auto w-full">
                             <table class="w-full text-left text-xs">
                                 <thead class="bg-orange-50 text-[10px] font-bold uppercase text-orange-400 sticky top-0 z-10 shadow-sm">
                                     <tr>
@@ -715,7 +715,7 @@ if (tabId === 'contact-settings') {
                 <div>
                     <h3 class="font-bold text-lg mb-4 flex items-center gap-2">🟢 Stage 3: History</h3>
                     <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 relative">
-                        <div class="max-h-[960px] overflow-y-auto w-full">
+                        <div class="max-h-[960px] overflow-auto w-full">
                             <table class="w-full text-left text-xs">
                                 <thead class="bg-gray-50 text-[10px] font-bold uppercase text-gray-400 sticky top-0 z-10 shadow-sm">
                                     <tr>
@@ -3482,7 +3482,7 @@ if (status === 'Confirmed') {
                          nextAction = '<button onclick="openReceiveReturnModal(\'' + oid + '\')" class="bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-md hover:bg-red-700 transition whitespace-nowrap">Process Return Receipt<\/button>';
                     }
 
-prHTML += '<tr class="border-b hover:bg-gray-50 transition">' +
+prHTML += '<tr class="border-b hover:bg-gray-50 transition cursor-pointer" onclick="orderRowClick(event, \'' + oid + '\')">' +
                         '<td class="p-4 font-mono font-bold text-gray-600">' + o.orderId + '<\/td>' +
                         '<td class="text-xs font-medium">' + dateStr + '<\/td>' +
                         '<td><span class="text-[10px] text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded">' + lastUpdateStr + '<\/span><\/td>' +
@@ -3520,7 +3520,7 @@ prHTML += '<tr class="border-b hover:bg-gray-50 transition">' +
                         actionBtn = '<button onclick="revertToPending(\'' + oid + '\')" class="text-blue-500 font-bold underline text-[10px] uppercase hover:text-blue-700 transition">Revert<\/button>';
                     }
 
-hHTML += '<tr class="border-b hover:bg-gray-50 opacity-90 transition">' +
+hHTML += '<tr class="border-b hover:bg-gray-50 opacity-90 transition cursor-pointer" onclick="orderRowClick(event, \'' + oid + '\')">' +
                         '<td class="p-4 font-mono text-gray-500">' + o.orderId + '<\/td>' +
                         '<td class="text-xs text-gray-500 font-medium">' + dateStr + '<\/td>' +
                         '<td class="text-xs text-[#322C2B] font-bold">' + lastUpdateStr + '<\/td>' +
@@ -9448,6 +9448,121 @@ window.preorderDeleteCustomer = async function(id) {
 };
 </script>
 
+
+<!-- READ-ONLY ORDER DETAIL POPUP (Stage 2 & 3) -->
+<div id="orderDetailModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[350] p-4 backdrop-blur-sm">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div class="p-5 border-b bg-gray-50 flex justify-between items-center shrink-0">
+      <h3 class="font-bold text-[#322C2B] text-sm">Order Details — <span id="od-order-id" class="text-blue-600">...</span></h3>
+      <button onclick="closeOrderDetail()" class="text-gray-400 text-xl hover:text-black leading-none">&times;</button>
+    </div>
+    <div id="order-detail-content" class="p-6 overflow-y-auto flex-1"></div>
+  </div>
+</div>
+
+<script>
+window.orderRowClick = function(e, oid) {
+    if (e.target.closest('button') || e.target.closest('a') || e.target.closest('input')) return;
+    window.openOrderDetail(oid);
+};
+
+window.openOrderDetail = function(docId) {
+    const o = ordersCache[docId];
+    if (!o) { alert('Order not loaded yet — hit refresh and try again.'); return; }
+
+    document.getElementById('od-order-id').innerText = o.orderId || '—';
+
+    let dateStr = 'N/A';
+    if (o.orderDate && o.orderDate.toDate) dateStr = o.orderDate.toDate().toLocaleDateString();
+    else if (o.orderDate) dateStr = new Date(o.orderDate).toLocaleDateString();
+
+    const phone  = o.verifiedPhone || o.userPhone || o.phone || 'N/A';
+    const status = o.status || 'Pending';
+
+    let itemTotal = 0;
+    const itemsHtml = (o.items || []).map(function(i){
+        const qty = Number(i.quantity) || 1;
+        const price = Number(i.price) || 0;
+        itemTotal += qty * price;
+        return '<div class="flex gap-3 py-2 border-b border-gray-100 last:border-0">' +
+            '<img src="' + (i.image || 'placeholder.png') + '" class="w-10 h-12 object-cover rounded border border-gray-100 shrink-0" onerror="this.src=\'placeholder.png\'">' +
+            '<div class="flex-1 min-w-0">' +
+                '<p class="text-xs font-bold text-[#322C2B] leading-tight">' + (i.name || 'Item') + '</p>' +
+                '<p class="text-[10px] text-gray-400 mt-0.5">' + qty + ' \u00D7 \u09F3' + fmt(price) + (i.sku ? ' \u00B7 ' + i.sku : '') + '</p>' +
+            '</div>' +
+            '<span class="text-xs font-bold text-[#322C2B] shrink-0">\u09F3' + fmt(qty * price) + '</span>' +
+        '</div>';
+    }).join('') || '<p class="text-xs text-gray-400">No items recorded.</p>';
+
+    const advance = Number(o.advancePaid) || 0;
+    const total   = Number(o.totalAmount) || 0;
+    const shipFee = Number(o.customerShippingFee) || Number(o.shippingFee) || Number(o.shippingCost) || 0;
+    const shipAddr = window.getAddressDisplay(o.shippingAddress || o.address || {});
+
+    let statusColor = 'bg-gray-100 text-gray-600';
+    if (status === 'Delivered') statusColor = 'bg-green-100 text-green-700';
+    else if (status === 'Cancelled' || status === 'Returned') statusColor = 'bg-red-100 text-red-600';
+    else if (['Confirmed','Packed','Handed over'].includes(status)) statusColor = 'bg-blue-100 text-blue-600';
+
+    document.getElementById('order-detail-content').innerHTML =
+        '<div class="flex justify-between items-start mb-4">' +
+            '<div>' +
+                '<p class="text-[9px] font-bold uppercase text-gray-400 tracking-widest mb-0.5">Customer</p>' +
+                '<p class="font-bold text-[#322C2B] text-sm">' + (o.userName || 'Unknown') + '</p>' +
+                '<p class="text-xs text-gray-500 font-mono mt-0.5">' + phone + '</p>' +
+            '</div>' +
+            '<div class="text-right">' +
+                '<span class="px-2 py-1 rounded text-[9px] font-bold uppercase ' + statusColor + '">' + status + '</span>' +
+                '<p class="text-[10px] text-gray-400 mt-1">' + dateStr + '</p>' +
+            '</div>' +
+        '</div>' +
+
+        '<div class="bg-gray-50 rounded-xl border border-gray-100 p-3 mb-4">' +
+            '<p class="text-[9px] font-bold uppercase text-gray-400 tracking-widest mb-2 border-b pb-1">Items</p>' +
+            itemsHtml +
+            '<div class="flex justify-between text-[11px] pt-2 mt-1 border-t border-gray-200"><span class="text-gray-500">Items Subtotal</span><span class="font-bold">\u09F3' + fmt(itemTotal) + '</span></div>' +
+            (shipFee ? '<div class="flex justify-between text-[11px] pt-1"><span class="text-gray-500">Shipping</span><span class="font-bold">\u09F3' + fmt(shipFee) + '</span></div>' : '') +
+            '<div class="flex justify-between text-[11px] pt-1"><span class="text-gray-500">Order Total</span><span class="font-bold text-[#322C2B]">\u09F3' + fmt(total) + '</span></div>' +
+            (advance > 0 ?
+                '<div class="flex justify-between text-[11px] pt-1"><span class="text-green-600">Advance Paid</span><span class="font-bold text-green-600">-\u09F3' + fmt(advance) + '</span></div>' +
+                '<div class="flex justify-between text-[11px] pt-1 border-t border-gray-200 mt-1"><span class="text-[#322C2B] font-bold">COD Collectable</span><span class="font-bold text-[#322C2B]">\u09F3' + fmt(Math.max(0, total - advance)) + '</span></div>'
+            : '') +
+        '</div>' +
+
+        '<div class="bg-gray-50 rounded-xl border border-gray-100 p-3 mb-4">' +
+            '<p class="text-[9px] font-bold uppercase text-gray-400 tracking-widest mb-1">Delivery Address</p>' +
+            '<p class="text-[11px] text-gray-600 leading-relaxed">' + shipAddr + '</p>' +
+            (o.logisticsPartner ? '<p class="text-[10px] text-gray-400 mt-2">Courier: <span class="font-bold text-gray-600">' + o.logisticsPartner + '</span></p>' : '') +
+        '</div>' +
+
+        '<div class="bg-blue-50 rounded-xl border border-blue-100 p-3">' +
+            '<p class="text-[9px] font-bold uppercase text-blue-500 tracking-widest mb-1">Firestore Document ID</p>' +
+            '<div class="flex items-center gap-2">' +
+                '<code class="flex-1 text-[11px] font-mono text-[#322C2B] bg-white border border-blue-100 rounded px-2 py-1.5 break-all">' + docId + '</code>' +
+                '<button onclick="copyOrderDocId(event, \'' + docId + '\')" class="shrink-0 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase hover:bg-blue-700 transition">Copy</button>' +
+            '</div>' +
+            '<p class="text-[9px] text-gray-400 mt-1.5">Paste this into the orders collection in Firebase to open the exact order.</p>' +
+        '</div>';
+
+    const m = document.getElementById('orderDetailModal');
+    m.classList.remove('hidden'); m.classList.add('flex');
+};
+
+window.closeOrderDetail = function() {
+    const m = document.getElementById('orderDetailModal');
+    if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+};
+
+window.copyOrderDocId = function(e, id) {
+    const btn = e && e.target ? e.target : null;
+    const flash = function() { if (btn) { const t = btn.innerText; btn.innerText = '\u2713 Copied'; setTimeout(function(){ btn.innerText = t; }, 1200); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(id).then(flash).catch(function(){ window.prompt('Copy this document ID:', id); });
+    } else {
+        window.prompt('Copy this document ID:', id);
+    }
+};
+</script>
 
 </body>
 </html>
