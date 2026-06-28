@@ -648,7 +648,47 @@ window.openPreorderModal = function(product) {
     const modal = document.getElementById('preorder-modal');
     modal.classList.remove('hidden'); modal.classList.add('flex');
     document.body.style.overflow = 'hidden';
+
+    // If a customer is already logged in, skip the phone-entry step
+    const _poAuthUser = firebase.auth().currentUser;
+    if (_poAuthUser) poAutofillForLoggedInUser(_poAuthUser);
 };
+
+async function poAutofillForLoggedInUser(user) {
+    try {
+        const doc = await firebase.firestore().collection("users").doc(user.uid).get();
+        if (!doc.exists) return;              // no profile — fall back to step 1
+        const d = doc.data();
+        const phone = d.phone || '';
+        if (!phone) return;                   // no phone on file — keep step 1
+
+        window._poPhone  = phone;
+        window._poUserId = user.uid;
+        window._poIsNew  = false;
+
+        document.getElementById('po-phone').value = phone;
+        if (d.fullName) document.getElementById('po-name').value = d.fullName;
+
+        // Pre-fill default saved address if they have one
+        let defaultAddr = '';
+        if (Array.isArray(d.addresses) && d.addresses.length) {
+            const def = d.addresses.find(a => a && a.isDefault) || d.addresses[0];
+            defaultAddr = (def && (def.fullDisplay || def.detail)) || '';
+        }
+        if (defaultAddr) document.getElementById('po-address').value = defaultAddr;
+
+        // Jump straight to the details step
+        document.getElementById('po-step-1').classList.add('hidden');
+        document.getElementById('po-step-2').classList.remove('hidden');
+        const note = document.getElementById('po-returning-note');
+        note.innerText = 'Welcome back' + (d.fullName ? ', ' + d.fullName : '') + '! Please confirm your details below.';
+        note.classList.remove('hidden');
+        poRecalcAdvance();
+    } catch(e) {
+        // Never block the sale — on any error just leave them on step 1
+        console.error('Preorder autofill error:', e);
+    }
+}
 
 window.closePreorderModal = function() {
     const modal = document.getElementById('preorder-modal');
@@ -705,7 +745,7 @@ window.poLookupPhone = async function() {
 
 window.poRecalcAdvance = function() {
     const qty    = Math.max(1, Number(document.getElementById('po-qty').value) || 1);
-    const perBag = Math.max(510, Number(window._poProduct.preorderAdvance) || 510);
+    const perBag = Number(window._poProduct.preorderAdvance) || 510;
     const min    = perBag * qty;
     const adv    = document.getElementById('po-advance');
     adv.min = min;
@@ -724,7 +764,7 @@ window.poSubmitForm = async function() {
     const address = (document.getElementById('po-address').value || '').trim();
     const qty     = Math.max(1, Number(document.getElementById('po-qty').value) || 1);
     const advance = Number(document.getElementById('po-advance').value) || 0;
-    const perBag  = Math.max(510, Number(window._poProduct.preorderAdvance) || 510);
+    const perBag  = Number(window._poProduct.preorderAdvance) || 510;
     const minAdv  = perBag * qty;
 
     document.getElementById('po-error-2').classList.add('hidden');
@@ -761,6 +801,32 @@ window.poSubmitForm = async function() {
         window._poPreorderId = ref.id;
 
         try { fbq('track', 'Lead', { content_name: window._poProduct.name, value: advance, currency: 'BDT' }); } catch(e) {}
+
+        // Email notification to admin — reuses the existing order template
+        try {
+            await emailjs.send('service_qr9m3ds', 'template_razbuuu', {
+                order_id:       'PRE-ORDER',
+                customer_name:  name,
+                customer_phone: window._poPhone,
+                total:          advance.toLocaleString(),
+                shipping:       '0',
+                items:          window._poProduct.name + ' × ' + qty + ' (Advance ৳' + advance.toLocaleString() + ', Batch: ' + (window._preorderSettings.currentBatch || 'N/A') + ')',
+                address:        address
+            });
+        } catch(e) { console.error('Pre-order notification failed:', e); }
+
+        // Email notification to admin — reuses the existing order template
+        try {
+            await emailjs.send('service_qr9m3ds', 'template_razbuuu', {
+                order_id:       'PRE-ORDER',
+                customer_name:  name,
+                customer_phone: window._poPhone,
+                total:          advance.toLocaleString(),
+                shipping:       '0',
+                items:          window._poProduct.name + ' × ' + qty + ' (Advance ৳' + advance.toLocaleString() + ', Batch: ' + (window._preorderSettings.currentBatch || 'N/A') + ')',
+                address:        address
+            });
+        } catch(e) { console.error('Pre-order notification failed:', e); }
 
         document.getElementById('po-step-2').classList.add('hidden');
         document.getElementById('po-step-3').classList.remove('hidden');
