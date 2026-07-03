@@ -802,18 +802,7 @@ window.poSubmitForm = async function() {
 
         try { fbq('track', 'Lead', { content_name: window._poProduct.name, value: advance, currency: 'BDT' }); } catch(e) {}
 
-        // Email notification to admin — reuses the existing order template
-        try {
-            await emailjs.send('service_qr9m3ds', 'template_razbuuu', {
-                order_id:       'PRE-ORDER',
-                customer_name:  name,
-                customer_phone: window._poPhone,
-                total:          advance.toLocaleString(),
-                shipping:       '0',
-                items:          window._poProduct.name + ' × ' + qty + ' (Advance ৳' + advance.toLocaleString() + ', Batch: ' + (window._preorderSettings.currentBatch || 'N/A') + ')',
-                address:        address
-            });
-        } catch(e) { console.error('Pre-order notification failed:', e); }
+
 
         // Email notification to admin — reuses the existing order template
         try {

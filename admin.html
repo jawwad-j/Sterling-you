@@ -963,6 +963,7 @@ if (tabId === 'contact-settings') {
                 <div class="flex items-center gap-2 mb-4 bg-white border border-gray-200 rounded-xl p-1 shadow-sm w-fit">
                     <button id="po-stage-pending" onclick="setPreorderStage('pending')" class="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition bg-[#322C2B] text-white">Stage 1 · Pending Confirmation <span id="po-stage-pending-count" class="ml-1 opacity-70"></span></button>
                     <button id="po-stage-confirmed" onclick="setPreorderStage('confirmed')" class="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition text-gray-500">Stage 2 · Confirmed <span id="po-stage-confirmed-count" class="ml-1 opacity-70"></span></button>
+                    <button id="po-stage-converted" onclick="setPreorderStage('converted')" class="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition text-gray-500">Stage 3 · Converted <span id="po-stage-converted-count" class="ml-1 opacity-70"></span></button>
                     <button id="po-stage-cancelled" onclick="setPreorderStage('cancelled')" class="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition text-gray-500">Cancelled / Refunded <span id="po-stage-cancelled-count" class="ml-1 opacity-70"></span></button>
                 </div>
 
@@ -1099,10 +1100,10 @@ if (tabId === 'contact-settings') {
             <option value="">All Partners</option>
         </select>
         <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-sm">
-            <input type="date" id="payout-date-from" onchange="renderPayoutTable()"
+            <input type="date" id="payout-date-from" onchange="renderPayoutTable(); loadPayoutHistory();"
                 class="text-[10px] font-bold outline-none bg-transparent text-gray-600 focus:text-[#322C2B]">
             <span class="text-gray-300 text-xs font-bold">→</span>
-            <input type="date" id="payout-date-to" onchange="renderPayoutTable()"
+            <input type="date" id="payout-date-to" onchange="renderPayoutTable(); loadPayoutHistory();"
                 class="text-[10px] font-bold outline-none bg-transparent text-gray-600 focus:text-[#322C2B]">
         </div>
         <button onclick="openRecordPayoutModal()" id="btn-record-payout" class="bg-[#10B981] text-white px-5 py-2.5 rounded-xl font-bold uppercase text-[10px] hover:bg-green-600 transition shadow-lg disabled:opacity-50">
@@ -4769,6 +4770,22 @@ window.getOrderTime = function(o) {
 
 // ── VISITOR STATS ──────────────────────────────────────────────────────────
 window.loadVisitorStats = async function(from, to) {
+    // Lifetime: GA4 only retains ~2 months, so use our own permanent Firestore counters for a true all-time total
+    if (window.dashPeriod === 'lifetime') {
+        try {
+            const snap = await db.collection("site_analytics").get();
+            let pv = 0, uv = 0;
+            snap.forEach(doc => {
+                pv += Number(doc.data().pageViews)      || 0;
+                uv += Number(doc.data().uniqueVisitors) || 0;
+            });
+            const pvEl = document.getElementById('qs-pageviews');
+            const uvEl = document.getElementById('qs-unique-visitors');
+            if (pvEl) pvEl.innerText = pv.toLocaleString();
+            if (uvEl) uvEl.innerText = uv.toLocaleString();
+            return;
+        } catch(e) { console.error("Lifetime visitor stats error:", e); /* fall through to GA4 */ }
+    }
     try {
         const fromStr = from.toISOString().split('T')[0].replace(/-/g, '');
         const toStr   = to.toISOString().split('T')[0].replace(/-/g, '');
@@ -7616,6 +7633,20 @@ window.loadPayoutHistory = async function() {
             batches.push({ id: doc.id, ...doc.data() });
         });
 
+        // Respect the payout date-range filter (by batch `date`)
+        const _pFrom = document.getElementById('payout-date-from')?.value || '';
+        const _pTo   = document.getElementById('payout-date-to')?.value   || '';
+        if (_pFrom || _pTo) {
+            const fromTime = _pFrom ? new Date(_pFrom + 'T00:00:00').getTime() : 0;
+            const toTime   = _pTo   ? new Date(_pTo + 'T23:59:59').getTime()   : Infinity;
+            batches = batches.filter(b => {
+                let t = 0;
+                if (b.date) t = new Date(b.date + 'T00:00:00').getTime();
+                else if (b.createdAt) t = b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime();
+                return t >= fromTime && t <= toTime;
+            });
+        }
+
         // Sort client-side instead
         batches.sort((a, b) => {
             const tA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
@@ -8888,7 +8919,7 @@ window.setPreorderStage = function(stage) {
     window._selectedPreorderIds = new Set();
     const selAll = document.getElementById('preorder-select-all');
     if (selAll) selAll.checked = false;
-    [['pending','po-stage-pending'],['confirmed','po-stage-confirmed'],['cancelled','po-stage-cancelled']].forEach(([s, id]) => {
+    [['pending','po-stage-pending'],['confirmed','po-stage-confirmed'],['converted','po-stage-converted'],['cancelled','po-stage-cancelled']].forEach(([s, id]) => {
         const b = document.getElementById(id);
         if (!b) return;
         if (s === stage) { b.classList.add('bg-[#322C2B]','text-white'); b.classList.remove('text-gray-500'); }
@@ -8953,7 +8984,8 @@ window.renderPreorders = function() {
         const st = p.status || 'Pending';
         let matchStage = true;
         if (window._poStage === 'pending')        matchStage = (st === 'Pending');
-        else if (window._poStage === 'confirmed') matchStage = (st === 'Confirmed' || st === 'Converted');
+        else if (window._poStage === 'confirmed') matchStage = (st === 'Confirmed');
+        else if (window._poStage === 'converted') matchStage = (st === 'Converted');
         else if (window._poStage === 'cancelled') matchStage = (st === 'Cancelled' || st === 'Refunded');
 
         let matchStatus = true;
@@ -8965,11 +8997,13 @@ window.renderPreorders = function() {
 
     // Stage tab counts (from full cache)
     const cPending   = all.filter(p => (p.status || 'Pending') === 'Pending').length;
-    const cConfirmed = all.filter(p => p.status === 'Confirmed' || p.status === 'Converted').length;
+    const cConfirmed = all.filter(p => p.status === 'Confirmed').length;
+    const cConverted = all.filter(p => p.status === 'Converted').length;
     const cCancelled = all.filter(p => p.status === 'Cancelled' || p.status === 'Refunded').length;
     const setc = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = '(' + v + ')'; };
     setc('po-stage-pending-count', cPending);
     setc('po-stage-confirmed-count', cConfirmed);
+    setc('po-stage-converted-count', cConverted);
     setc('po-stage-cancelled-count', cCancelled);
 
     // ── Stats (from full cache) ──
