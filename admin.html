@@ -5751,6 +5751,7 @@ snap.docs.forEach(doc => {
                                 '<td class="p-4">' +
                                     '<div class="flex gap-2">' +
                                         '<button onclick="editProduct(\'' + p.id + '\')" class="text-blue-500 font-bold uppercase text-[10px] hover:underline">Edit<\/button>' +
+                                        '<button onclick="duplicateProduct(\'' + p.id + '\')" class="text-purple-500 font-bold uppercase text-[10px] hover:underline">Copy<\/button>' +
                                         '<button onclick="openRestockModal(\'' + p.id + '\')" class="text-green-600 font-bold uppercase text-[10px] hover:underline">Restock<\/button>' +
                                         '<button onclick="deleteProduct(\'' + p.id + '\')" class="text-red-400 font-bold uppercase text-[10px] hover:underline">Del<\/button>' +
                                     '<\/div>' +
@@ -5809,6 +5810,9 @@ window.processGalleryImage = function(input, previewId, slot) {
                         imageUrls[i] = await snap.ref.getDownloadURL(); 
                     } else if (editProductId) { 
                         imageUrls[i] = i === 1 ? existingData.image : (existingData['image' + i] || null); 
+                    } else if (window._duplicateImageUrls) {
+                        // Duplicating: reuse the source product's image URLs
+                        imageUrls[i] = window._duplicateImageUrls[i] || null;
                     } 
                 } 
                 
@@ -5866,12 +5870,14 @@ imageFocus3: document.getElementById('p_imageFocus3').value || '50% 50%',
                 closeProductModal(); 
                 loadInventory(); 
                 galleryBlobs = { 1: null, 2: null, 3: null }; 
+                window._duplicateImageUrls = null;
+                window._duplicateFocus = null; 
             } catch (err) { alert(err.message); } 
             finally { btn.disabled = false; btn.innerText = "Save Product"; } 
         });
 
         window.openCategoryModal = function() { document.getElementById('categoryModal').classList.remove('hidden'); document.getElementById('categoryModal').classList.add('flex'); loadCategories(); };
-        window.openAddModal = function() { document.getElementById('productForm').reset(); editProductId = null; resetGalleryUI(); loadCategories(); document.getElementById('productModal').classList.remove('hidden'); document.getElementById('productModal').classList.add('flex'); };
+        window.openAddModal = function() { window._duplicateImageUrls = null; window._duplicateFocus = null; document.getElementById('productForm').reset(); editProductId = null; resetGalleryUI(); loadCategories(); document.getElementById('productModal').classList.remove('hidden'); document.getElementById('productModal').classList.add('flex'); };
         window.closeProductModal = function() { document.getElementById('productModal').classList.add('hidden'); };
         
 window.editProduct = async function(id) { 
@@ -5932,6 +5938,74 @@ window.switchFocusSlot(1);
     document.getElementById('productModal').classList.remove('hidden'); 
     document.getElementById('productModal').classList.add('flex'); 
     document.getElementById('submitBtn').innerText = "Update Product"; 
+};
+
+window.duplicateProduct = async function(id) {
+    // Duplicate = load an existing product into the modal but save as a NEW product
+    editProductId = null;                 // ← critical: null means "create new" on save
+    galleryBlobs = { 1: null, 2: null, 3: null };  // reuse the source's image URLs, no re-upload
+
+    const doc = await db.collection("products").doc(id).get();
+    if (!doc.exists) return alert("Source product not found.");
+    const p = doc.data();
+
+    await loadCategories();
+
+    // Copy all text/number fields
+    document.getElementById('p_name').value            = (p.name || '') + ' (Copy)';
+    document.getElementById('p_price').value           = p.price || '';
+    document.getElementById('p_originalPrice').value   = p.originalPrice || '';
+    document.getElementById('p_purchasePrice').value   = p.purchasePrice || '';
+    document.getElementById('p_supplierShipping').value= p.supplierShippingCost || '';
+    document.getElementById('p_weight').value          = p.weightKg || '';
+    document.getElementById('p_isFreeDelivery').checked= p.isFreeDelivery || false;
+    document.getElementById('p_isPreorder').checked    = p.isPreorder || false;
+    document.getElementById('p_preorderAdvance').value = p.preorderAdvance || '';
+    document.getElementById('p_stock').value           = p.stock || 0;
+    document.getElementById('p_shortDesc').value       = p.shortDesc || '';
+    document.getElementById('p_longDesc').value        = p.longDesc || '';
+    document.getElementById('p_productVideo').value    = p.productVideo || '';
+    document.getElementById('p_instructions').value    = p.instructions || '';
+    document.getElementById('p_isNew').checked         = p.isNew !== undefined ? p.isNew : true;
+    document.getElementById('p_isVisible').checked     = p.isVisible !== undefined ? p.isVisible : true;
+    document.getElementById('p_skipLowStock').checked  = p.skipLowStock || false;
+
+    // Category + subcategory (same pattern as editProduct)
+    const catSel = document.getElementById('p_category');
+    const subSel = document.getElementById('p_subcategory');
+    catSel.value = p.category || '';
+    if (catSel.onchange) catSel.onchange();
+    subSel.value = p.subcategory || '';
+
+    // Fresh unique SKU for the variation (don't reuse the source's SKU)
+    window.autoGenerateSKU();
+
+    // Carry over the source's image URLs so the copy shows the same photos.
+    // galleryBlobs stay null → on save, editProductId is null so productForm's
+    // submit handler needs these URLs; we stash them for the submit to pick up.
+    window._duplicateImageUrls = { 1: p.image || null, 2: p.image2 || null, 3: p.image3 || null };
+    window._duplicateFocus     = { 1: p.imageFocus || '50% 50%', 2: p.imageFocus2 || '50% 50%', 3: p.imageFocus3 || '50% 50%' };
+
+    window.updateFocusPickerImage(p.image, 1);
+    if (p.image2) window.updateFocusPickerImage(p.image2, 2);
+    if (p.image3) window.updateFocusPickerImage(p.image3, 3);
+    window.setFocusFromSaved(1, p.imageFocus  || '50% 50%');
+    window.setFocusFromSaved(2, p.imageFocus2 || '50% 50%');
+    window.setFocusFromSaved(3, p.imageFocus3 || '50% 50%');
+    window.switchFocusSlot(1);
+
+    // Show existing images in the gallery slots
+    [1,2,3].forEach(function(i) {
+        const src = i === 1 ? p.image : p['image'+i];
+        const prev = document.getElementById('preview'+i);
+        const ph   = document.getElementById('placeholder'+i);
+        if (src) { prev.src = src; prev.classList.remove('hidden'); ph.classList.add('hidden'); }
+        else     { prev.classList.add('hidden'); ph.classList.remove('hidden'); }
+    });
+
+    document.getElementById('productModal').classList.remove('hidden');
+    document.getElementById('productModal').classList.add('flex');
+    document.getElementById('submitBtn').innerText = "Save as New Product";
 };
         
         function resetGalleryUI() { galleryBlobs = { 1: null, 2: null, 3: null }; [1, 2, 3].forEach(function(i) { document.getElementById('preview'+i).classList.add('hidden'); document.getElementById('placeholder'+i).classList.remove('hidden'); }); }
