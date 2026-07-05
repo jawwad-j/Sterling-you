@@ -333,9 +333,18 @@
         if (categoryType === 'Sale') allProducts = allProducts.filter(p => p.originalPrice && Number(p.originalPrice) > Number(p.price));
         if (categoryType === 'New')  allProducts = allProducts.filter(p => p.isNew === true);
 
+        const stockRank = (p) => {
+            const inStock = (Number(p.stock) || 0) > 0;
+            if (inStock) return 0;                 // in-stock first
+            if (p.isPreorder === true) return 1;   // then pre-orderable
+            return 2;                              // sold-out & not pre-orderable last
+        };
         allProducts.sort((a, b) => {
-            const dA = a.updatedAt || a.dateAdded ? new Date(a.updatedAt || a.dateAdded).getTime() : 0;
-            const dB = b.updatedAt || b.dateAdded ? new Date(b.updatedAt || b.dateAdded).getTime() : 0;
+            const rA = stockRank(a), rB = stockRank(b);
+            if (rA !== rB) return rA - rB;
+            // Within a tier: newest-first by dateAdded (NOT updatedAt — editing must not move it)
+            const dA = a.dateAdded ? new Date(a.dateAdded).getTime() : 0;
+            const dB = b.dateAdded ? new Date(b.dateAdded).getTime() : 0;
             if (dB === dA) return (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0);
             return dB - dA;
         });
@@ -456,10 +465,18 @@
         } else if (c === 'high-low') {
             currentFilteredProducts = [...currentFilteredProducts].sort((a, b) => b.price - a.price);
         } else {
+            const stockRank = (p) => {
+                const inStock = (Number(p.stock) || 0) > 0;
+                if (inStock) return 0;
+                if (p.isPreorder === true) return 1;
+                return 2;
+            };
             const base = currentFilteredProducts.map(p => p.id);
             currentFilteredProducts = allProducts.filter(p => base.includes(p.id)).sort((a, b) => {
-                const dA = a.updatedAt || a.dateAdded ? new Date(a.updatedAt || a.dateAdded).getTime() : 0;
-                const dB = b.updatedAt || b.dateAdded ? new Date(b.updatedAt || b.dateAdded).getTime() : 0;
+                const rA = stockRank(a), rB = stockRank(b);
+                if (rA !== rB) return rA - rB;
+                const dA = a.dateAdded ? new Date(a.dateAdded).getTime() : 0;
+                const dB = b.dateAdded ? new Date(b.dateAdded).getTime() : 0;
                 if (dB === dA) return (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0);
                 return dB - dA;
             });
