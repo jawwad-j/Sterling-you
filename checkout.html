@@ -200,13 +200,36 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
         </div>
     </div>
 
-    <script src="cart.js?v=4"></script>
+    <script src="cart.js?v=5"></script>
+<script src="locations.js"></script>
+<script src="address.js"></script>
 
 <script>
         const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+// Wire the shared address module to checkout's user + re-render
+window.SterlingAddressUser = () => currentCheckoutUser;
+window.SterlingAddressOnSave = (updatedList) => {
+    // Rebuild the checkout address list from the updated user, then re-render
+    if (currentCheckoutUser) currentCheckoutUser.addresses = updatedList;
+    userAddresses = [];
+    const raw = [];
+    if (Array.isArray(currentCheckoutUser.addresses)) {
+        currentCheckoutUser.addresses.forEach(a => raw.push({ ...a }));
+    }
+    raw.forEach(ra => {
+        const dText = (ra.fullDisplay || ra.detail || "").trim().toLowerCase();
+        if (dText && !userAddresses.some(ua => (ua.fullDisplay || ua.detail || "").trim().toLowerCase() === dText)) {
+            userAddresses.push(ra);
+        }
+    });
+    userAddresses.forEach((a, i) => { if (!a.id) a.id = 'temp_addr_' + i; });
+    renderAddressSelection();
+    updateShippingAndTotals();
+};
 
         let userAddresses = [];
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
@@ -507,7 +530,8 @@ observer.observe(document.body, { childList: true, subtree: false });
                 container.innerHTML = `<div class="bg-[#fdf9f8] border border-[#B36A5E]/30 rounded-xl p-5 text-center">
                     <p class="text-sm font-bold text-[#322C2B] mb-1">One last step</p>
                     <p class="text-xs text-gray-500 mb-4">Add your delivery address to place the order.</p>
-                    <a href="account.html?tab=addresses&from=checkout&action=add" class="inline-block bg-[#322C2B] text-white px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-[#B36A5E] transition">+ Add Delivery Address</a>
+                    <button type="button" onclick="openAddressModal()"
+class="inline-block bg-[#322C2B] text-white px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-[#B36A5E] transition">+ Add Delivery Address</button>
                 </div>`;
                 return;
             }
@@ -515,8 +539,11 @@ observer.observe(document.body, { childList: true, subtree: false });
             // FIX: Supply ALL user addresses to both dropdowns instead of strict filtering.
             let html = '';
 
-            html += `<div class="space-y-2">
-                        <label class="block text-[10px] font-bold uppercase text-[#322C2B] tracking-widest">Shipping Address <span class="text-red-500">*</span></label>
+            html += `<div class="flex justify-between items-center">
+<label class="block text-[10px] font-bold uppercase text-[#322C2B] tracking-widest">Shipping Address <span class="text-red-500">*</span></label>
+<button type="button" onclick="openAddressModal()" class="text-[10px] font-bold text-[#B36A5E] uppercase hover:underline">+ Add New</button>
+</div>
+<div class="space-y-2">
                         <select id="shipping_address" onchange="updateShippingAndTotals()" class="w-full border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-[#B36A5E] bg-white text-[#322C2B] truncate">`;
             
             userAddresses.forEach((a, index) => {
