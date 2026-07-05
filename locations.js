@@ -1,334 +1,201 @@
-/* ============================================================================
-   Sterling You — Shared Address Module (address.js)
-   ----------------------------------------------------------------------------
-   Provides a reusable "Add Address" popup with Pathao-style smart area search.
-   Used by checkout.html (in-page popup, no navigation) and optionally elsewhere.
+/* Sterling You — shared location dataset (Bangladesh divisions/districts/thanas/areas) */
+window.locationData = {
+            "Dhaka": {
+                "Dhaka": {
+                    // Replace your existing Dhaka > Dhaka section entries with these additions/fixes:
 
-   REQUIREMENTS (must exist on the page BEFORE this script loads):
-     - Firebase initialised, with globals `db` and `auth`
-     - `window.locationData`  (loaded via locations.js)
-     - `window.SterlingAddressUser`  -> function returning the current user object
-          { uid, addresses: [...] }   (checkout: currentCheckoutUser)
-     - `window.SterlingAddressOnSave` -> callback run after a successful save
-          (checkout: re-render address dropdowns + totals)
-
-   The modal HTML is injected automatically on load, so pages only need to
-   call `openAddressModal()` to show it.
-   ========================================================================== */
-(function () {
-    "use strict";
-
-    /* ---- 1. Inject the modal markup once ---------------------------------- */
-    function injectModal() {
-        if (document.getElementById('addressModal')) return; // already present
-        const wrap = document.createElement('div');
-        wrap.innerHTML = `
-<div id="addressModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[400] p-4 backdrop-blur-sm">
-  <div class="bg-white w-full max-w-lg rounded-2xl p-8 max-h-[90vh] overflow-y-auto modal-enter">
-    <h2 class="text-xl font-bold mb-6" id="addr-modal-title">Add Delivery Address</h2>
-    <form id="addressForm" class="space-y-5 relative" novalidate>
-      <input type="hidden" id="addr-edit-index" value="-1">
-      <div class="mb-4">
-        <select id="addr-type" class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#B36A5E]" required>
-          <option value="" disabled>Select Address Type *</option>
-          <option value="billing">Only Billing Address</option>
-          <option value="shipping">Only Shipping Address</option>
-          <option value="both" selected>Shipping and Billing Address</option>
-        </select>
-      </div>
-      <div class="space-y-4">
-        <div id="smart-search-container">
-          <label class="block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Search Your Area <span class="text-red-400">*</span></label>
-          <input type="text" id="addr-smart-search" autocomplete="off"
-            placeholder="Type your area, thana or district (e.g. Gulshan, Mirpur, Dhanmondi...)"
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#B36A5E] transition">
-          <div id="smart-search-results" class="hidden absolute z-50 bg-white border border-gray-200 rounded-xl shadow-xl mt-1 max-h-64 overflow-y-auto w-full left-0"></div>
-          <p id="smart-search-chosen" class="hidden mt-2 text-xs font-bold text-[#10B981] bg-green-50 px-3 py-2 rounded-lg border border-green-100"></p>
-        </div>
-        <input type="hidden" id="addr-division">
-        <input type="hidden" id="addr-district">
-        <input type="hidden" id="addr-thana">
-        <input type="hidden" id="addr-zone-hidden">
-        <div class="grid grid-cols-2 gap-4">
-          <div class="flex flex-col-reverse">
-            <input type="text" id="addr-house" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="House No/Name" required>
-            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">House No/Name</label>
-          </div>
-          <div class="flex flex-col-reverse">
-            <input type="text" id="addr-floor" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Floor / Flat">
-            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Floor / Flat</label>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="flex flex-col-reverse">
-            <input type="text" id="addr-road" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Road No/Name" required>
-            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Road No/Name</label>
-          </div>
-          <div class="flex flex-col-reverse">
-            <input type="text" id="addr-block" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Block / Sector">
-            <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Block / Sector</label>
-          </div>
-        </div>
-        <div class="flex flex-col-reverse">
-          <input type="text" id="addr-detailed" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Detailed Address (e.g., Flat 4B, Amin Court)" required>
-          <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Detailed Address</label>
-        </div>
-        <div class="flex flex-col-reverse">
-          <input type="text" id="addr-details" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] transition-colors" placeholder="Additional directions (Optional)">
-          <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Additional directions</label>
-        </div>
-      </div>
-      <div class="flex gap-4 pt-4">
-        <button type="button" onclick="closeAddressModal()" class="flex-1 text-xs font-bold uppercase text-gray-400 hover:text-gray-600">Cancel</button>
-        <button type="submit" id="addr-submit-btn" class="flex-1 bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px] shadow-md hover:bg-[#B36A5E] transition">Save Address</button>
-      </div>
-    </form>
-  </div>
-</div>`;
-        document.body.appendChild(wrap.firstElementChild);
+"Banani": ["Banani", "Banani Block A", "Banani Block B", "Banani Block C", "Banani Block D", "Banani Block E", "Banani Block F", "Banani Block G", "Banani Block H", "Banani Block I", "Banani Block J", "Banani Block K", "Banani DOHS", "Banani Chairmanbari", "Banani Road 11", "Banani Road 17", "Banani Bazar"],
+"Mohakhali": ["Mohakhali", "Mohakhali DOHS", "Mohakhali Wireless Gate", "Mohakhali Bus Stand", "Mohakhali Bazar", "Mohakhali Rail Gate", "Niketon", "Natun Bazar", "Aminbazar", "Kamal Ataturk Avenue"],
+"Cantonment": ["Cantonment", "Dhaka Cantonment", "Cantonment DOHS", "Shaheed Sarani", "Airport Road", "Khilkhet", "Nikunja 1", "Nikunja 2", "Kurmitola", "Ashkona", "Diabari"],
+"Uttara": ["Uttara", "Uttara Sector 1", "Uttara Sector 2", "Uttara Sector 3", "Uttara Sector 4", "Uttara Sector 5", "Uttara Sector 6", "Uttara Sector 7", "Uttara Sector 8", "Uttara Sector 9", "Uttara Sector 10", "Uttara Sector 11", "Uttara Sector 12", "Uttara Sector 13", "Uttara Sector 14", "Uttara West", "Uttara East", "Uttara Model Town", "Azampur", "Rajlakshmi", "Abdullahpur", "Baitul Aman Housing", "Uttara 3rd Phase"],
+"Pallabi": ["Pallabi", "Mirpur 11", "Mirpur 11.5", "Mirpur 12", "Mirpur 13", "Mirpur 14", "Mirpur DOHS", "Duaripara", "Katasur", "Paikpara", "Gabtoli", "Shewrapara", "Kazipara", "Bauniabadh"],
+"Kafrul": ["Kafrul", "Ibrahimpur", "Kachukhet", "Senpara Parbata", "Monipuripara", "Bhasantek", "Taltola", "Agargaon", "Pirerbagh", "Secretariat Quarter", "Lalmatia Block A", "Lalmatia Block B", "Lalmatia Block C", "Lalmatia Block D", "Lalmatia Block E", "Lalmatia Block F", "Lalmatia Block G"],
+"Hatirjheel": ["Hatirjheel", "Rampura", "East Rampura", "West Rampura", "Banasree", "Banasree Block A", "Banasree Block B", "Banasree Block C", "Banasree Block D", "Banasree Block E", "Meradia", "Mugda", "North Mugda", "South Mugda", "Mahanagar Project", "Ulon"],
+"Gulshan": ["Gulshan", "Gulshan 1", "Gulshan 2", "Gulshan Avenue", "Gulshan Circle 1", "Gulshan Circle 2", "Gulshan North", "Gulshan South", "Gulshan Lake Road", "Gulshan Model Town", "Gulshan Pink City", "DNCC Market", "Niketan", "Baridhara Diplomatic Zone", "Police Plaza"],
+"Baridhara": ["Baridhara", "Baridhara DOHS", "Baridhara Block J", "Baridhara Block K", "Baridhara Diplomatic Zone", "Progati Sarani", "Shahjadpur", "Vatara", "Nordic Club Area", "Notun Bazar"],
+"Tejgaon": ["Tejgaon", "Tejgaon Industrial Area", "Farmgate", "Bijoy Sarani", "Kawran Bazar", "West Nakhalpara", "East Nakhalpara", "Indira Road", "Monipur", "Tejkunipara", "Tejgaon Link Road", "Wireless Gate", "Mogbazar Rail Gate", "Sonargaon Hotel Area"],
+"Shahbagh": ["Shahbagh", "Shahbagh Crossing", "Aziz Market", "TSC", "Doel Chattar", "Nilkhet", "Elephant Road", "Science Lab", "New Market", "Paribagh", "Dhaka University Area", "High Court"],
+"Motijheel": ["Motijheel", "Motijheel C/A", "Dilkusha C/A", "Shapla Chattar", "Arambagh", "Kakrail", "Segunbagicha", "Rajarbagh", "Purana Paltan", "Naya Paltan", "Fakirerpool", "Bijoy Nagar", "Kamalapur", "Toyenbee Circular Road"],
+"Paltan": ["Purana Paltan", "Naya Paltan", "Bijoy Nagar", "Kakrail", "Segunbagicha", "Inner Circular Road", "VIP Road"],
+"Ramna": ["Ramna", "Baily Road", "Eskaton", "New Eskaton", "Old Eskaton", "Moghbazar", "Shantinagar", "Siddheswari", "Minto Road", "Topkhana Road", "Maghbazar Wireless", "Bijoynagar"],
+"Dhanmondi": ["Dhanmondi", "Dhanmondi 1", "Dhanmondi 2", "Dhanmondi 3", "Dhanmondi 4", "Dhanmondi 5", "Dhanmondi 6", "Dhanmondi 7", "Dhanmondi 8", "Dhanmondi 9", "Dhanmondi 10", "Dhanmondi 11", "Dhanmondi 12", "Dhanmondi 13", "Dhanmondi 14", "Dhanmondi 15", "Dhanmondi 16", "Dhanmondi 17", "Dhanmondi 18", "Dhanmondi 27", "Dhanmondi 32", "Satmasjid Road", "Mirpur Road", "Lake Circus", "Jigatola", "Shangkar", "Rayer Bazar", "Sobhanbag", "Panthapath", "Free School Street", "Sukrabad"],
+"Mohammadpur": ["Mohammadpur", "Mohammadpur Bus Stand", "Mohammadpur Krishi Market", "Mohammadpur Town Hall", "Geneva Camp", "Adabor", "Shekhertek", "Nurjahan Road", "Tajmahal Road", "Jahanara Garden", "PC Culture Housing", "Shahed Colony", "Basila", "Katashur", "Dhaka Udyan", "Bajdhar Para", "Rahmatullah Nagar", "Japan Garden City"],
+"Lalbagh": ["Lalbagh", "Azimpur", "Azimpur Colony", "Dhakeshwari", "Pilkhana", "Nawabganj", "Imamganj", "Begum Bazar", "Shankhari Bazar", "Lalbagh Fort Area"],
+"Chawkbazar": ["Chawkbazar", "Begum Bazar", "Shankhari Bazar", "Islampur", "Urdu Road", "Mitford", "Bangsal"],
+"Kotwali": ["Kotwali", "Babubazar", "Nawabpur", "Patuatuli", "Sadarghat", "Mitford", "Bangsal", "Firingi Bazar", "Boro Pool", "Jubilee Road", "Asadganj"],
+"Wari": ["Wari", "Tikatuli", "Gopibagh", "Dholaikhal", "Baldha Garden", "Joy Kali Temple Road", "Rankin Street", "Faridabad", "Laxmibazar", "Narinda"],
+"Sutrapur": ["Sutrapur", "Faridabad", "Laxmibazar", "Narinda", "Wari", "Gendaria", "Dinnath Sen Road"],
+"Gendaria": ["Gendaria", "Dinnath Sen Road", "Sadhana Oushadhalaya", "Narinda", "Swamibagh", "Banagram"],
+"Jatrabari": ["Jatrabari", "Jatrabari Chowrasta", "Dholairpar", "Danialpara", "Kutubkhali", "Rayerbagh", "Shanir Akhra", "Postogola", "Kanchpur Bridge Area", "Donia", "Katherpool"],
+"Demra": ["Demra", "Signboard", "Shanir Akhra", "Matuail", "Sarulia", "Konapara", "Demra Bazar", "Demra Staff Quarter", "Kholamora"],
+"Sabujbagh": ["Sabujbagh", "Basabo", "Madartek", "Mugdapara", "Kamalapur", "Madhubagh", "Maniknagar", "Goran", "Razarbagh"],
+"Khilgaon": ["Khilgaon", "Khilgaon Chowdhurypara", "Khilgaon Taltola", "Khilgaon Railgate", "Tilpapara", "Goran", "North Goran", "South Goran", "Bashabo", "North Bashabo", "South Bashabo", "Maniknagar", "Nandipara", "Sipahibagh"],
+"Rampura": ["Rampura", "East Rampura", "West Rampura", "Banasree", "TV Center", "Wapda Road", "Ulon"],
+"Mirpur": ["Mirpur 1", "Mirpur 2", "Mirpur 6", "Mirpur 7", "Mirpur 10", "Mirpur 10 Golchattar", "Mirpur 11", "Mirpur 11.5", "Mirpur 12", "Mirpur 13", "Mirpur 14", "Mirpur Ceramic", "Mirpur Zoo", "Mirpur Stadium", "Mirpur Beribadh", "Kalshi", "Rupnagar", "Senpara Parbata", "Tollarbag", "Duaripara", "East Monipur", "West Monipur", "Pirerbagh", "Kazipara", "Shewrapara", "Paikpara", "Bauniabadh", "Section 6", "Section 7", "Section 10", "Section 11", "Section 12"],
+"Adabor": ["Adabor", "Baitul Aman Housing", "Mohammadia Housing", "Shyamoli", "Shyamoli Housing", "Ring Road"],
+"Sher-e-Bangla Nagar": ["Sher-e-Bangla Nagar", "Agargaon", "Taltola", "Sher-e-Bangla Krishi Bishwavidyalay", "National Assembly Area"],
+"Kalabagan": ["Kalabagan", "Bashiruddin Road", "Green Road", "Kathalbagan", "Free School Street"],
+"New Market": ["New Market", "Azimpur", "Elephant Road", "Science Lab", "Nilkhet", "Chandni Chowk"],
+"Hazaribagh": ["Hazaribagh", "Rayerbazar", "Jigatola", "Lalbagh Road", "Tannery Area"],
+"Kamrangirchar": ["Kamrangirchar", "Ashrafabad", "Kholamora", "Nawabganj", "Char Kamrangirchar"],
+"Keraniganj": ["Keraniganj", "Aganagar", "Ati Bazar", "Chunakhali", "Jinjira", "Kalindi", "Ruhitpur", "Taranagar", "Shubhadya", "Bochila", "Zinzira Bazar", "Sarulia", "Rokeya Nagar", "Kalatia", "Subhadia", "Hrinagar"],
+"Savar": ["Savar", "Aminbazar", "Ashulia", "Bank Town", "Bipail", "Hemayetpur", "Jahangirnagar University", "Nabinagar", "Savar Bazar", "Nishchintopur", "Vogra", "Balipara", "Ghoshbag", "Tetuljhora", "Pathalia", "Savar EPZ", "Rajfulbaria", "Bypass Road Savar"],
+"Dakshinkhan": ["Dakshinkhan", "Ashkona", "Azampur", "Chalaband", "Faidabad", "Gawair", "Kanchkura", "Mollartek"],
+"Uttarkhan": ["Uttarkhan", "Atipara", "Chamurkhan", "Kachkura", "Maziara", "Uzampur", "Harirampur"],
+"Vatara": ["Vatara", "Bashundhara R/A", "Beraid", "Kuril", "Nurer Chala", "Solmaid", "Nadda", "Kalachadpur", "Notun Bazar", "Boro Beraid", "Joar Sahara", "Kuratoli"],
+"Khilkhet": ["Khilkhet", "Dumni", "Kuril", "Lake City Concord", "Nikunja 1", "Nikunja 2", "Pink City", "Joar Sahara", "Kuratoli"],
+"Bimanbandar": ["Airport Area", "Hajj Camp", "Kawnia", "Zia Colony"],
+"Turag": ["Turag", "Baunia", "Diabari", "Kamarpara", "Tongi"],
+"Darus Salam": ["Darus Salam", "Kallyanpur", "Gabtoli", "Mirpur Road"],
+"Shah Ali": ["Shah Ali Bagh", "Mirpur 1", "Duaripara"],
+"Shyampur": ["Shyampur", "Dholaipar", "Jurain", "Kadamtali", "Muradpur"],
+"Kadamtali": ["Kadamtali", "Jurain", "Muradpur", "Shyampur", "Donia"],
+"Bhashantek": ["Bhashantek", "Dewanpara", "Vasantek Cantonment"],
+                },
+                "Faridpur": ["Alfadanga", "Bhanga", "Boalmari", "Charbhadrasan", "Faridpur Sadar", "Madhukhali", "Nagarkanda", "Sadarpur", "Saltha"],
+                "Gazipur": {
+                    "Gazipur Sadar": ["Board Bazar", "Chandana Chowrasta", "Gazipur City", "Joydebpur", "Kashimpur", "Konabari", "Salna", "Shibbari"],
+                    "Tongi": ["Tongi Bazar", "Aushpara", "Cherag Ali", "Ershad Nagar", "Hossain Market", "Morkun", "Station Road"],
+                    "Kaliakair": ["Kaliakair", "Chandra", "Mouchak", "Shafipur"],
+                    "Kaliganj": ["Kaliganj"],
+                    "Kapasia": ["Kapasia"],
+                    "Sreepur": ["Sreepur", "Bhaluka", "Maona"]
+                },
+                "Gopalganj": ["Gopalganj Sadar", "Kashiani", "Kotalipara", "Muksudpur", "Tungipara"],
+                "Kishoreganj": ["Austagram", "Bajitpur", "Bhairab", "Hossainpur", "Itna", "Karimganj", "Katiadi", "Kishoreganj Sadar", "Kuliarchar", "Mithamain", "Nikli", "Pakundia", "Tarail"],
+                "Madaripur": ["Kalkini", "Madaripur Sadar", "Rajoir", "Shibchar"],
+                "Manikganj": ["Daulatpur", "Ghior", "Harirampur", "Manikganj Sadar", "Saturia", "Shivalaya", "Singair"],
+                "Munshiganj": ["Gazaria", "Lohajang", "Munshiganj Sadar", "Sirajdikhan", "Sreenagar", "Tongibari"],
+                "Narayanganj": {
+                    "Narayanganj Sadar": ["Chashara", "Deobhog", "Golgachia", "Mandalpara", "Nitaiganj", "Tanbazar"],
+                    "Fatullah": ["Fatullah", "Bhuigar", "Enayetnagar", "Pagla", "Panchabati", "Shibu Market"],
+                    "Siddhirganj": ["Siddhirganj", "Adamjee", "Baghpara", "Kanchpur", "Mouchak", "Signboard", "Sanarpar"],
+                    "Araihazar": ["Araihazar"],
+                    "Bandar": ["Bandar", "Madanpur", "Nabiganj"],
+                    "Rupganj": ["Rupganj", "Bhulta", "Kanchan", "Murapara", "Tarabo"],
+                    "Sonargaon": ["Sonargaon", "Kanchpur", "Mograpara"]
+                },
+                "Narsingdi": ["Belabo", "Monohardi", "Narsingdi Sadar", "Palash", "Raipura", "Shibpur"],
+                "Rajbari": ["Baliakandi", "Goalandaghat", "Kalukhali", "Pangsha", "Rajbari Sadar"],
+                "Shariatpur": ["Bhedarganj", "Damudya", "Gosairhat", "Naria", "Shariatpur Sadar", "Zajira"],
+                "Tangail": ["Basail", "Bhuapur", "Delduar", "Dhanbari", "Ghatail", "Gopalpur", "Kalihati", "Madhupur", "Mirzapur", "Nagarpur", "Sakhipur", "Tangail Sadar"]
+            },
+            "Chattogram": {
+                "Bandarban": ["Alikadam", "Bandarban Sadar", "Lama", "Naikhongchhari", "Rowangchhari", "Ruma", "Thanchi"],
+                "Brahmanbaria": ["Akhaura", "Ashuganj", "Bancharampur", "Bijoynagar", "Brahmanbaria Sadar", "Kasba", "Nabinagar", "Nasirnagar", "Sarail"],
+                "Chandpur": ["Chandpur Sadar", "Faridganj", "Haimchar", "Haziganj", "Kachua", "Matlab Dakshin", "Matlab Uttar", "Shahrasti"],
+                "Chattogram": {
+                    "Anwara": ["Anwara"],
+                    "Banshkhali": ["Banshkhali"],
+                    "Boalkhali": ["Boalkhali"],
+                    "Chandanaish": ["Chandanaish"],
+                    "Fatikchhari": ["Fatikchhari"],
+"Hathazari": ["Hathazari", "Aman Bazar", "Fatehabad", "Gorduara", "Hamidchar", "Mirsharai Bazar"],                    
+"Karnaphuli": ["Karnaphuli"],
+                    "Lohagara": ["Lohagara"],
+                    "Mirsharai": ["Mirsharai"],
+                    "Patiya": ["Patiya"],
+                    "Rangunia": ["Rangunia"],
+                    "Raozan": ["Raozan"],
+                    "Sandwip": ["Sandwip"],
+                    "Satkania": ["Satkania"],
+                    "Sitakunda": ["Sitakunda", "Bhatiari", "Faujdarhat", "Baraiyadhala", "Kumira", "Salimpur", "Shitakundo Bazar", "Barabkunda", "Fouzdarhat Beach"],
+                    "Akbar Shah": ["Akbar Shah", "Firoz Shah Colony", "Biswa Colony"],
+                    "Bakalia": ["Bakalia", "Chaktai", "Kalamia Bazar", "Rahattar Pool"],
+                    "Bandar": ["Bandar", "Gosaildanga", "Nimtala"],
+                    "Bayazid": ["Bayazid Bostami", "Oxygen", "Sher Shah Colony", "Baizid Link Road", "Sugandha", "CDA Avenue", "Baizid Bostami Road", "Foy's Lake Area", "Khulshi Hill"],
+                    "Chandgaon": ["Chandgaon", "Bahaddarhat", "Kalurghat", "Mohra", "Chandgaon R/A", "Muradpur", "Hazi Colony", "East Nasirabad", "Bayazid Bostami Road"],
+                    "Chawkbazar": ["Chawkbazar", "Jamal Khan", "Kapasgola", "Katalganj", "Devpahar"],
+                    "Double Mooring": ["Double Mooring", "Agrabad", "Agrabad Access Road", "Choumuhani", "Dewanhat", "Munsurabad", "CDA Commercial Area", "Segun Bagicha"],
+                    "EPZ": ["EPZ", "Cement Crossing", "Free Port"],
+                    "Halishahar": ["Halishahar", "Boroipara", "Naya Bazar", "Shantibag", "Halishahar Housing Estate", "Block A", "Block B", "Block C", "Block D", "Block E", "Block F", "Block G", "Port Connecting Road"],
+                    "Khulshi": ["Khulshi", "GEC", "Jhautala", "Lalkhan Bazar", "Nasirabad", "Zakir Hossain Road"],
+                    "Kotwali": ["Kotwali", "Anderkilla", "Khatunganj", "New Market", "Reazuddin Bazar", "Station Road", "Chawk Bazar", "Firingi Bazar", "Boro Pool", "Jubilee Road", "Asadganj"],
+                    "Pahartali": ["Pahartali", "AK Khan", "Alangkar", "Colonel Hat", "Oxygen", "CDA Avenue", "Baizid Link Road", "Nasirabad Housing", "Zakir Hossain Road"],
+                    "Panchlaish": ["Panchlaish", "2 No Gate", "Muradpur", "Sholashahar", "GEC Circle", "Probortak Circle", "Wasa Mor", "Dampara", "Nasirabad", "Surma"],
+                    "Patenga": ["Patenga", "Kathgar", "Potenga Sea Beach Area", "Steel Mill"],
+                    "Sadarghat": ["Sadarghat", "Majhirghat"]
+                },
+                "Cox's Bazar": ["Chakaria", "Cox's Bazar Sadar", "Kutubdia", "Maheshkhali", "Pekua", "Ramu", "Teknaf", "Ukhia", "Cox's Bazar Beach", "Kolatoli", "Sugandha Beach", "Laboni Beach", "Himchhari", "Inani", "Baharchhara", "Jhilongjha"],
+                "Cumilla": ["Barura", "Brahmanpara", "Burichang", "Chandina", "Chauddagram", "Cumilla Sadar", "Daudkandi", "Debidwar", "Homna", "Laksam", "Lalmai", "Manoharganj", "Meghna", "Muradnagar", "Nangalkot", "Titas"],
+                "Feni": ["Chhagalnaiya", "Daganbhuiyan", "Feni Sadar", "Fulgazi", "Parshuram", "Sonagazi"],
+                "Khagrachhari": ["Dighinala", "Khagrachhari Sadar", "Lakshmichhari", "Mahalchhari", "Manikchhari", "Matiranga", "Panchhari", "Ramgarh"],
+                "Lakshmipur": ["Kamalnagar", "Lakshmipur Sadar", "Raipur", "Ramganj", "Ramgati"],
+                "Noakhali": ["Begumganj", "Chatkhil", "Companiganj", "Hatiya", "Kabirhat", "Noakhali Sadar", "Senbagh", "Sonaimuri", "Subarnachar"],
+                "Rangamati": ["Baghaichhari", "Barkal", "Belaichhari", "Juraichhari", "Kaptai", "Kawkhali", "Langadu", "Naniarchar", "Rajasthali", "Rangamati Sadar"]
+            },
+"Sylhet": {
+    "Habiganj": ["Ajmiriganj", "Bahubal", "Baniachong", "Chunarughat", "Habiganj Sadar", "Lakhai", "Madhabpur", "Nabiganj"],
+    "Moulvibazar": {
+        "Barlekha": ["Barlekha"],
+        "Juri": ["Juri"],
+        "Kamalganj": ["Kamalganj"],
+        "Kulaura": ["Kulaura"],
+        "Moulvibazar Sadar": ["Moulvibazar Sadar"],
+        "Rajnagar": ["Rajnagar"],
+        "Sreemangal": ["Sreemangal", "Sreemangal Town", "Tea Garden Area", "Bhanu Beel", "Lawachara", "Kalapur"]
+    },
+    "Sunamganj": ["Bishwamvarpur", "Chhatak", "Dakshin Sunamganj", "Derai", "Dharmapasha", "Dowarabazar", "Jagannathpur", "Jamalganj", "Sullah", "Sunamganj Sadar", "Tahirpur"],
+    "Sylhet": {
+        "Balaganj": ["Balaganj"],
+        "Beanibazar": ["Beanibazar"],
+        "Bishwanath": ["Bishwanath"],
+        "Companiganj": ["Companiganj"],
+        "Dakshin Surma": ["Dakshin Surma", "Chandipool", "Humayun Rashid Chottor", "Kadamtali", "Khadim Nagar"],
+        "Fenchuganj": ["Fenchuganj"],
+        "Golapganj": ["Golapganj"],
+        "Gowainghat": ["Gowainghat"],
+        "Jaintiapur": ["Jaintiapur"],
+        "Kanaighat": ["Kanaighat"],
+        "Osmani Nagar": ["Osmani Nagar"],
+        "Sylhet Sadar": ["Sylhet Sadar", "Akhalia", "Amberkhana", "Bandar Bazar", "Chouhatta", "Dargah Mahalla", "Lamabazar", "Mirboxtola", "Pathantula", "Shibganj", "Subidbazar", "Tilagarh", "Uposhohor", "Zindabazar", "Airport Road", "Kumarpara", "Shahjalal Upashahar", "Modina Market", "Bondor Bazar", "Kazir Bazar", "Taltola", "Mendibagh", "Nayasarak", "Rekabi Bazar"],
+        "Zakiganj": ["Zakiganj"]
     }
-
-    /* ---- 2. Smart area search (ported verbatim from account.html) --------- */
-    let searchIndex = null;
-    let selectedAreaData = null;
-
-    function buildSearchIndex() {
-        const index = [];
-        const locationData = window.locationData || {};
-        Object.keys(locationData).forEach(division => {
-            const districts = locationData[division];
-            Object.keys(districts).forEach(district => {
-                const thanas = districts[district];
-                if (Array.isArray(thanas)) {
-                    thanas.forEach(thana => index.push({ division, district, thana, zone: '' }));
-                } else {
-                    Object.keys(thanas).forEach(thana => {
-                        const zones = thanas[thana];
-                        if (Array.isArray(zones) && zones.length > 0) {
-                            zones.forEach(zone => index.push({ division, district, thana, zone }));
-                            index.push({ division, district, thana, zone: '' });
-                        } else {
-                            index.push({ division, district, thana, zone: '' });
-                        }
-                    });
-                }
-            });
-        });
-        return index;
-    }
-
-    function normalizeTranslit(str) {
-        return str
-            .replace(/sh/g, 's').replace(/ph/g, 'p').replace(/kh/g, 'k')
-            .replace(/gh/g, 'g').replace(/ch/g, 'c').replace(/dh/g, 'd')
-            .replace(/th/g, 't').replace(/(.)\1+/g, '$1')
-            .replace(/oo/g, 'u').replace(/ee/g, 'i').replace(/aa/g, 'a')
-            .trim();
-    }
-
-    function initSmartSearch() {
-        if (!searchIndex) searchIndex = buildSearchIndex();
-        const input = document.getElementById('addr-smart-search');
-        const results = document.getElementById('smart-search-results');
-        if (!input || !results) return;
-        if (input.dataset.bound === '1') return; // avoid double-binding
-        input.dataset.bound = '1';
-
-        input.addEventListener('input', function () {
-            const raw = this.value.trim().toLowerCase();
-            const query = normalizeTranslit(raw);
-            if (query.length < 2) { results.classList.add('hidden'); return; }
-
-            const scored = searchIndex.map(entry => {
-                const haystack = normalizeTranslit(
-                    [entry.zone, entry.thana, entry.district, entry.division].filter(Boolean).join(' ').toLowerCase()
-                );
-                let score = 0;
-                const words = query.split(/\s+/);
-                words.forEach(word => {
-                    if (haystack.includes(word)) score += 3;
-                    else {
-                        const parts = haystack.split(/[\s,]+/);
-                        parts.forEach(part => {
-                            if (part.startsWith(word)) score += 2;
-                            else if (part.includes(word)) score += 1;
-                            else if (word.length >= 3) {
-                                const maxDiff = word.length >= 6 ? 2 : 1;
-                                let diff = 0;
-                                const minLen = Math.min(word.length, part.length);
-                                for (let i = 0; i < minLen; i++) { if (word[i] !== part[i]) diff++; }
-                                if (diff <= maxDiff && Math.abs(word.length - part.length) <= maxDiff) score += 1;
-                                if (part.replace(/(.)\1+/g, '$1').includes(word.replace(/(.)\1+/g, '$1'))) score += 2;
-                            }
-                        });
-                    }
-                });
-                return { entry, score };
-            }).filter(s => s.score > 0).sort((a, b) => b.score - a.score).slice(0, 15);
-
-            if (scored.length === 0) {
-                results.innerHTML = '<div class="p-3 text-xs text-gray-400 italic">No matching area found. Try a different spelling.</div>';
-                results.classList.remove('hidden');
-                return;
+},
+            "Khulna": {
+                "Bagerhat": ["Bagerhat Sadar", "Chitalmari", "Fakirhat", "Kachua", "Mollahat", "Mongla", "Morrelganj", "Rampal", "Sarankhola"],
+                "Chuadanga": ["Alamdanga", "Chuadanga Sadar", "Damurhuda", "Jibannagar"],
+                "Jashore": ["Abhaynagar", "Bagherpara", "Chaugachha", "Jashore Sadar", "Jhikargachha", "Keshabpur", "Manirampur", "Sharsha", "Jashore Town", "Rail Gate", "Mujib Sarani", "Chanchra", "Benapole"],
+                "Jhenaidah": ["Harinakunda", "Jhenaidah Sadar", "Kaliganj", "Kotchandpur", "Maheshpur", "Shailkupa"],
+                "Khulna": ["Batiaghata", "Dacope", "Dumuria", "Dighalia", "Koyra", "Paikgacha", "Phultala", "Rupsa", "Terokhada", "Khulna Sadar", "Sonadanga", "Boyra", "Khalishpur", "Khan Jahan Ali Road", "Shiromoni", "Daulatpur", "Fulbarigate", "Nirala", "Gollamari", "Tutpara", "Mujgunni", "Hadis Park Area", "KDA Avenue", "Ferri Ghat"],
+                "Kushtia": ["Bheramara", "Daulatpur", "Khoksa", "Kumarkhali", "Kushtia Sadar", "Mirpur"],
+                "Magura": ["Magura Sadar", "Mohammadpur", "Shalikha", "Sreepur"],
+                "Meherpur": ["Gangni", "Meherpur Sadar", "Mujibnagar"],
+                "Narail": ["Kalia", "Lohagara", "Narail Sadar"],
+                "Satkhira": ["Assasuni", "Debhata", "Kalaroa", "Kaliganj", "Satkhira Sadar", "Shyamnagar", "Tala"]
+            },
+            "Barishal": {
+                "Barguna": ["Amtali", "Bamna", "Barguna Sadar", "Betagi", "Patharghata", "Taltali"],
+                "Barishal": ["Agailjhara", "Babuganj", "Bakerganj", "Banaripara", "Barishal Sadar", "Gournadi", "Hizla", "Mehendiganj", "Muladi", "Wazirpur", "Barishal City", "Natullabad", "Sadar Road", "Band Road", "Rupatali", "Chawkbazar Barishal", "Amtala", "Kawnia", "Barishal Launch Ghat", "Circuit House Road"],
+                "Bhola": ["Bhola Sadar", "Burhanuddin", "Char Fasson", "Daulatkhan", "Lalmohan", "Manpura", "Tazumuddin"],
+                "Jhalokati": ["Jhalokati Sadar", "Kathalia", "Nalchity", "Rajapur"],
+                "Patuakhali": ["Bauphal", "Dashmina", "Dumki", "Galachipa", "Kalapara", "Mirzaganj", "Patuakhali Sadar", "Rangabali"],
+                "Pirojpur": ["Bhandaria", "Kawkhali", "Mathbaria", "Nazirpur", "Nesarabad", "Pirojpur Sadar", "Zianagar"]
+            },
+            "Rangpur": {
+                "Dinajpur": ["Birampur", "Birganj", "Biral", "Bochaganj", "Chirirbandar", "Dinajpur Sadar", "Fulbari", "Ghoraghat", "Hakimpur", "Kaharole", "Khansama", "Nawabganj", "Parbatipur", "Dinajpur Town", "Gor-e-Shahid", "Munshipara", "Station Road Dinajpur", "Dhap Dinajpur"],
+                "Gaibandha": ["Fulchhari", "Gaibandha Sadar", "Gobindaganj", "Palashbari", "Sadullapur", "Saghata", "Sundarganj"],
+                "Kurigram": ["Bhurungamari", "Char Rajibpur", "Chilmari", "Kurigram Sadar", "Nageshwari", "Phulbari", "Rajarhat", "Raomari", "Ulipur"],
+                "Lalmonirhat": ["Aditmari", "Hatibandha", "Kaliganj", "Lalmonirhat Sadar", "Patgram"],
+                "Nilphamari": ["Dimla", "Domar", "Jaldhaka", "Kishoreganj", "Nilphamari Sadar", "Saidpur"],
+                "Panchagarh": ["Atwari", "Boda", "Debiganj", "Panchagarh Sadar", "Tetulia"],
+                "Rangpur": ["Badarganj", "Gangachara", "Kaunia", "Mithapukur", "Pirgachha", "Pirganj", "Rangpur Sadar", "Taraganj", "Rangpur City", "Dhap", "Station Road", "Jahaj Company", "Shapla Chottor", "Modern More", "Koiborta Para", "Lalbag", "Medhabibag"],
+                "Thakurgaon": ["Baliadangi", "Haripur", "Pirganj", "Ranisankail", "Thakurgaon Sadar"]
+            },
+            "Mymensingh": {
+                "Jamalpur": ["Bakshiganj", "Dewanganj", "Islampur", "Jamalpur Sadar", "Madarganj", "Melandaha", "Sarishabari"],
+                "Mymensingh": ["Bhaluka", "Dhobaura", "Fulbaria", "Gaffargaon", "Gauripur", "Haluaghat", "Ishwarganj", "Muktagacha", "Mymensingh Sadar", "Nandail", "Phulpur", "Trishal", "Mymensingh Town", "Ganginagar", "Charpara", "Kewatkhali", "Shambhuganj", "Chorpara", "Notun Bazar Mymensingh", "Medical College Road"],
+                "Netrokona": ["Atpara", "Barhatta", "Durgapur", "Khaliajuri", "Kalmakanda", "Kendua", "Madan", "Mohanganj", "Netrokona Sadar", "Purbadhala"],
+                "Sherpur": ["Jhenaigati", "Nakla", "Nalitabari", "Sherpur Sadar", "Sreebardi"]
+            },
+            "Rajshahi": {"Bogura": ["Adamdighi", "Bogura Sadar", "Dhunat", "Dhupchanchia", "Gabtali", "Kahaloo", "Nandigram", "Sariakandi", "Shajahanpur", "Sherpur", "Shibganj", "Sonatola", "Bogura Town", "Satmatha", "Thana Road", "Jhauthala", "Khelafat Market", "Rangpur Road", "Jail Road"],
+            "Bogura": ["Adamdighi", "Bogura Sadar", "Dhunat", "Dhupchanchia", "Gabtali", "Kahaloo", "Nandigram", "Sariakandi", "Shajahanpur", "Sherpur", "Shibganj", "Sonatola"],
+                "Joypurhat": ["Akkelpur", "Joypurhat Sadar", "Kalai", "Khetlal", "Panchbibi"],
+                "Naogaon": ["Atrai", "Badalgachhi", "Dhamoirhat", "Manda", "Mohadevpur", "Naogaon Sadar", "Niamatpur", "Patnitala", "Porsha", "Raninagar", "Sapahar"],
+                "Natore": ["Bagatipara", "Baraigram", "Gurudaspur", "Lalpur", "Naldanga", "Natore Sadar", "Singra"],
+                "Chapainawabganj": ["Bholahat", "Gomastapur", "Nachole", "Nawabganj Sadar", "Shibganj"],
+                "Pabna": ["Atgharia", "Bera", "Bhangura", "Chatmohar", "Faridpur", "Ishwardi", "Pabna Sadar", "Santhia", "Sujanagar"],
+                "Rajshahi": ["Bagha", "Bagmara", "Boalia", "Charghat", "Durgapur", "Godagari", "Mohanpur", "Paba", "Puthia", "Rajpara", "Shah Makhdum", "Tanore", "Rajshahi City", "Sahebbazar", "Ghoramara", "Laxmipur", "Padma Residential Area", "Uposhahar", "Kazla", "Binodpur Bazar", "Talaimari", "Bhandardaha"],
+                "Sirajganj": ["Belkuchi", "Chauhali", "Kamarkhanda", "Kazipur", "Raiganj", "Shahjadpur", "Sirajganj Sadar", "Tarash", "Ullahpara"]
             }
-            const seen = new Set();
-            results.innerHTML = scored.map(({ entry }) => {
-                const label = entry.zone
-                    ? `${entry.zone}, ${entry.thana}, ${entry.district}, ${entry.division}`
-                    : `${entry.thana}, ${entry.district}, ${entry.division}`;
-                if (seen.has(label)) return '';
-                seen.add(label);
-                const highlighted = label.replace(
-                    new RegExp(`(${query.split(/\s+/).filter(w => w.length > 1).join('|')})`, 'gi'),
-                    '<strong class="text-[#B36A5E]">$1</strong>'
-                );
-                return `<div class="px-4 py-3 text-xs hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 transition"
-                    data-division="${entry.division}" data-district="${entry.district}"
-                    data-thana="${entry.thana}" data-zone="${entry.zone}"
-                    onclick="window.selectSmartArea(this)">📍 ${highlighted}</div>`;
-            }).join('');
-            results.classList.remove('hidden');
-        });
-
-        document.addEventListener('click', function (e) {
-            if (!input.contains(e.target) && !results.contains(e.target)) results.classList.add('hidden');
-        });
-    }
-
-    window.selectSmartArea = function (el) {
-        const division = el.getAttribute('data-division');
-        const district = el.getAttribute('data-district');
-        const thana = el.getAttribute('data-thana');
-        const zone = el.getAttribute('data-zone');
-        document.getElementById('addr-division').value = division;
-        document.getElementById('addr-district').value = district;
-        document.getElementById('addr-thana').value = thana;
-        document.getElementById('addr-zone-hidden').value = zone;
-        selectedAreaData = { division, district, thana, zone };
-        const input = document.getElementById('addr-smart-search');
-        input.value = zone ? `${zone}, ${thana}, ${district}, ${division}` : `${thana}, ${district}, ${division}`;
-        const chosen = document.getElementById('smart-search-chosen');
-        chosen.innerHTML = `✓ <strong>${district}</strong> › ${thana}${zone ? ' › ' + zone : ''} <span class="text-gray-400 font-normal">(${division})</span>`;
-        chosen.classList.remove('hidden');
-        document.getElementById('smart-search-results').classList.add('hidden');
-    };
-
-    /* ---- 3. Delivery zone (same rules as account.html) -------------------- */
-    function getDeliveryZone(district, area) {
-        if (district === 'Gazipur' || district === 'Narayanganj' || area === 'Keraniganj' || area === 'Savar') return 'Dhaka Suburb';
-        if (district === 'Dhaka') return 'Inside Dhaka';
-        return 'Outside Dhaka';
-    }
-
-    /* ---- 4. Open / close -------------------------------------------------- */
-    window.openAddressModal = function () {
-        injectModal();
-        initSmartSearch();
-        const form = document.getElementById('addressForm');
-        if (form) form.reset();
-        document.getElementById('addr-edit-index').value = "-1";
-        document.getElementById('addr-modal-title').innerText = "Add Delivery Address";
-        document.getElementById('addr-submit-btn').innerText = "Save Address";
-        document.getElementById('addr-type').value = "both";
-        ['addr-division', 'addr-district', 'addr-thana', 'addr-zone-hidden'].forEach(id => {
-            const el = document.getElementById(id); if (el) el.value = '';
-        });
-        selectedAreaData = null;
-        const si = document.getElementById('addr-smart-search'); if (si) si.value = '';
-        const chosen = document.getElementById('smart-search-chosen'); if (chosen) chosen.classList.add('hidden');
-        const res = document.getElementById('smart-search-results'); if (res) res.classList.add('hidden');
-        const m = document.getElementById('addressModal');
-        m.classList.remove('hidden'); m.classList.add('flex');
-    };
-
-    window.closeAddressModal = function () {
-        const m = document.getElementById('addressModal');
-        if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
-    };
-
-    /* ---- 5. Save (writes addresses[] in the exact account.html format) ---- */
-    function bindSaveHandler() {
-        // Delegated submit so it works even though the modal is injected later
-        document.addEventListener('submit', async function (e) {
-            if (!e.target || e.target.id !== 'addressForm') return;
-            e.preventDefault();
-
-            const user = (typeof window.SterlingAddressUser === 'function') ? window.SterlingAddressUser() : null;
-            if (!user || !user.uid) { alert("Please sign in to save an address."); return; }
-
-            const addrType = document.getElementById('addr-type').value;
-            const div = document.getElementById('addr-division').value;
-            const dist = document.getElementById('addr-district').value;
-            const thana = document.getElementById('addr-thana').value;
-            const subArea = document.getElementById('addr-zone-hidden') ? document.getElementById('addr-zone-hidden').value : '';
-            const house = document.getElementById('addr-house') ? document.getElementById('addr-house').value.trim() : '';
-            const floor = document.getElementById('addr-floor') ? document.getElementById('addr-floor').value.trim() : '';
-            const road = document.getElementById('addr-road') ? document.getElementById('addr-road').value.trim() : '';
-            const block = document.getElementById('addr-block') ? document.getElementById('addr-block').value.trim() : '';
-            const detailed = document.getElementById('addr-detailed') ? document.getElementById('addr-detailed').value.trim() : '';
-            const extra = document.getElementById('addr-details') ? document.getElementById('addr-details').value.trim() : '';
-
-            if (!addrType) { alert("Please select an Address Type."); return; }
-            if (!div || !dist || !thana) {
-                alert("Please search and select your area using the area search field.");
-                document.getElementById('addr-smart-search').focus();
-                return;
-            }
-            if (!house || !road || !detailed) { alert("Please fill in House No/Name, Road, and Detailed Address."); return; }
-
-            const btn = document.getElementById('addr-submit-btn');
-            const btnTxt = btn ? btn.innerText : '';
-            if (btn) { btn.innerText = 'Saving...'; btn.disabled = true; }
-
-            try {
-                let updatedList = (user.addresses) ? [...user.addresses] : [];
-                const deliveryZone = getDeliveryZone(dist, thana);
-                const parts = [];
-                if (detailed) parts.push(detailed);
-                if (house) parts.push(`House: ${house}`);
-                if (floor) parts.push(`Floor/Flat: ${floor}`);
-                if (road) parts.push(`Road: ${road}`);
-                if (block) parts.push(`Block/Sector: ${block}`);
-                if (subArea) parts.push(subArea);
-                if (thana) parts.push(thana);
-                if (dist) parts.push(dist);
-                if (extra) parts.push(`(Directions: ${extra})`);
-                const fullDisplay = parts.join(', ');
-
-                const baseAddr = {
-                    division: div, district: dist, thana: thana, subArea: subArea, zone: deliveryZone,
-                    house: house, floor: floor, road: road, block: block, detailed: detailed, detail: extra,
-                    fullDisplay: fullDisplay
-                };
-                const resetDefaults = (list, tag) => list.map(a => { if (a.tag === tag) a.isDefault = false; return a; });
-
-                if (addrType === 'shipping' || addrType === 'both') {
-                    updatedList = resetDefaults(updatedList, 'Shipping Address');
-                    updatedList.push({ ...baseAddr, id: Date.now().toString() + 'S', tag: 'Shipping Address', isDefault: true });
-                }
-                if (addrType === 'billing' || addrType === 'both') {
-                    updatedList = resetDefaults(updatedList, 'Billing Address');
-                    updatedList.push({ ...baseAddr, id: Date.now().toString() + 'B', tag: 'Billing Address', isDefault: true });
-                }
-
-                await db.collection("users").doc(user.uid).set({ addresses: updatedList }, { merge: true });
-                user.addresses = updatedList; // keep caller's object in sync
-
-                window.closeAddressModal();
-                if (typeof window.SterlingAddressOnSave === 'function') window.SterlingAddressOnSave(updatedList);
-            } catch (error) {
-                console.error("Address save failed:", error);
-                alert("Could not save address: " + error.message);
-            } finally {
-                if (btn) { btn.innerText = btnTxt || 'Save Address'; btn.disabled = false; }
-            }
-        });
-    }
-
-    /* ---- 6. Boot ---------------------------------------------------------- */
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () { injectModal(); bindSaveHandler(); });
-    } else {
-        injectModal(); bindSaveHandler();
-    }
-})();
+        };
