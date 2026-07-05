@@ -802,6 +802,34 @@ window.poSubmitForm = async function() {
 
         try { fbq('track', 'Lead', { content_name: window._poProduct.name, value: advance, currency: 'BDT' }); } catch(e) {}
 
+        // GA4 pre-order event
+        try {
+            gtag('event', 'preorder', {
+                currency: 'BDT',
+                value: advance,
+                items: [{
+                    item_id: String(window._poProduct.id),
+                    item_name: window._poProduct.name,
+                    price: Number(window._poProduct.price) || 0,
+                    quantity: qty
+                }]
+            });
+        } catch(e) {}
+
+        // GA4 pre-order event
+        try {
+            gtag('event', 'preorder', {
+                currency: 'BDT',
+                value: advance,
+                items: [{
+                    item_id: String(window._poProduct.id),
+                    item_name: window._poProduct.name,
+                    price: Number(window._poProduct.price) || 0,
+                    quantity: qty
+                }]
+            });
+        } catch(e) {}
+
 
 
         // Email notification to admin — reuses the existing order template
