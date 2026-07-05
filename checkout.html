@@ -75,10 +75,12 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
 <body class="bg-gray-50 min-h-screen pb-20">
 
     <div class="bg-white py-4 shadow-sm mb-6">
-        <div class="max-w-6xl mx-auto flex justify-center">
+        <div class="max-w-6xl mx-auto px-4 flex justify-between items-center">
+            <div class="w-24"></div>
             <a href="index.html">
                 <img src="web-logo2.png" alt="Sterling You" class="h-12 object-contain">
             </a>
+            <a href="account.html" class="w-24 text-right text-xs font-bold text-[#322C2B] hover:text-[#B36A5E] transition truncate" id="checkout-username">&nbsp;</a>
         </div>
     </div>
 
@@ -93,7 +95,11 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
                 <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400">Delivery Addresses</h3>
-                        <a href="account.html?tab=addresses&from=checkout&action=add" class="text-[10px] font-bold text-[#B36A5E] uppercase hover:underline">+ Add Address</a>                    </div>
+                        <div class="flex items-center gap-3">
+                            <button type="button" onclick="openAddressModal()" class="text-[10px] font-bold text-[#B36A5E] uppercase hover:underline">+ Add Address</button>
+                            <a href="account.html?tab=addresses" class="text-[10px] font-bold text-gray-400 uppercase hover:underline hover:text-[#322C2B]">Manage Addresses</a>
+                        </div>
+                    </div>
                     <div id="address-container" class="space-y-5">
                         <p class="text-sm italic text-gray-400">Loading addresses...</p>
                     </div>
@@ -257,8 +263,12 @@ auth.onAuthStateChanged(async (user) => {
             return;
         }
 
-        currentCheckoutUser = userDoc.data();
-        currentCheckoutUser.uid = targetUid;
+currentCheckoutUser = userDoc.data();
+currentCheckoutUser.uid = targetUid;
+
+// Show the customer's name in the top bar
+const nameEl = document.getElementById('checkout-username');
+if (nameEl) nameEl.innerText = currentCheckoutUser.fullName || 'My Account';
 
         if (!currentCheckoutUser.phone) {
             document.getElementById('address-container').innerHTML = `
