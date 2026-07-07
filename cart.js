@@ -332,7 +332,7 @@ window.renderActionButtons = (product) => {
     if (currentStock > 0) {
         return `<button onclick="addToCart(${pStr})" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg">Add to Cart</button>`;
     } else if (isPreorder) {
-        return `<button onclick="openPreorderModal(${pStr})" class="w-full text-white py-3 rounded-xl font-bold uppercase text-xs transition shadow-lg" style="background:#B36A5E" onmouseover="this.style.background='#322C2B'" onmouseout="this.style.background='#B36A5E'">Pre-order Now</button>`;
+        return `<button onclick="openPreorderModal(${pStr})" class="w-full bg-[#B36A5E] text-white py-3 rounded-xl font-bold uppercase text-xs hover:bg-[#322C2B] transition shadow-lg">Pre-order Now</button>`;
     } else {
         return `<button onclick="requestProduct('${String(product.id).trim()}', '${cleanName}')" class="w-full bg-gray-200 text-gray-600 py-3 rounded-xl font-bold uppercase text-xs hover:bg-gray-300 transition">Request Restock</button>`;
     }
