@@ -978,6 +978,8 @@ if (tabId === 'contact-settings') {
                             <thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400">
                                 <tr>
                                     <th class="p-3 w-8"><input type="checkbox" id="preorder-select-all" onchange="togglePreorderSelectAll(this.checked)" class="accent-[#B36A5E] w-4 h-4 cursor-pointer" title="Select all Confirmed"></th>
+                                    <th class="p-3 whitespace-nowrap">Pre-Order ID</th>
+                                    <th class="p-3 whitespace-nowrap">PO Number</th>
                                     <th class="p-3 whitespace-nowrap">Product</th>
                                     <th class="whitespace-nowrap">Customer</th>
                                     <th class="whitespace-nowrap">Phone</th>
@@ -4091,8 +4093,8 @@ inv += '<div class="grand-total"><span>Grand Total:<\/span><span>৳' + fmt(fina
                 const user = userDoc.data() || { fullName: order.userName, phone: 'N/A' };
                 
                 document.getElementById('verify-order-id').innerText = order.orderId;
-                document.getElementById('verify-discount-value').value = '';
-                document.getElementById('verify-discount-type').value  = 'fixed';
+                document.getElementById('verify-discount-value').value = order.pendingDiscountValue ? order.pendingDiscountValue : '';
+                document.getElementById('verify-discount-type').value  = order.pendingDiscountType || 'fixed';
                 document.getElementById('verify-new-total').innerText  = '—';
                 document.getElementById('verify-discount-msg').classList.add('hidden');
                 document.getElementById('verify-discount-msg').innerText = '';
@@ -8961,6 +8963,23 @@ window.openActivityModal = async function(uid, fullName) {
                 <datalist id="po-edit-batch-list"></datalist>
                 <p class="text-[10px] text-gray-400 mt-1">Move an item to the next batch here if it doesn't arrive in the current shipment.</p>
             </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <label class="block text-[10px] font-bold uppercase text-amber-700 tracking-widest mb-2">Discount (carried to Stage 1 verify)</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[9px] font-bold uppercase text-gray-400 mb-1">Type</label>
+                        <select id="po-edit-discount-type" class="w-full border border-amber-200 rounded-lg p-2 text-xs bg-white outline-none focus:border-[#B36A5E]">
+                            <option value="fixed">৳ Fixed Amount</option>
+                            <option value="percent">% Percentage</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold uppercase text-gray-400 mb-1">Value</label>
+                        <input type="number" id="po-edit-discount-value" placeholder="0" class="w-full border border-amber-200 rounded-lg p-2 text-sm outline-none focus:border-[#B36A5E] text-center font-bold">
+                    </div>
+                </div>
+                <p class="text-[10px] text-gray-400 mt-1.5">Optional. Applied when you confirm the order in Stage 1 — still editable there.</p>
+            </div>
             <button id="po-edit-save-btn" onclick="preorderSaveEdit()" class="w-full bg-[#322C2B] text-white py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition shadow-md">Save Changes</button>
             <button id="po-edit-confirm-btn" onclick="preorderSaveAndConfirm()" class="hidden w-full bg-[#10B981] text-white py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-green-600 transition shadow-md">✓ Save & Confirm Pre-order</button>
 
@@ -9011,7 +9030,7 @@ function _poIsSuperAdmin() {
 window.loadPreorders = async function() {
     const tbody = document.getElementById('preorders-table-body');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="11" class="p-10 text-center"><div class="loader mx-auto"></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" class="p-10 text-center"><div class="loader mx-auto"></div></td></tr>';
     try {
         const snap = await db.collection("preorders").get();
         window._preordersCache = [];
@@ -9033,7 +9052,7 @@ window.loadPreorders = async function() {
         window.renderPreorders();
     } catch(e) {
         console.error("Preorders load error:", e);
-        tbody.innerHTML = '<tr><td colspan="11" class="p-10 text-center text-red-500">Error loading pre-orders: ' + e.message + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="p-10 text-center text-red-500">Error loading pre-orders: ' + e.message + '</td></tr>';
     }
 };
 
@@ -9051,7 +9070,8 @@ window.renderPreorders = function() {
     const list = all.filter(p => {
         const matchSearch = !searchVal ||
             (p.customerName || '').toLowerCase().includes(searchVal) ||
-            (p.customerPhone || '').toLowerCase().includes(searchVal);
+            (p.customerPhone || '').toLowerCase().includes(searchVal) ||
+            (p.poNumber || '').toLowerCase().includes(searchVal);
         const matchBatch = !batchVal || p.batch === batchVal;
 
         // Stage gate
@@ -9093,7 +9113,7 @@ window.renderPreorders = function() {
     set('preorder-total-count', list.length + ' showing · ' + all.length + ' total');
 
     if (list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" class="p-8 text-center text-gray-400">No pre-orders match your filters.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="p-8 text-center text-gray-400">No pre-orders match your filters.</td></tr>';
         window.updatePreorderSelectionBar();
         return;
     }
@@ -9131,6 +9151,7 @@ window.renderPreorders = function() {
             actions += '<button onclick="preorderOpenEdit(\'' + p.id + '\')" class="text-gray-600 font-bold uppercase text-[9px] hover:underline bg-gray-50 px-2 py-1 rounded border border-gray-200">Edit</button>';
             actions += '<button onclick="preorderCancel(\'' + p.id + '\')" class="text-red-500 font-bold uppercase text-[9px] hover:underline bg-red-50 px-2 py-1 rounded border border-red-100">Cancel</button>';
         } else if (status === 'Confirmed') {
+            actions += '<button onclick="_buildPreorderReceipt(\'' + p.id + '\', \'save\')" class="text-[#B36A5E] font-bold uppercase text-[9px] hover:underline bg-[#F5ECE9] px-2 py-1 rounded border border-[#E5D3CD]">⬇ Receipt</button>';
             actions += '<button onclick="preorderRevert(\'' + p.id + '\')" class="text-yellow-700 font-bold uppercase text-[9px] hover:underline bg-yellow-50 px-2 py-1 rounded border border-yellow-100">↩ Revert</button>';
             actions += '<button onclick="preorderOpenEdit(\'' + p.id + '\')" class="text-gray-600 font-bold uppercase text-[9px] hover:underline bg-gray-50 px-2 py-1 rounded border border-gray-200">Edit</button>';
             actions += '<button onclick="preorderCancel(\'' + p.id + '\')" class="text-red-500 font-bold uppercase text-[9px] hover:underline bg-red-50 px-2 py-1 rounded border border-red-100">Cancel</button>';
@@ -9145,8 +9166,17 @@ window.renderPreorders = function() {
         if (isSuper && p.userId)
             actions += '<button onclick="preorderDeleteCustomer(\'' + p.id + '\')" class="text-red-700 font-bold uppercase text-[9px] hover:underline bg-red-50 px-2 py-1 rounded border border-red-200">Del Customer</button>';
 
+        const preIdCell = p.preorderId
+            ? '<span class="font-mono text-[10px] font-bold text-[#B36A5E]">' + p.preorderId + '</span>'
+            : '<span class="text-gray-300 text-[10px]">—</span>';
+
+        const poCell = (p.poNumber || p.convertedOrderCode)
+            ? '<span class="font-mono text-[10px] font-bold text-[#B36A5E]">' + (p.poNumber || p.convertedOrderCode) + '</span>'
+            : '<span class="text-gray-300 text-[10px]">— not yet</span>';
+
         html += '<tr class="border-b hover:bg-gray-50 transition ' + (sel ? 'bg-blue-50' : (awaitPay ? 'bg-orange-50/40' : '')) + '">' +
             cbCell +
+            '<td class="p-3 whitespace-nowrap">' + poCell + '</td>' +
             '<td class="p-3"><div class="flex items-center gap-2"><img src="' + (p.productImage || 'placeholder.png') + '" class="w-8 h-9 object-cover rounded shadow-sm shrink-0" onerror="this.src=\'placeholder.png\'"><span class="font-medium text-xs">' + (p.productName || '—') + '</span></div></td>' +
             '<td class="text-xs font-bold text-[#322C2B] whitespace-nowrap">' + (p.customerName || '—') + linkedBadge + '</td>' +
             '<td><a href="tel:' + (p.customerPhone || '') + '" class="font-mono text-xs text-[#B36A5E] hover:underline whitespace-nowrap">' + (p.customerPhone || '—') + '</a></td>' +
@@ -9245,7 +9275,10 @@ window.preorderMarkConfirmed = async function(id) {
             try { await window._poEnsureCustomer(p); }
             catch(ce) { if (!confirm('Could not auto-create customer (' + ce.message + ').\nConfirm anyway without linking a customer?')) return; }
         }
-        await db.collection("preorders").doc(id).update({ status: 'Confirmed', confirmedAt: new Date().toISOString() });
+        // Assign the permanent PO number now, at confirmation (reused when moved to Orders)
+        const poNumber = (p && p.poNumber) ? p.poNumber : ('PO-' + Date.now().toString().slice(-7) + Math.floor(10 + Math.random() * 89));
+        if (p) p.poNumber = poNumber;
+        await db.collection("preorders").doc(id).update({ status: 'Confirmed', confirmedAt: new Date().toISOString(), poNumber: poNumber });
         await window.logAdminAction('Confirmed pre-order: ' + p.customerName + ' (' + p.customerPhone + ')');
         window.loadPreorders();
         if (typeof window.loadCRMUsers === 'function') window.loadCRMUsers();
@@ -9336,7 +9369,8 @@ window.moveSelectedPreordersToOrders = async function() {
             };
 
             const addrObj = { detail: p.customerAddress || '', fullDisplay: p.customerAddress || '', tag: 'Shipping Address' };
-            const orderId = 'PO-' + Date.now().toString().slice(-7) + Math.floor(10 + Math.random() * 89);
+            // Reuse the PO number assigned at confirmation; fall back to a fresh one only if missing
+            const orderId = p.poNumber || ('PO-' + Date.now().toString().slice(-7) + Math.floor(10 + Math.random() * 89));
 
             const orderDoc = {
                 orderId: orderId,
@@ -9356,6 +9390,8 @@ window.moveSelectedPreordersToOrders = async function() {
                 source: 'preorder',
                 preorderId: p.id,
                 preorderBatch: p.batch || '',
+                pendingDiscountType:  p.preorderDiscountType  || 'fixed',
+                pendingDiscountValue: Number(p.preorderDiscountValue) || 0,
                 lastUpdate: new Date().toISOString()
             };
 
@@ -9413,15 +9449,18 @@ window.preorderSaveAndConfirm = async function() {
         const advance = Number(document.getElementById('po-edit-advance').value) || 0;
         const txn     = document.getElementById('po-edit-txn').value.trim();
         const batch   = document.getElementById('po-edit-batch').value.trim();
+        const discType  = document.getElementById('po-edit-discount-type').value;
+        const discValue = Number(document.getElementById('po-edit-discount-value').value) || 0;
 
         await db.collection("preorders").doc(id).update({
             customerName: name, customerPhone: phone, customerAddress: address,
-            quantity: qty, advanceAmount: advance, bkashTxnId: txn || null, batch: batch || ''
+            quantity: qty, advanceAmount: advance, bkashTxnId: txn || null, batch: batch || '',
+            preorderDiscountType: discType, preorderDiscountValue: discValue
         });
 
         // Refresh local copy so customer-creation uses the edited values
         const p = window._preordersCache.find(x => x.id === id);
-        if (p) Object.assign(p, { customerName: name, customerPhone: phone, customerAddress: address, quantity: qty, advanceAmount: advance, bkashTxnId: txn || null, batch: batch || '' });
+        if (p) Object.assign(p, { customerName: name, customerPhone: phone, customerAddress: address, quantity: qty, advanceAmount: advance, bkashTxnId: txn || null, batch: batch || '', preorderDiscountType: discType, preorderDiscountValue: discValue });
 
         // 2. Auto-create CRM customer (best-effort), then confirm
         if (p && !p.userId) {
@@ -9454,6 +9493,8 @@ window.preorderOpenEdit = function(id) {
     document.getElementById('po-edit-advance').value       = p.advanceAmount   || '';
     document.getElementById('po-edit-txn').value           = p.bkashTxnId      || '';
     document.getElementById('po-edit-batch').value         = p.batch           || '';
+    document.getElementById('po-edit-discount-type').value = p.preorderDiscountType  || 'fixed';
+    document.getElementById('po-edit-discount-value').value= p.preorderDiscountValue || '';
     document.getElementById('po-edit-refund-amount').value = p.advanceAmount   || '';
     document.getElementById('po-edit-refund-reason').value = '';
     document.getElementById('po-edit-title').innerText     = 'Edit Pre-order — ' + (p.customerName || '');
@@ -9487,12 +9528,15 @@ window.preorderSaveEdit = async function() {
     const advance = Number(document.getElementById('po-edit-advance').value) || 0;
     const txn     = document.getElementById('po-edit-txn').value.trim();
     const batch   = document.getElementById('po-edit-batch').value.trim();
+    const discType  = document.getElementById('po-edit-discount-type').value;
+    const discValue = Number(document.getElementById('po-edit-discount-value').value) || 0;
     const btn     = document.getElementById('po-edit-save-btn');
     btn.innerText = 'Saving...'; btn.disabled = true;
     try {
         await db.collection("preorders").doc(id).update({
             customerName: name, customerPhone: phone, customerAddress: address,
-            quantity: qty, advanceAmount: advance, bkashTxnId: txn || null, batch: batch || ''
+            quantity: qty, advanceAmount: advance, bkashTxnId: txn || null, batch: batch || '',
+            preorderDiscountType: discType, preorderDiscountValue: discValue
         });
         await window.logAdminAction('Edited pre-order: ' + name + ' (' + phone + ')');
         window.preorderCloseEdit();
