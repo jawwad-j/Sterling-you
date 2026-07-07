@@ -8786,6 +8786,133 @@ pos += '<\/div>';
     _openDocWindow(pos, action, '3in auto', order.orderId);
 };
 
+/* ============================================================================
+   Pre-order POS Receipt  (paste this block into admin.html, inside the main
+   <script>, anywhere after _openDocWindow and renderPreorders are defined —
+   e.g. right after the _buildPOSInvoice function.)
+
+   Adds window._buildPreorderReceipt(preorderId, action) which builds a
+   thermal-style receipt for a CONFIRMED pre-order and pipes it through the
+   existing _openDocWindow(html, action, pageSize, orderId) machinery, so it
+   prints and PDF-saves exactly like the order POS receipt.
+
+   action: 'print'  -> opens print dialog
+           'save'   -> downloads a PDF (via the jsPDF/html2canvas path)
+   ========================================================================== */
+window._buildPreorderReceipt = async function(preorderId, action) {
+    const p = (window._preordersCache || []).find(x => x.id === preorderId);
+    if (!p) { alert('Pre-order not found — refresh the panel and try again.'); return; }
+
+    // Store contact + terms (same settings docs the order receipt uses)
+    let storePhone = '';
+    let terms = 'Advance is adjusted against final bill. Balance payable on delivery (COD).';
+    try {
+        const c = await db.collection("settings").doc("contact").get();
+        if (c.exists && c.data().phone) storePhone = c.data().phone;
+    } catch(e) {}
+    try {
+        const tdoc = await db.collection("settings").doc("preorder_terms").get();
+        if (tdoc.exists && tdoc.data().text) terms = tdoc.data().text;
+    } catch(e) {}
+
+    const poNum    = p.poNumber || p.convertedOrderCode || '(pending)';
+    const custName = p.customerName || 'N/A';
+    const custPhone= p.customerPhone || 'N/A';
+    const custAddr = p.customerAddress || 'N/A';
+    const qty      = Number(p.quantity) || 1;
+    const price    = Number(p.productPrice) || 0;
+    const lineTotal= qty * price;
+    const advance  = Number(p.advanceAmount) || 0;
+    const balance  = Math.max(0, lineTotal - advance);
+
+    // Discount carried on the pre-order (fixed or %)
+    let discountLabel = '', discountAmt = 0;
+    const dType = p.preorderDiscountType || 'fixed';
+    const dVal  = Number(p.preorderDiscountValue) || 0;
+    if (dVal > 0) {
+        discountAmt = (dType === 'percent') ? Math.round(lineTotal * dVal / 100) : dVal;
+        discountLabel = (dType === 'percent') ? (dVal + '%') : ('\u09F3' + fmt(dVal));
+    }
+    const netAfterDiscount = Math.max(0, lineTotal - discountAmt);
+    const balanceAfter     = Math.max(0, netAfterDiscount - advance);
+
+    let dateStr = 'N/A';
+    if (p.confirmedAt) dateStr = new Date(p.confirmedAt).toLocaleDateString();
+    else if (p.createdAt) dateStr = new Date(p.createdAt).toLocaleDateString();
+
+    var pos = '<!DOCTYPE html><html><head><title>Pre-order Receipt - ' + poNum + '<\/title>';
+    pos += '<style>';
+    pos += '@page { size: 3in auto; margin: 0; }';
+    pos += '* { box-sizing: border-box; margin: 0; padding: 0; }';
+    pos += 'body { font-family: "Courier New", monospace; width: 3in; padding: 8px 10px; font-size: 13px; color:#000; background:white; }';
+    pos += '.center { text-align:center; }';
+    pos += '.divider { border-top:1px dashed #000; margin:6px 0; }';
+    pos += '.divider-solid { border-top:2px solid #000; margin:6px 0; }';
+    pos += 'table { width:100%; font-size:12px; }';
+    pos += '.grand-row td { font-weight:900; font-size:18px; padding-top:5px; }';
+    pos += '.label { color:#555; font-size:11px; }';
+    pos += '.cust-name { font-size:16px; font-weight:900; }';
+    pos += '.cust-detail { font-size:13px; }';
+    pos += '<\/style><\/head><body>';
+
+    // Header
+    pos += '<div class="center" style="margin-bottom:6px">';
+    pos += '<div style="font-size:18px;font-weight:900;letter-spacing:2px">STERLING YOU<\/div>';
+    pos += '<div class="label">Bashundhara, Dhaka<\/div>';
+    pos += (storePhone ? '<div class="label">' + storePhone + '<\/div>' : '');
+    pos += '<div class="label">sterlingyou.com<\/div>';
+    pos += '<\/div>';
+
+    // PRE-ORDER banner
+    pos += '<div class="center" style="border:2px solid #000;border-radius:4px;padding:3px 0;margin-bottom:6px;font-weight:900;letter-spacing:1px;font-size:13px">PRE-ORDER RECEIPT<\/div>';
+
+    // Meta
+    pos += '<div class="divider-solid"><\/div>';
+    pos += '<div style="margin-bottom:4px">';
+    pos += '<div><span class="label">PO NO: <\/span><span style="font-weight:800">' + poNum + '<\/span><\/div>';
+    pos += '<div><span class="label">DATE: <\/span>' + dateStr + '<\/div>';
+    pos += '<div><span class="label">STATUS: <\/span>' + (p.status || 'Pending') + '<\/div>';
+    if (p.batch) pos += '<div><span class="label">BATCH: <\/span>' + p.batch + '<\/div>';
+    pos += '<\/div>';
+
+    // Customer
+    pos += '<div class="divider"><\/div>';
+    pos += '<div style="margin-bottom:6px">';
+    pos += '<div class="label">CUSTOMER<\/div>';
+    pos += '<div class="cust-name">' + custName + '<\/div>';
+    pos += '<div class="cust-detail" style="font-weight:700">' + custPhone + '<\/div>';
+    pos += '<div class="cust-detail" style="color:#333;margin-top:2px">' + custAddr + '<\/div>';
+    pos += '<\/div>';
+
+    // Item
+    pos += '<div class="divider"><\/div>';
+    pos += '<table>';
+    pos += '<tr><td colspan="2" style="padding:3px 0;font-weight:800;font-size:14px">' + (p.productName || 'Item') + '<\/td><\/tr>';
+    pos += '<tr><td style="padding:0 0 5px 0;color:#444;font-size:13px">' + qty + ' x \u09F3' + fmt(price) + '<\/td>' +
+           '<td style="text-align:right;padding:0 0 5px 0;font-weight:900;font-size:14px">\u09F3' + fmt(lineTotal) + '<\/td><\/tr>';
+    pos += '<\/table>';
+
+    // Totals
+    pos += '<div class="divider"><\/div>';
+    pos += '<table>';
+    pos += '<tr><td class="label">Subtotal<\/td><td style="text-align:right">\u09F3' + fmt(lineTotal) + '<\/td><\/tr>';
+    if (discountAmt > 0)
+        pos += '<tr><td class="label">Discount (' + discountLabel + ')<\/td><td style="text-align:right">-\u09F3' + fmt(discountAmt) + '<\/td><\/tr>';
+    pos += '<tr><td class="label">Advance Paid<\/td><td style="text-align:right;color:#000;font-weight:700">-\u09F3' + fmt(advance) + '<\/td><\/tr>';
+    pos += '<tr class="grand-row"><td>BALANCE (COD)<\/td><td style="text-align:right">\u09F3' + fmt(balanceAfter) + '<\/td><\/tr>';
+    pos += '<\/table>';
+
+    // Footer
+    pos += '<div class="divider"><\/div>';
+    pos += '<div class="label" style="font-size:10px;line-height:1.4">' + terms + '<\/div>';
+    pos += '<div class="divider"><\/div>';
+    pos += '<div class="center" style="font-size:10px;font-weight:900;letter-spacing:2px;margin:6px 0">YOU ARE THE STAR<\/div>';
+    pos += '<div class="center" style="font-size:8px;color:#666">Thank you for pre-ordering with Sterling You<\/div>';
+    pos += '<\/body><\/html>';
+
+    _openDocWindow(pos, action, '3in auto', poNum);
+};
+
 window.logAdminAction = async function(actionDescription) {
     try {
         const user = firebase.auth().currentUser;
