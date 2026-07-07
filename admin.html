@@ -978,7 +978,6 @@ if (tabId === 'contact-settings') {
                             <thead class="bg-gray-50 border-b text-[10px] font-bold uppercase text-gray-400">
                                 <tr>
                                     <th class="p-3 w-8"><input type="checkbox" id="preorder-select-all" onchange="togglePreorderSelectAll(this.checked)" class="accent-[#B36A5E] w-4 h-4 cursor-pointer" title="Select all Confirmed"></th>
-                                    <th class="p-3 whitespace-nowrap">Pre-Order ID</th>
                                     <th class="p-3 whitespace-nowrap">PO Number</th>
                                     <th class="p-3 whitespace-nowrap">Product</th>
                                     <th class="whitespace-nowrap">Customer</th>
@@ -989,7 +988,7 @@ if (tabId === 'contact-settings') {
                                     <th class="whitespace-nowrap">Batch</th>
                                     <th class="whitespace-nowrap">Date</th>
                                     <th class="whitespace-nowrap">Status</th>
-                                    <th class="whitespace-nowrap">Actions</th>
+                                    <th class="whitespace-nowrap text-right pr-4" style="min-width:200px">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="preorders-table-body" class="text-xs"></tbody>
@@ -9301,7 +9300,7 @@ window.renderPreorders = function() {
         actions += icoBtn('preorderDelete(\'' + p.id + '\')', 'Delete', '🗑', 'text-red-400 bg-white border-red-200 hover:bg-red-50');
         if (isSuper && p.userId)
             actions += icoBtn('preorderDeleteCustomer(\'' + p.id + '\')', 'Delete Customer', '⛔', 'text-red-700 bg-white border-red-300 hover:bg-red-50');
-        
+
         const preIdCell = p.preorderId
             ? '<span class="font-mono text-[10px] font-bold text-[#B36A5E]">' + p.preorderId + '</span>'
             : '<span class="text-gray-300 text-[10px]">—</span>';
@@ -9322,7 +9321,7 @@ window.renderPreorders = function() {
             '<td class="text-[10px] text-gray-500 whitespace-nowrap">' + (p.batch || '—') + '</td>' +
             '<td class="text-[10px] text-gray-500 whitespace-nowrap">' + dateStr + '</td>' +
             '<td>' + statusBadge + '</td>' +
-            '<td class="p-3"><div class="flex flex-wrap gap-1">' + actions + '</div></td>' +
+            '<td class="p-3"><div class="flex items-center gap-1.5 justify-end">' + actions + '</div></td>' +
         '</tr>';
     });
     tbody.innerHTML = html;
