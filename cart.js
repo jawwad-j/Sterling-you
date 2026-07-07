@@ -542,7 +542,7 @@ function injectPreorderModal() {
         <div class="p-4 border-b flex items-center gap-3 bg-gray-50">
           <img id="po-product-img" src="" class="w-12 h-14 object-cover rounded-lg border border-gray-100 bg-gray-100">
           <div class="flex-1 min-w-0">
-            <p class="text-[9px] font-bold uppercase tracking-widest" style="color:#B36A5E">Pre-order <span class="po-number-display text-sm font-bold text-[#322C2B]"></span></p>
+            <p class="text-[9px] font-bold uppercase tracking-widest" style="color:#B36A5E">Pre-order <span class="po-number-display text-[#322C2B]"></span></p>
             <p id="po-product-name" class="text-sm font-bold text-[#322C2B] truncate"></p>
           </div>
           <button onclick="closePreorderModal()" class="text-gray-400 hover:text-black text-2xl leading-none">&times;</button>
