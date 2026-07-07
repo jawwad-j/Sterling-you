@@ -396,7 +396,7 @@
                     </div>
                     <div class="add-to-cart-container absolute bottom-0 left-0 w-full z-20">
                         ${canPreorder
-                            ? `<button onclick="event.preventDefault(); openPreorderModal(${pStr});" style="pointer-events:all" class="w-full text-white py-3 text-[10px] font-bold tracking-widest uppercase transition-colors" style="background:#B36A5E" onmouseover="this.style.background='#322C2B'" onmouseout="this.style.background='#B36A5E'">Pre-order Now</button>`
+                            ? `<button onclick="event.preventDefault(); openPreorderModal(${pStr});" style="pointer-events:all;background:#B36A5E" class="w-full text-white py-3 text-[10px] font-bold tracking-widest uppercase transition-colors hover:brightness-90">Pre-order Now</button>`
                             : (isOutOfStock
                             ? `<button onclick="event.preventDefault(); requestProduct('${productId}','${p.name.replace(/'/g,"\\'")}');" style="pointer-events:all" class="w-full bg-gray-400 text-white py-3 text-[10px] font-bold tracking-widest uppercase">Request Stock</button>`
                             : `<button onclick="event.preventDefault(); addToCart(${pStr});" style="pointer-events:all" class="w-full bg-[#322C2B]/95 text-white py-3 text-[10px] font-bold tracking-widest uppercase hover:bg-[#B36A5E] transition-colors">Add To Cart</button>`)}
