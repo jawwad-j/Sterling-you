@@ -542,7 +542,7 @@ function injectPreorderModal() {
         <div class="p-4 border-b flex items-center gap-3 bg-gray-50">
           <img id="po-product-img" src="" class="w-12 h-14 object-cover rounded-lg border border-gray-100 bg-gray-100">
           <div class="flex-1 min-w-0">
-            <p class="text-[9px] font-bold uppercase tracking-widest" style="color:#B36A5E">Pre-order</p>
+            <p class="text-[9px] font-bold uppercase tracking-widest" style="color:#B36A5E">Pre-order <span class="po-number-display font-mono normal-case text-gray-400"></span></p>
             <p id="po-product-name" class="text-sm font-bold text-[#322C2B] truncate"></p>
           </div>
           <button onclick="closePreorderModal()" class="text-gray-400 hover:text-black text-2xl leading-none">&times;</button>
@@ -596,11 +596,6 @@ function injectPreorderModal() {
           </div>
           <div class="bg-white border-2 border-dashed rounded-xl px-4 py-3 text-center" style="border-color:#E5D3CD">
             <p class="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">Your Pre-Order Number</p>
-            <p class="po-number-display font-mono text-xl font-bold" style="color:#B36A5E">—</p>
-            <p class="text-[10px] text-gray-400 mt-1">Please save this for future reference.</p>
-          </div>
-          <div class="bg-white border-2 border-dashed rounded-xl px-4 py-3 text-center" style="border-color:#E5D3CD">
-            <p class="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">Your Pre-Order Number</p>
             <p class="po-number-display font-mono text-lg font-bold" style="color:#B36A5E">—</p>
             <p class="text-[10px] text-gray-400 mt-1">Save this for future reference.</p>
           </div>
@@ -621,7 +616,6 @@ function injectPreorderModal() {
         <div id="po-step-done" class="hidden p-8 text-center space-y-3">
           <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto text-2xl" style="background:#F5ECE9">✨</div>
           <h3 class="text-lg font-bold text-[#322C2B]">Thank you!</h3>
-          <p class="text-sm text-gray-500">Your pre-order is in. We'll be in touch shortly.</p>
           <p class="text-sm text-gray-500">Your pre-order is in. We'll be in touch shortly.</p>
           <div class="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 mx-auto max-w-[220px]">
             <p class="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">Your Pre-Order Number</p>
@@ -824,20 +818,6 @@ const poNumber = 'PO-' + Math.floor(100000 + Math.random() * 900000);
         _poNumEls.forEach(el => { el.innerText = poNumber; });
 
         try { fbq('track', 'Lead', { content_name: window._poProduct.name, value: advance, currency: 'BDT' }); } catch(e) {}
-
-        // GA4 pre-order event
-        try {
-            gtag('event', 'preorder', {
-                currency: 'BDT',
-                value: advance,
-                items: [{
-                    item_id: String(window._poProduct.id),
-                    item_name: window._poProduct.name,
-                    price: Number(window._poProduct.price) || 0,
-                    quantity: qty
-                }]
-            });
-        } catch(e) {}
 
         // GA4 pre-order event
         try {
