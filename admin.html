@@ -946,7 +946,7 @@ if (tabId === 'contact-settings') {
                         <h3 id="preorder-stat-total" class="text-xl font-bold text-[#322C2B] mt-1">0</h3>
                     </div>
                     <div class="bg-white p-4 rounded-xl border border-orange-100 shadow-sm">
-                        <p class="text-[10px] font-bold uppercase text-orange-500">Awaiting Payment</p>
+                        <p class="text-[10px] font-bold uppercase text-orange-500">DUE</p>
                         <h3 id="preorder-stat-awaiting" class="text-xl font-bold text-orange-500 mt-1">0</h3>
                         <p class="text-[10px] text-gray-400 mt-0.5">your call list</p>
                     </div>
@@ -9257,7 +9257,7 @@ window.renderPreorders = function() {
         else if (status === 'Refunded')  statusBadge = '<span class="bg-pink-100 text-pink-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase" title="Refunded ৳' + fmt(p.refundAmount) + (p.refundReason ? ' — ' + p.refundReason : '') + '">Refunded ৳' + fmt(p.refundAmount) + '</span>';
         else if (status === 'Cancelled') statusBadge = '<span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase" title="' + ((p.cancelReason || 'No payment taken').replace(/"/g,'&quot;')) + '">Cancelled</span>';
         else statusBadge = awaitPay
-            ? '<span class="bg-orange-100 text-orange-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase">Awaiting Pay</span>'
+            ? '<span class="bg-orange-100 text-orange-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase">DUE</span>'
             : '<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-[9px] font-bold uppercase">Pending</span>';
 
         const dateStr    = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '—';
