@@ -542,7 +542,7 @@ function injectPreorderModal() {
         <div class="p-4 border-b flex items-center gap-3 bg-gray-50">
           <img id="po-product-img" src="" class="w-12 h-14 object-cover rounded-lg border border-gray-100 bg-gray-100">
           <div class="flex-1 min-w-0">
-            <p class="text-[9px] font-bold uppercase tracking-widest" style="color:#B36A5E">Pre-order <span class="po-number-display font-mono normal-case text-sm font-bold text-[#322C2B]"></span></p>
+            <p class="text-[9px] font-bold uppercase tracking-widest" style="color:#B36A5E">Pre-order <span class="po-number-display text-sm font-bold text-[#322C2B]"></span></p>
             <p id="po-product-name" class="text-sm font-bold text-[#322C2B] truncate"></p>
           </div>
           <button onclick="closePreorderModal()" class="text-gray-400 hover:text-black text-2xl leading-none">&times;</button>
@@ -614,7 +614,7 @@ function injectPreorderModal() {
           <p class="text-sm text-gray-500">Your pre-order is in. We'll be in touch shortly.</p>
           <div class="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 mx-auto max-w-[220px]">
             <p class="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">Your Pre-Order Number</p>
-            <p class="po-number-display font-mono text-base font-bold text-[#322C2B]">—</p>
+            <p class="po-number-display text-base font-bold text-[#322C2B]">—</p>
           </div>
           <button onclick="closePreorderModal()" class="bg-[#322C2B] text-white px-6 py-2.5 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition tracking-widest">Close</button>
         </div>
