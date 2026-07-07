@@ -11,6 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Stamp cart.js version with commit SHA
+        run: |
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          echo "Stamping cart.js version as: $SHORT_SHA"
+          find . -name "*.html" -exec sed -i "s/cart\.js?v=[^\"']*/cart.js?v=${SHORT_SHA}/g" {} +
+          echo "Done. Verifying:"
+          grep -o 'cart\.js?v=[^"'"'"']*' *.html | head -20
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
