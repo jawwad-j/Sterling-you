@@ -594,11 +594,6 @@ function injectPreorderModal() {
             <p class="text-[10px] font-bold uppercase tracking-widest mb-1" style="color:#B36A5E">Pre-order Recorded ✓</p>
             <p class="text-xs text-gray-600">Send your advance via bKash to confirm:</p>
           </div>
-          <div class="bg-white border-2 border-dashed rounded-xl px-4 py-3 text-center" style="border-color:#E5D3CD">
-            <p class="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">Your Pre-Order Number</p>
-            <p class="po-number-display font-mono text-lg font-bold" style="color:#B36A5E">—</p>
-            <p class="text-[10px] text-gray-400 mt-1">Save this for future reference.</p>
-          </div>
           <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center space-y-1">
             <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Send Money to bKash</p>
             <p id="po-bkash-number" class="text-xl font-bold text-[#322C2B] tracking-wide"></p>
@@ -617,10 +612,6 @@ function injectPreorderModal() {
           <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto text-2xl" style="background:#F5ECE9">✨</div>
           <h3 class="text-lg font-bold text-[#322C2B]">Thank you!</h3>
           <p class="text-sm text-gray-500">Your pre-order is in. We'll be in touch shortly.</p>
-          <div class="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 mx-auto max-w-[220px]">
-            <p class="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">Your Pre-Order Number</p>
-            <p class="po-number-display font-mono text-base font-bold" style="color:#B36A5E">—</p>
-          </div>
           <button onclick="closePreorderModal()" class="bg-[#322C2B] text-white px-6 py-2.5 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition tracking-widest">Close</button>
         </div>
       </div>`;
@@ -812,10 +803,6 @@ const poNumber = 'PO-' + Math.floor(100000 + Math.random() * 900000);
         window._poPreorderId = ref.id;
         window._poNumber = poNumber;
         document.querySelectorAll('.po-number-display').forEach(el => { el.innerText = poNumber; });
-        window._poNumber = poNumber;
-        // Show the customer their PO number on the payment + done steps
-        const _poNumEls = document.querySelectorAll('.po-number-display');
-        _poNumEls.forEach(el => { el.innerText = poNumber; });
 
         try { fbq('track', 'Lead', { content_name: window._poProduct.name, value: advance, currency: 'BDT' }); } catch(e) {}
 
