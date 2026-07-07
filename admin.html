@@ -8805,7 +8805,7 @@ window._buildPreorderReceipt = async function(preorderId, action) {
 
     // Store contact + terms (same settings docs the order receipt uses)
     let storePhone = '';
-    let terms = 'Advance is adjusted against final bill. Balance payable on delivery (COD).';
+    let terms = 'The balance shown does NOT include delivery charge. Delivery charge will be added at dispatch. Advance is adjusted against the final bill. Balance + delivery payable on delivery (COD).';
     try {
         const c = await db.collection("settings").doc("contact").get();
         if (c.exists && c.data().phone) storePhone = c.data().phone;
@@ -8901,6 +8901,7 @@ window._buildPreorderReceipt = async function(preorderId, action) {
     pos += '<tr><td class="label">Advance Paid<\/td><td style="text-align:right;color:#000;font-weight:700">-\u09F3' + fmt(advance) + '<\/td><\/tr>';
     pos += '<tr class="grand-row"><td>BALANCE (COD)<\/td><td style="text-align:right">\u09F3' + fmt(balanceAfter) + '<\/td><\/tr>';
     pos += '<\/table>';
+    pos += '<div class="center" style="font-size:10px;font-weight:700;margin-top:4px">+ Delivery charge (added at dispatch)<\/div>';
 
     // Footer
     pos += '<div class="divider"><\/div>';
@@ -9272,27 +9273,35 @@ window.renderPreorders = function() {
             ? '<td class="p-3"><input type="checkbox" class="preorder-checkbox accent-[#B36A5E] w-4 h-4 cursor-pointer" data-id="' + p.id + '" ' + (sel ? 'checked' : '') + ' onchange="togglePreorderSelect(this)"></td>'
             : '<td class="p-3"></td>';
 
+// Icon button helper (secondary actions) — icon only, label on hover via title
+        const icoBtn = (onclick, title, icon, colorClass) =>
+            '<button onclick="' + onclick + '" title="' + title + '" class="w-7 h-7 flex items-center justify-center rounded-lg border text-sm transition ' + colorClass + '">' + icon + '</button>';
+        // Text button helper (primary actions)
+        const txtBtn = (onclick, label, colorClass) =>
+            '<button onclick="' + onclick + '" class="font-bold uppercase text-[9px] px-2.5 py-1.5 rounded-lg border transition ' + colorClass + '">' + label + '</button>';
+
         let actions = '';
         if (status === 'Pending') {
-            actions += '<button onclick="preorderOpenConfirm(\'' + p.id + '\')" class="text-green-600 font-bold uppercase text-[9px] hover:underline bg-green-50 px-2 py-1 rounded border border-green-100">Confirm</button>';
-            actions += '<button onclick="preorderOpenEdit(\'' + p.id + '\')" class="text-gray-600 font-bold uppercase text-[9px] hover:underline bg-gray-50 px-2 py-1 rounded border border-gray-200">Edit</button>';
-            actions += '<button onclick="preorderCancel(\'' + p.id + '\')" class="text-red-500 font-bold uppercase text-[9px] hover:underline bg-red-50 px-2 py-1 rounded border border-red-100">Cancel</button>';
+            actions += txtBtn('preorderOpenConfirm(\'' + p.id + '\')', 'Confirm', 'text-green-700 bg-green-50 border-green-200 hover:bg-green-100');
+            actions += icoBtn('preorderOpenEdit(\'' + p.id + '\')', 'Edit', '✏️', 'text-gray-500 bg-white border-gray-200 hover:bg-gray-50');
+            actions += icoBtn('preorderCancel(\'' + p.id + '\')', 'Cancel', '✕', 'text-red-500 bg-white border-red-200 hover:bg-red-50');
         } else if (status === 'Confirmed') {
-            actions += '<button onclick="_buildPreorderReceipt(\'' + p.id + '\', \'save\')" class="text-[#B36A5E] font-bold uppercase text-[9px] hover:underline bg-[#F5ECE9] px-2 py-1 rounded border border-[#E5D3CD]">⬇ Receipt</button>';
-            actions += '<button onclick="preorderRevert(\'' + p.id + '\')" class="text-yellow-700 font-bold uppercase text-[9px] hover:underline bg-yellow-50 px-2 py-1 rounded border border-yellow-100">↩ Revert</button>';
-            actions += '<button onclick="preorderOpenEdit(\'' + p.id + '\')" class="text-gray-600 font-bold uppercase text-[9px] hover:underline bg-gray-50 px-2 py-1 rounded border border-gray-200">Edit</button>';
-            actions += '<button onclick="preorderCancel(\'' + p.id + '\')" class="text-red-500 font-bold uppercase text-[9px] hover:underline bg-red-50 px-2 py-1 rounded border border-red-100">Cancel</button>';
+            actions += txtBtn('_buildPreorderReceipt(\'' + p.id + '\', \'save\')', '⬇ Receipt', 'text-[#B36A5E] bg-[#F5ECE9] border-[#E5D3CD] hover:bg-[#EADfdA]');
+            actions += icoBtn('preorderOpenEdit(\'' + p.id + '\')', 'Edit', '✏️', 'text-gray-500 bg-white border-gray-200 hover:bg-gray-50');
+            actions += icoBtn('preorderRevert(\'' + p.id + '\')', 'Revert to Pending', '↩', 'text-yellow-700 bg-white border-yellow-200 hover:bg-yellow-50');
+            actions += icoBtn('preorderCancel(\'' + p.id + '\')', 'Cancel', '✕', 'text-red-500 bg-white border-red-200 hover:bg-red-50');
         } else if (status === 'Converted') {
             actions += '<span class="text-blue-600 font-bold text-[9px] uppercase bg-blue-50 px-2 py-1 rounded border border-blue-100">→ ' + (p.convertedOrderCode || 'Order') + '</span>';
+            actions += icoBtn('_buildPreorderReceipt(\'' + p.id + '\', \'save\')', 'Download Receipt', '⬇', 'text-[#B36A5E] bg-white border-[#E5D3CD] hover:bg-[#F5ECE9]');
         } else if (status === 'Cancelled' || status === 'Refunded') {
-            actions += '<button onclick="preorderRestore(\'' + p.id + '\')" class="text-gray-600 font-bold uppercase text-[9px] hover:underline bg-gray-50 px-2 py-1 rounded border border-gray-200">↩ Restore</button>';
+            actions += icoBtn('preorderRestore(\'' + p.id + '\')', 'Restore', '↩', 'text-gray-600 bg-white border-gray-200 hover:bg-gray-50');
         }
         if (!p.userId && status !== 'Refunded' && status !== 'Cancelled' && status !== 'Converted')
-            actions += '<button onclick="preorderSaveAsCustomer(\'' + p.id + '\')" class="text-blue-600 font-bold uppercase text-[9px] hover:underline bg-blue-50 px-2 py-1 rounded border border-blue-100">Save Customer</button>';
-        actions += '<button onclick="preorderDelete(\'' + p.id + '\')" class="text-red-400 font-bold uppercase text-[9px] hover:underline bg-red-50 px-2 py-1 rounded border border-red-100">Delete</button>';
+            actions += icoBtn('preorderSaveAsCustomer(\'' + p.id + '\')', 'Save as Customer', '👤', 'text-blue-600 bg-white border-blue-200 hover:bg-blue-50');
+        actions += icoBtn('preorderDelete(\'' + p.id + '\')', 'Delete', '🗑', 'text-red-400 bg-white border-red-200 hover:bg-red-50');
         if (isSuper && p.userId)
-            actions += '<button onclick="preorderDeleteCustomer(\'' + p.id + '\')" class="text-red-700 font-bold uppercase text-[9px] hover:underline bg-red-50 px-2 py-1 rounded border border-red-200">Del Customer</button>';
-
+            actions += icoBtn('preorderDeleteCustomer(\'' + p.id + '\')', 'Delete Customer', '⛔', 'text-red-700 bg-white border-red-300 hover:bg-red-50');
+        
         const preIdCell = p.preorderId
             ? '<span class="font-mono text-[10px] font-bold text-[#B36A5E]">' + p.preorderId + '</span>'
             : '<span class="text-gray-300 text-[10px]">—</span>';
@@ -9403,7 +9412,7 @@ window.preorderMarkConfirmed = async function(id) {
             catch(ce) { if (!confirm('Could not auto-create customer (' + ce.message + ').\nConfirm anyway without linking a customer?')) return; }
         }
         // Assign the permanent PO number now, at confirmation (reused when moved to Orders)
-        const poNumber = (p && p.poNumber) ? p.poNumber : ('PO-' + Date.now().toString().slice(-7) + Math.floor(10 + Math.random() * 89));
+        const poNumber = (p && p.poNumber) ? p.poNumber : ('PO-' + Math.floor(100000 + Math.random() * 900000));
         if (p) p.poNumber = poNumber;
         await db.collection("preorders").doc(id).update({ status: 'Confirmed', confirmedAt: new Date().toISOString(), poNumber: poNumber });
         await window.logAdminAction('Confirmed pre-order: ' + p.customerName + ' (' + p.customerPhone + ')');
