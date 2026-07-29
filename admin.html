@@ -4188,16 +4188,14 @@ if (shipToggleBtn) {
                                     ' class="w-20 border border-gray-200 rounded px-2 py-0.5 text-xs font-bold text-[#322C2B] text-center outline-none focus:border-[#B36A5E] bg-white">' +
                                 '<\/div>' +
                             '<\/div>' +
-                            (advancePaid > 0 ?
-                                '<div class="flex justify-between items-center text-[11px] py-1 border-t border-gray-200 mt-1 pt-1">' +
-                                    '<span class="text-green-600 font-medium">Advance Paid (bKash)<\/span>' +
-                                    '<span class="font-bold text-green-600">-\u09F3' + fmt(advancePaid) + '<\/span>' +
-                                '<\/div>' +
-                                '<div class="flex justify-between items-center text-[11px] py-1 border-t border-gray-200 mt-1 pt-1">' +
-                                    '<span class="text-[#322C2B] font-bold uppercase tracking-wide">COD Collectable<\/span>' +
-                                    '<span id="verify-cod-collectable" class="font-bold text-[#322C2B]">\u09F3' + fmt(Math.max(0, (Number(order.totalAmount) || itemTotalSum) - advancePaid)) + '<\/span>' +
-                                '<\/div>'
-                            : '') +
+                            '<div class="flex justify-between items-center text-[11px] py-1 border-t border-gray-200 mt-1 pt-1">' +
+                                '<span class="text-green-600 font-medium">Advance Paid (bKash)<\/span>' +
+                                '<span class="flex items-center gap-1">\u09F3<input id="verify-advance-paid" type="number" value="' + advancePaid + '" oninput="recalcVerifyTotal()" class="w-20 text-right border-b border-green-200 bg-transparent font-bold text-green-600 outline-none focus:border-green-500 py-0.5" placeholder="0"><\/span>' +
+                            '<\/div>' +
+                            '<div class="flex justify-between items-center text-[11px] py-1 border-t border-gray-200 mt-1 pt-1">' +
+                                '<span class="text-[#322C2B] font-bold uppercase tracking-wide">COD Collectable<\/span>' +
+                                '<span id="verify-cod-collectable" class="font-bold text-[#322C2B]">\u09F3' + fmt(Math.max(0, (Number(order.totalAmount) || itemTotalSum) - advancePaid)) + '<\/span>' +
+                            '<\/div>' +
                         '<\/div>' +
 
                         '<div class="bg-gray-50 p-3 rounded-lg border border-gray-100 space-y-3">' +
@@ -4313,12 +4311,11 @@ window.recalcVerifyTotal = function() {
     const newTotal   = adjustedTotal - discountAmount;
     const hasChange  = discountAmount > 0 || shippingDiff !== 0;
 
-    // Keep the COD collectable (effective total − advance) in sync as fees/discounts change
-    const _advCollect = Number(order.advancePaid) || 0;
-    if (_advCollect > 0) {
-        const collectEl = document.getElementById('verify-cod-collectable');
-        if (collectEl) collectEl.innerText = '\u09F3' + fmt(Math.max(0, newTotal - _advCollect));
-    }
+    // Keep the COD collectable (effective total − advance) in sync as fees/discounts/advance change
+    const _advEl = document.getElementById('verify-advance-paid');
+    const _advCollect = _advEl ? (Number(_advEl.value) || 0) : (Number(order.advancePaid) || 0);
+    const collectEl = document.getElementById('verify-cod-collectable');
+    if (collectEl) collectEl.innerText = '\u09F3' + fmt(Math.max(0, newTotal - _advCollect));
 
     if (!hasChange) {
         totalEl.innerText = '—';
@@ -4539,6 +4536,15 @@ const updatePayload = {
         if (shippingDiffFinal !== 0) {
             updatePayload.customerShippingFee      = editedShippingFinal;
             updatePayload.shippingFeeEditedByAdmin = true;
+        }
+
+        // ── Advance paid (editable in verify; covers regular orders crediting a prior advance) ──
+        const _advInputEl = document.getElementById('verify-advance-paid');
+        if (_advInputEl) {
+            const _advVal = Number(_advInputEl.value) || 0;
+            if (_advVal !== (Number(order.advancePaid) || 0)) {
+                updatePayload.advancePaid = _advVal;
+            }
         }
 
         if (discountAmount > 0) {
