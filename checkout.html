@@ -244,9 +244,13 @@ window.SterlingAddressOnSave = (updatedList) => {
         let currentCheckoutUser = null; 
         let isSurrogateActive = false;
 
-auth.onAuthStateChanged(async (user) => {
-    if (window._authPopupActive) return;
+window.SterlingAuthOnSuccess = function() {
+    if (auth.currentUser) runCheckoutAuth(auth.currentUser);
+};
+
+async function runCheckoutAuth(user) {
     if (!user) {
+        if (window._authPopupActive) return;
         openAuthPopup();
         return;
     }
@@ -338,6 +342,11 @@ try {
         console.error("Error loading checkout data:", err);
         document.getElementById('address-container').innerHTML = `<p class="text-sm text-red-500">Error loading addresses. Please refresh.</p>`;
     }
+}
+
+auth.onAuthStateChanged((user) => {
+    if (window._authPopupActive) return;
+    runCheckoutAuth(user);
 });
 
         (function() {
