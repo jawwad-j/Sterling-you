@@ -259,8 +259,9 @@ auth.onAuthStateChanged(async (user) => {
         const userDoc = await db.collection("users").doc(targetUid).get();
 
         if (!userDoc.exists) {
+            if (window._authPopupActive) return;   // popup still finishing — don't bounce
             await auth.signOut();
-            window.location.href = 'login.html?redirect=checkout.html';
+            openAuthPopup();
             return;
         }
 

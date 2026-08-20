@@ -236,14 +236,27 @@
     // ── SUCCESS: close popup instead of redirect ──
     function finishSuccess(){
         clearInterval(otpTimer);
-        window._authPopupActive = false;   // release checkout's auth guard
         closeAuthPopup();
-        // Prefer an explicit hook; otherwise reload so checkout re-runs its
-        // auth flow cleanly with the now-logged-in user.
-        if (typeof window.SterlingAuthOnSuccess === 'function') {
-            try { window.SterlingAuthOnSuccess(); return; } catch(e){}
+        // Wait until Firebase has a confirmed, persisted user before we hand
+        // back to checkout — otherwise checkout's guard can race the session
+        // and bounce to the login page. Keep the popup guard ON until then.
+        const proceed = () => {
+            window._authPopupActive = false;
+            if (typeof window.SterlingAuthOnSuccess === 'function') {
+                try { window.SterlingAuthOnSuccess(); return; } catch(e){}
+            }
+            window.location.reload();
+        };
+        if (auth.currentUser) {
+            // Give Firestore a beat to have the user doc readable, then go.
+            setTimeout(proceed, 400);
+        } else {
+            const unsub = auth.onAuthStateChanged(u => {
+                if (u) { unsub(); setTimeout(proceed, 400); }
+            });
+            // Safety timeout in case the event never fires
+            setTimeout(() => { unsub(); proceed(); }, 4000);
         }
-        window.location.reload();
     }
 
     // ── STEP 1: check phone ──
