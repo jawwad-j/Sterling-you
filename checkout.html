@@ -263,16 +263,52 @@ async function runCheckoutAuth(user) {
     try {
         const userDoc = await db.collection("users").doc(targetUid).get();
 
-                if (!userDoc.exists) {
-            console.log('[DEBUG-5] userDoc MISSING for uid:', targetUid, '— signing out and reopening popup');
-            if (window._authPopupActive) return;   // popup still finishing — don't bounce
-            await auth.signOut();
-            openAuthPopup();
-            return;
-        }
+        if (!userDoc.exists) {
+            // Self-heal: auth account exists but has no users/ document.
+            // Only ever heal the signed-in user's OWN account — never a surrogate target.
+            if (targetUid === user.uid) {
+                let phone = '';
+                if (user.email && user.email.indexOf('@sterling.com') > -1) {
+                    phone = user.email.split('@')[0];
+                } else if (user.phoneNumber) {
+                    phone = '0' + user.phoneNumber.replace('+880', '');
+                }
 
-currentCheckoutUser = userDoc.data();
-currentCheckoutUser.uid = targetUid;
+                let fullName = user.displayName || '';
+                if (phone) {
+                    try {
+                        const lk = await db.collection('phone_lookups').doc(phone).get();
+                        if (lk.exists && lk.data().name) fullName = lk.data().name;
+                    } catch (e) {}
+                }
+
+                const healedDoc = {
+                    fullName: fullName || 'Customer',
+                    phone: phone,
+                    email: user.email || (phone ? phone + '@sterling.com' : ''),
+                    contactEmail: null,
+                    crmTags: 'Good',
+                    isBlocked: false,
+                    addresses: [],
+                    paymentMethods: [],
+                    totalSpend: 0,
+                    authMethod: 'phone',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                await db.collection('users').doc(user.uid).set(healedDoc, { merge: true });
+                currentCheckoutUser = healedDoc;
+                currentCheckoutUser.uid = user.uid;
+            } else {
+                if (window._authPopupActive) return;
+                await auth.signOut();
+                openAuthPopup();
+                return;
+            }
+        } else {
+            currentCheckoutUser = userDoc.data();
+            currentCheckoutUser.uid = targetUid;
+        }
 
 // Show the customer's name in the top bar
 const nameEl = document.getElementById('checkout-username');
