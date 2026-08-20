@@ -249,6 +249,7 @@ window.SterlingAuthOnSuccess = function() {
 };
 
 async function runCheckoutAuth(user) {
+    console.log('[DEBUG-4] runCheckoutAuth called | user:', user ? user.uid : null, '| popupActive:', window._authPopupActive);
     if (!user) {
         if (window._authPopupActive) return;
         openAuthPopup();
@@ -262,7 +263,8 @@ async function runCheckoutAuth(user) {
     try {
         const userDoc = await db.collection("users").doc(targetUid).get();
 
-        if (!userDoc.exists) {
+                if (!userDoc.exists) {
+            console.log('[DEBUG-5] userDoc MISSING for uid:', targetUid, '— signing out and reopening popup');
             if (window._authPopupActive) return;   // popup still finishing — don't bounce
             await auth.signOut();
             openAuthPopup();

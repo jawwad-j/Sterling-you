@@ -237,14 +237,17 @@
     function finishSuccess(){
         clearInterval(otpTimer);
         closeAuthPopup();
+        console.log('[DEBUG-1] finishSuccess fired | currentUser:', auth.currentUser ? auth.currentUser.uid : null, '| hook exists:', typeof window.SterlingAuthOnSuccess);
         // Wait until Firebase has a confirmed, persisted user before we hand
         // back to checkout — otherwise checkout's guard can race the session
         // and bounce to the login page. Keep the popup guard ON until then.
         const proceed = () => {
+            console.log('[DEBUG-2] proceed() running | hook type:', typeof window.SterlingAuthOnSuccess, '| currentUser:', auth.currentUser ? auth.currentUser.uid : null);
             window._authPopupActive = false;
             if (typeof window.SterlingAuthOnSuccess === 'function') {
                 try { window.SterlingAuthOnSuccess(); return; } catch(e){}
             }
+            console.log('[DEBUG-3] FALLING BACK TO RELOAD — hook was not found or threw');
             window.location.reload();
         };
         if (auth.currentUser) {
@@ -425,6 +428,7 @@
 
     // ── open / close ──
     window.openAuthPopup = function(){
+        console.log('[DEBUG-6] openAuthPopup called', new Error().stack);
         window._authPopupActive = true;    // block checkout's auth redirect while open
         injectModal();
         setupRecaptcha();
