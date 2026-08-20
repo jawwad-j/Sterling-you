@@ -90,10 +90,9 @@ service cloud.firestore {
     match /otp_daily_cap/{date} {
       allow read, write: if true;
     }
-    match /site_analytics/{docId} {
-      allow read: if isAdmin();
-      allow write: if true;
-    }
+match /site_analytics/{docId} {
+  allow read, write: if true;
+}
     match /site_visitors/{docId} {
       allow read: if isAdmin();
       allow write: if true;

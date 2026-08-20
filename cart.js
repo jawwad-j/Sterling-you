@@ -595,7 +595,7 @@ function injectPreorderModal() {
             <p class="text-xs text-gray-600">Send your advance via bKash to confirm:</p>
           </div>
           <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center space-y-1">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Send Money to bKash</p>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">MAKE PAYMENT to bKash</p>
             <p id="po-bkash-number" class="text-xl font-bold text-[#322C2B] tracking-wide"></p>
             <p class="text-[10px] text-gray-400">Amount: <span id="po-bkash-amount" class="font-bold" style="color:#B36A5E"></span></p>
           </div>
