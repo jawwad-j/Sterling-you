@@ -38,6 +38,15 @@
           }
         ]
       },
+            {
+        "source": "/@(checkout|account|login|product|category|home|terms)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
       {
         "source": "**/*.@(js|css)",
         "headers": [
