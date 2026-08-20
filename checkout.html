@@ -244,8 +244,8 @@ window.SterlingAddressOnSave = (updatedList) => {
         let currentCheckoutUser = null; 
         let isSurrogateActive = false;
 
-let authHandled = false;
 auth.onAuthStateChanged(async (user) => {
+    if (window._authPopupActive) return;
     if (!user) {
         openAuthPopup();
         return;

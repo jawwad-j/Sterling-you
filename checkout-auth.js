@@ -236,11 +236,14 @@
     // ── SUCCESS: close popup instead of redirect ──
     function finishSuccess(){
         clearInterval(otpTimer);
+        window._authPopupActive = false;   // release checkout's auth guard
         closeAuthPopup();
-        // checkout.html's onAuthStateChanged fires and takes over.
+        // Prefer an explicit hook; otherwise reload so checkout re-runs its
+        // auth flow cleanly with the now-logged-in user.
         if (typeof window.SterlingAuthOnSuccess === 'function') {
-            try { window.SterlingAuthOnSuccess(); } catch(e){}
+            try { window.SterlingAuthOnSuccess(); return; } catch(e){}
         }
+        window.location.reload();
     }
 
     // ── STEP 1: check phone ──
@@ -409,6 +412,7 @@
 
     // ── open / close ──
     window.openAuthPopup = function(){
+        window._authPopupActive = true;    // block checkout's auth redirect while open
         injectModal();
         setupRecaptcha();
         caBackToPhone();
@@ -421,6 +425,7 @@
         const m=$('checkoutAuthModal');
         if(m){ m.classList.add('hidden'); m.classList.remove('flex'); }
         clearInterval(otpTimer);
+        window._authPopupActive = false;
     };
 
     // Boot: inject early so reCAPTCHA container exists
