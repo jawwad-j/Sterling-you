@@ -93,10 +93,9 @@ service cloud.firestore {
 match /site_analytics/{docId} {
   allow read, write: if true;
 }
-    match /site_visitors/{docId} {
-      allow read: if isAdmin();
-      allow write: if true;
-    }
+match /site_visitors/{docId} {
+  allow read, write: if true;
+}
     match /newsletter_subscribers/{subscriber} {
       allow create: if true;
       allow read, update, delete: if isAdmin();

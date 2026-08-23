@@ -570,21 +570,32 @@ function injectPreorderModal() {
             <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Delivery Address</label>
             <textarea id="po-address" rows="2" placeholder="House, road, area, district..." class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-[#B36A5E] resize-none"></textarea>
           </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Quantity</label>
-              <input type="number" id="po-qty" value="1" min="1" oninput="poRecalcAdvance()" class="w-full border-b border-gray-300 py-2 text-sm outline-none focus:border-[#B36A5E] text-center font-bold">
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Advance (৳)</label>
-              <input type="number" id="po-advance" class="w-full border-b border-gray-300 py-2 text-sm outline-none focus:border-[#B36A5E] text-center font-bold">
-            </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Your Bags</label>
+            <div id="po-items-list" class="space-y-2"></div>
+            <button type="button" onclick="poOpenPicker()" class="mt-2 w-full border border-dashed py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition hover:bg-[#F5ECE9]" style="border-color:#B36A5E;color:#B36A5E">+ Add Another Bag</button>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Advance (৳)</label>
+            <input type="number" id="po-advance" class="w-full border-b border-gray-300 py-2 text-sm outline-none focus:border-[#B36A5E] text-center font-bold">
           </div>
           <p id="po-advance-hint" class="text-[10px] text-gray-400"></p>
           <p id="po-error-2" class="hidden text-red-500 text-[11px] font-bold"></p>
           <div class="flex gap-3 pt-1">
             <button onclick="poBackToStep1()" class="flex-1 text-[10px] font-bold uppercase text-gray-400 border border-gray-200 py-3 rounded-xl hover:bg-gray-50 transition tracking-widest">Back</button>
             <button id="po-submit-btn" onclick="poSubmitForm()" class="flex-1 text-white py-3 rounded-xl font-bold uppercase text-[10px] transition shadow-lg tracking-widest" style="background:#B36A5E" onmouseover="this.style.background='#322C2B'" onmouseout="this.style.background='#B36A5E'">Confirm Pre-order</button>
+          </div>
+        </div>
+
+        <!-- STEP PICKER: choose more products -->
+        <div id="po-step-picker" class="hidden p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <p class="text-[10px] font-bold uppercase tracking-widest" style="color:#B36A5E">Add Another Bag</p>
+            <button onclick="poClosePicker()" class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Back</button>
+          </div>
+          <input type="text" id="po-picker-search" oninput="poRenderPicker()" placeholder="Search bags..." class="w-full border-b border-gray-300 py-2 text-sm outline-none focus:border-[#B36A5E]">
+          <div id="po-picker-grid" class="grid grid-cols-2 gap-3 max-h-[45vh] overflow-y-auto">
+            <p class="col-span-2 text-center text-xs text-gray-400 py-6">Loading...</p>
           </div>
         </div>
 
@@ -626,6 +637,12 @@ document.addEventListener('DOMContentLoaded', injectPreorderModal);
 window.openPreorderModal = function(product) {
     injectPreorderModal();
     window._poProduct   = product;
+    window._poItems     = [{
+        id: product.id, name: product.name, image: product.image || '',
+        price: Number(product.price) || 0,
+        preorderAdvance: Number(product.preorderAdvance) || 510,
+        qty: 1
+    }];
     window._poIsNew     = false;
     window._poUserId    = null;
     window._poPhone     = null;
@@ -638,11 +655,12 @@ window.openPreorderModal = function(product) {
     document.getElementById('po-step-2').classList.add('hidden');
     document.getElementById('po-step-3').classList.add('hidden');
     document.getElementById('po-step-done').classList.add('hidden');
+    document.getElementById('po-step-picker').classList.add('hidden');
+    poRenderItems();
 
     document.getElementById('po-phone').value = '';
     document.getElementById('po-name').value = '';
     document.getElementById('po-address').value = '';
-    document.getElementById('po-qty').value = 1;
     document.getElementById('po-advance').value = '';
     document.getElementById('po-txn').value = '';
     document.getElementById('po-error').classList.add('hidden');
@@ -747,15 +765,129 @@ window.poLookupPhone = async function() {
     }
 };
 
+window.poMinAdvance = function() {
+    return (window._poItems || []).reduce((s, i) => s + (Number(i.preorderAdvance) || 510) * i.qty, 0);
+};
+
+window.poRenderItems = function() {
+    const list  = document.getElementById('po-items-list');
+    const items = window._poItems || [];
+    if (!list) return;
+
+    list.innerHTML = items.map((it, idx) => `
+      <div class="flex items-center gap-2 border border-gray-100 rounded-xl p-2 bg-gray-50">
+        <img src="${it.image || ''}" class="w-10 h-12 object-cover rounded-lg bg-gray-100 flex-shrink-0">
+        <div class="flex-1 min-w-0">
+          <p class="text-[11px] font-bold text-[#322C2B] truncate">${it.name}</p>
+          <p class="text-[9px] text-gray-400">Advance ৳${(Number(it.preorderAdvance) || 510).toLocaleString()} each</p>
+        </div>
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <button type="button" onclick="poSetQty(${idx},-1)" class="w-6 h-6 rounded-md border border-gray-200 text-sm font-bold text-gray-500 leading-none">−</button>
+          <span class="w-5 text-center text-xs font-bold">${it.qty}</span>
+          <button type="button" onclick="poSetQty(${idx},1)" class="w-6 h-6 rounded-md border border-gray-200 text-sm font-bold text-gray-500 leading-none">+</button>
+        </div>
+        ${items.length > 1 ? `<button type="button" onclick="poRemoveItem(${idx})" class="text-gray-300 hover:text-red-500 text-lg leading-none flex-shrink-0 ml-1">&times;</button>` : ''}
+      </div>`).join('');
+
+    const totalQty = items.reduce((s, i) => s + i.qty, 0);
+    const nameEl = document.getElementById('po-product-name');
+    if (nameEl) nameEl.innerText = items.length > 1
+        ? items.length + ' bags · ' + totalQty + ' item' + (totalQty > 1 ? 's' : '')
+        : (items[0] ? items[0].name : 'Pre-order');
+    const imgEl = document.getElementById('po-product-img');
+    if (imgEl && items[0]) imgEl.src = items[0].image || '';
+
+    poRecalcAdvance();
+};
+
+window.poSetQty = function(idx, delta) {
+    const items = window._poItems || [];
+    if (!items[idx]) return;
+    items[idx].qty = Math.max(1, items[idx].qty + delta);
+    poRenderItems();
+};
+
+window.poRemoveItem = function(idx) {
+    const items = window._poItems || [];
+    if (items.length <= 1) return;
+    items.splice(idx, 1);
+    poRenderItems();
+};
+
 window.poRecalcAdvance = function() {
-    const qty    = Math.max(1, Number(document.getElementById('po-qty').value) || 1);
-    const perBag = Number(window._poProduct.preorderAdvance) || 510;
-    const min    = perBag * qty;
-    const adv    = document.getElementById('po-advance');
+    const items = window._poItems || [];
+    const min   = poMinAdvance();
+    const adv   = document.getElementById('po-advance');
+    if (!adv) return;
     adv.min = min;
     if (!adv.value || Number(adv.value) < min) adv.value = min;
+    const breakdown = items.map(i => i.qty + ' × ৳' + (Number(i.preorderAdvance) || 510).toLocaleString()).join(' + ');
     document.getElementById('po-advance-hint').innerText =
-        'Minimum ৳' + min.toLocaleString() + ' (' + qty + ' × ৳' + perBag.toLocaleString() + '). You may pay more.';
+        'Minimum ৳' + min.toLocaleString() + ' (' + breakdown + '). You may pay more.';
+};
+
+window.poOpenPicker = function() {
+    document.getElementById('po-step-2').classList.add('hidden');
+    document.getElementById('po-step-picker').classList.remove('hidden');
+    document.getElementById('po-picker-search').value = '';
+    poLoadPickerProducts();
+};
+
+window.poClosePicker = function() {
+    document.getElementById('po-step-picker').classList.add('hidden');
+    document.getElementById('po-step-2').classList.remove('hidden');
+};
+
+window.poLoadPickerProducts = async function() {
+    if (window._poPickerCache) { poRenderPicker(); return; }
+    try {
+        const snap = await db.collection("products").where("isPreorder", "==", true).limit(60).get();
+        window._poPickerCache = snap.docs.map(d => {
+            const p = d.data();
+            return {
+                id: String(d.id).trim(), name: p.name || '', image: p.image || '',
+                price: Number(p.price) || 0,
+                preorderAdvance: Number(p.preorderAdvance) || 510
+            };
+        });
+        poRenderPicker();
+    } catch (e) {
+        document.getElementById('po-picker-grid').innerHTML =
+            '<p class="col-span-2 text-center text-xs text-red-500 py-6">Could not load products.</p>';
+    }
+};
+
+window.poRenderPicker = function() {
+    const grid = document.getElementById('po-picker-grid');
+    const q    = (document.getElementById('po-picker-search').value || '').toLowerCase().trim();
+    const have = (window._poItems || []).map(i => i.id);
+    const list = (window._poPickerCache || [])
+        .filter(p => have.indexOf(p.id) === -1)
+        .filter(p => !q || p.name.toLowerCase().indexOf(q) > -1);
+
+    if (!list.length) {
+        grid.innerHTML = '<p class="col-span-2 text-center text-xs text-gray-400 py-6">No other bags available.</p>';
+        return;
+    }
+    grid.innerHTML = list.map(p => `
+      <button type="button" onclick="poAddItem('${p.id}')" class="text-left border border-gray-100 rounded-xl overflow-hidden hover:border-[#B36A5E] transition">
+        <img src="${p.image}" class="w-full h-24 object-cover bg-gray-100">
+        <div class="p-2">
+          <p class="text-[10px] font-bold text-[#322C2B] leading-tight line-clamp-2">${p.name}</p>
+          <p class="text-[9px] mt-0.5" style="color:#B36A5E">৳${p.price.toLocaleString()}</p>
+        </div>
+      </button>`).join('');
+};
+
+window.poAddItem = function(id) {
+    const p = (window._poPickerCache || []).find(x => x.id === id);
+    if (!p) return;
+    window._poItems.push({
+        id: p.id, name: p.name, image: p.image,
+        price: p.price, preorderAdvance: p.preorderAdvance, qty: 1
+    });
+    poClosePicker();
+    poRenderItems();
 };
 
 function poErr2(msg) {
@@ -766,10 +898,11 @@ function poErr2(msg) {
 window.poSubmitForm = async function() {
     const name    = (document.getElementById('po-name').value || '').trim();
     const address = (document.getElementById('po-address').value || '').trim();
-    const qty     = Math.max(1, Number(document.getElementById('po-qty').value) || 1);
+    const items   = window._poItems || [];
+    const qty     = items.reduce((s, i) => s + i.qty, 0);
     const advance = Number(document.getElementById('po-advance').value) || 0;
-    const perBag  = Number(window._poProduct.preorderAdvance) || 510;
-    const minAdv  = perBag * qty;
+    const minAdv  = poMinAdvance();
+    if (!items.length) { poErr2('Please add at least one bag.'); return; }
 
     document.getElementById('po-error-2').classList.add('hidden');
     if (!name)    { poErr2('Please enter your name.'); return; }
@@ -792,11 +925,18 @@ const poNumber = 'PO-' + Math.floor(100000 + Math.random() * 900000);
             customerPhone:   window._poPhone,
             customerAddress: address,
             userId:          uid || null,
-            productId:       window._poProduct.id,
-            productName:     window._poProduct.name,
-            productImage:    window._poProduct.image || '',
-            productPrice:    Number(window._poProduct.price) || 0,
+            productId:       items[0].id,
+            productName:     items.length > 1 ? items[0].name + ' +' + (items.length - 1) + ' more' : items[0].name,
+            productImage:    items[0].image || '',
+            productPrice:    Number(items[0].price) || 0,
             quantity:        qty,
+            itemCount:       items.length,
+            itemsSummary:    items.map(i => i.name + ' × ' + i.qty).join(', '),
+            items:           items.map(i => ({
+                                 productId: i.id, productName: i.name, productImage: i.image || '',
+                                 productPrice: Number(i.price) || 0, quantity: i.qty,
+                                 advancePerUnit: Number(i.preorderAdvance) || 510
+                             })),
             advanceAmount:   advance,
             bkashTxnId:      null,
             batch:           window._preorderSettings.currentBatch || '',
@@ -808,7 +948,12 @@ const poNumber = 'PO-' + Math.floor(100000 + Math.random() * 900000);
         window._poNumber = poNumber;
         document.querySelectorAll('.po-number-display').forEach(el => { el.innerText = poNumber; });
 
-        try { fbq('track', 'Lead', { content_name: window._poProduct.name, value: advance, currency: 'BDT' }); } catch(e) {}
+                items: [{
+                    item_id: String(window._poProduct.id),
+                    item_name: window._poProduct.name,
+                    price: Number(window._poProduct.price) || 0,
+                    quantity: qty
+                }]
 
         // GA4 pre-order event
         try {
@@ -834,7 +979,7 @@ const poNumber = 'PO-' + Math.floor(100000 + Math.random() * 900000);
                 customer_phone: window._poPhone,
                 total:          advance.toLocaleString(),
                 shipping:       '0',
-                items:          window._poProduct.name + ' × ' + qty + ' (Advance ৳' + advance.toLocaleString() + ', Batch: ' + (window._preorderSettings.currentBatch || 'N/A') + ')',
+                items:          items.map(i => i.name + ' × ' + i.qty).join('\n') + '\n(Advance ৳' + advance.toLocaleString() + ', Batch: ' + (window._preorderSettings.currentBatch || 'N/A') + ')',
                 address:        address
             });
         } catch(e) { console.error('Pre-order notification failed:', e); }
