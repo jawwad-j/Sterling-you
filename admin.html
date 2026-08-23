@@ -9757,7 +9757,12 @@ window.preorderSaveAndConfirm = async function() {
         const name    = document.getElementById('po-edit-name').value.trim();
         const phone   = document.getElementById('po-edit-phone').value.trim();
         const address = document.getElementById('po-edit-address').value.trim();
-        const qty     = Math.max(1, Number(document.getElementById('po-edit-qty').value) || 1);
+        const items   = (window._poEditItems || []).map(i => ({
+            productId: i.productId, productName: i.productName, productImage: i.productImage,
+            productPrice: Number(i.productPrice) || 0, quantity: Math.max(1, Number(i.quantity) || 1),
+            advancePerUnit: Number(i.advancePerUnit) || 510
+        }));
+        const qty     = items.reduce((s, i) => s + i.quantity, 0) || 1;
         const advance = Number(document.getElementById('po-edit-advance').value) || 0;
         const txn     = document.getElementById('po-edit-txn').value.trim();
         const batch   = document.getElementById('po-edit-batch').value.trim();
@@ -9766,7 +9771,13 @@ window.preorderSaveAndConfirm = async function() {
 
         await db.collection("preorders").doc(id).update({
             customerName: name, customerPhone: phone, customerAddress: address,
-            quantity: qty, advanceAmount: advance, bkashTxnId: txn || null, batch: batch || '',
+            quantity: qty, items: items, itemCount: items.length,
+            itemsSummary: items.map(i => i.productName + ' × ' + i.quantity).join(', '),
+            productId: items[0] ? items[0].productId : '',
+            productName: items.length > 1 ? items[0].productName + ' +' + (items.length - 1) + ' more' : (items[0] ? items[0].productName : ''),
+            productImage: items[0] ? items[0].productImage : '',
+            productPrice: items[0] ? items[0].productPrice : 0,
+            advanceAmount: advance, bkashTxnId: txn || null, batch: batch || '',
             preorderDiscountType: discType, preorderDiscountValue: discValue
         });
 
@@ -9842,7 +9853,6 @@ window.preorderOpenEdit = function(id) {
     document.getElementById('po-edit-name').value          = p.customerName    || '';
     document.getElementById('po-edit-phone').value         = p.customerPhone   || '';
     document.getElementById('po-edit-address').value       = p.customerAddress || '';
-    document.getElementById('po-edit-qty').value           = p.quantity        || 1;
     document.getElementById('po-edit-advance').value       = p.advanceAmount   || '';
     document.getElementById('po-edit-txn').value           = p.bkashTxnId      || '';
     document.getElementById('po-edit-batch').value         = p.batch           || '';
