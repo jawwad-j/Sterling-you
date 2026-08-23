@@ -8963,9 +8963,10 @@ window._buildPreorderReceipt = async function(preorderId, action) {
     const custName = p.customerName || 'N/A';
     const custPhone= p.customerPhone || 'N/A';
     const custAddr = p.customerAddress || 'N/A';
-    const qty      = Number(p.quantity) || 1;
-    const price    = Number(p.productPrice) || 0;
-    const lineTotal= qty * price;
+    const rItems   = window._poItemsOf(p);
+    const qty      = rItems.reduce((s, i) => s + i.quantity, 0);
+    const price    = rItems.length ? rItems[0].productPrice : 0;
+    const lineTotal= rItems.reduce((s, i) => s + i.quantity * i.productPrice, 0);
     const advance  = Number(p.advanceAmount) || 0;
     const balance  = Math.max(0, lineTotal - advance);
 
@@ -9031,9 +9032,11 @@ window._buildPreorderReceipt = async function(preorderId, action) {
     // Item
     pos += '<div class="divider"><\/div>';
     pos += '<table>';
-    pos += '<tr><td colspan="2" style="padding:3px 0;font-weight:800;font-size:14px">' + (p.productName || 'Item') + '<\/td><\/tr>';
-    pos += '<tr><td style="padding:0 0 5px 0;color:#444;font-size:13px">' + qty + ' x \u09F3' + fmt(price) + '<\/td>' +
-           '<td style="text-align:right;padding:0 0 5px 0;font-weight:900;font-size:14px">\u09F3' + fmt(lineTotal) + '<\/td><\/tr>';
+    rItems.forEach(function(it) {
+        pos += '<tr><td colspan="2" style="padding:3px 0;font-weight:800;font-size:14px">' + it.productName + '<\/td><\/tr>';
+        pos += '<tr><td style="padding:0 0 5px 0;color:#444;font-size:13px">' + it.quantity + ' x \u09F3' + fmt(it.productPrice) + '<\/td>' +
+               '<td style="text-align:right;padding:0 0 5px 0;font-weight:900;font-size:14px">\u09F3' + fmt(it.quantity * it.productPrice) + '<\/td><\/tr>';
+    });
     pos += '<\/table>';
 
     // Totals
@@ -9215,15 +9218,14 @@ window.openActivityModal = async function(uid, fullName) {
                 <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Delivery Address</label>
                 <textarea id="po-edit-address" rows="2" class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-[#B36A5E] resize-none"></textarea>
             </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Quantity</label>
-                    <input type="number" id="po-edit-qty" min="1" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] text-center font-bold">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Advance (৳)</label>
-                    <input type="number" id="po-edit-advance" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] text-center font-bold">
-                </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-2">Items Ordered</label>
+                <div id="po-edit-items" class="space-y-2"></div>
+                <div id="po-edit-items-total" class="text-[10px] text-gray-500 mt-2 text-right font-bold"></div>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Advance Paid (৳)</label>
+                <input type="number" id="po-edit-advance" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] text-center font-bold">
             </div>
             <div>
                 <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">bKash Transaction ID</label>
@@ -9277,6 +9279,29 @@ window.openActivityModal = async function(uid, fullName) {
 window._preordersCache       = [];
 window._selectedPreorderIds  = new Set();
 window._poEditId             = null;
+window._poEditItems          = [];
+
+// Normalises old single-product pre-orders and new multi-item ones into one shape
+window._poItemsOf = function(p) {
+    if (Array.isArray(p.items) && p.items.length) {
+        return p.items.map(i => ({
+            productId:      i.productId || i.id || '',
+            productName:    i.productName || i.name || 'Item',
+            productImage:   i.productImage || i.image || '',
+            productPrice:   Number(i.productPrice || i.price) || 0,
+            quantity:       Math.max(1, Number(i.quantity) || 1),
+            advancePerUnit: Number(i.advancePerUnit) || 510
+        }));
+    }
+    return [{
+        productId:      p.productId || '',
+        productName:    p.productName || 'Item',
+        productImage:   p.productImage || '',
+        productPrice:   Number(p.productPrice) || 0,
+        quantity:       Math.max(1, Number(p.quantity) || 1),
+        advancePerUnit: 510
+    }];
+};
 window._poStage              = 'pending';   // pending | confirmed | cancelled
 
 window.setPreorderStage = function(stage) {
@@ -9457,7 +9482,12 @@ window.renderPreorders = function() {
         html += '<tr class="border-b hover:bg-gray-50 transition ' + (sel ? 'bg-blue-50' : (awaitPay ? 'bg-orange-50/40' : '')) + '">' +
             cbCell +
             '<td class="p-3 whitespace-nowrap">' + poCell + '</td>' +
-            '<td class="p-3"><div class="flex items-center gap-2"><img src="' + (p.productImage || 'placeholder.png') + '" class="w-8 h-9 object-cover rounded shadow-sm shrink-0" onerror="this.src=\'placeholder.png\'"><span class="font-medium text-xs">' + (p.productName || '—') + '</span></div></td>' +
+            '<td class="p-3">' + (function(){
+                const its = window._poItemsOf(p);
+                return '<div class="space-y-1">' + its.map(function(it){
+                    return '<div class="flex items-center gap-2"><img src="' + (it.productImage || 'placeholder.png') + '" class="w-8 h-9 object-cover rounded shadow-sm shrink-0" onerror="this.src=\'placeholder.png\'"><span class="font-medium text-xs">' + it.productName + '</span><span class="text-[10px] font-bold text-gray-400 shrink-0">×' + it.quantity + '</span></div>';
+                }).join('') + (its.length > 1 ? '<p class="text-[9px] font-bold uppercase tracking-widest" style="color:#B36A5E">' + its.length + ' bags</p>' : '') + '</div>';
+            })() + '</td>' +
             '<td class="text-xs font-bold text-[#322C2B] whitespace-nowrap">' + (p.customerName || '—') + linkedBadge + '</td>' +
             '<td><a href="tel:' + (p.customerPhone || '') + '" class="font-mono text-xs text-[#B36A5E] hover:underline whitespace-nowrap">' + (p.customerPhone || '—') + '</a></td>' +
             '<td class="text-center font-bold text-xs">' + (p.quantity || 1) + '</td>' +
@@ -9630,23 +9660,25 @@ window.moveSelectedPreordersToOrders = async function() {
         try {
             const uid = await window._poEnsureCustomer(p);
 
-            let prod = {};
-            try { const pd = await db.collection("products").doc(String(p.productId)).get(); if (pd.exists) prod = pd.data(); } catch(e) {}
-
-            const qty   = Number(p.quantity) || 1;
-            const price = Number(p.productPrice) || Number(prod.price) || 0;
-
-            const item = {
-                id: p.productId,
-                name: p.productName || prod.name || 'Pre-order item',
-                price: price, quantity: qty,
-                image: p.productImage || prod.image || '',
-                sku: prod.sku || '', category: prod.category || '', subcategory: prod.subcategory || '',
-                weightKg: Number(prod.weightKg) || 0,
-                purchasePrice: Number(prod.purchasePrice) || 0,
-                supplierShippingCost: Number(prod.supplierShippingCost) || 0,
-                originalPrice: Number(prod.originalPrice) || price
-            };
+            const poItems = window._poItemsOf(p);
+            const orderItems = [];
+            for (const it of poItems) {
+                let prod = {};
+                try { const pd = await db.collection("products").doc(String(it.productId)).get(); if (pd.exists) prod = pd.data(); } catch(e) {}
+                const price = Number(it.productPrice) || Number(prod.price) || 0;
+                orderItems.push({
+                    id: it.productId,
+                    name: it.productName || prod.name || 'Pre-order item',
+                    price: price, quantity: it.quantity,
+                    image: it.productImage || prod.image || '',
+                    sku: prod.sku || '', category: prod.category || '', subcategory: prod.subcategory || '',
+                    weightKg: Number(prod.weightKg) || 0,
+                    purchasePrice: Number(prod.purchasePrice) || 0,
+                    supplierShippingCost: Number(prod.supplierShippingCost) || 0,
+                    originalPrice: Number(prod.originalPrice) || price
+                });
+            }
+            const orderTotal = orderItems.reduce((s, i) => s + i.price * i.quantity, 0);
 
             const addrObj = { detail: p.customerAddress || '', fullDisplay: p.customerAddress || '', tag: 'Shipping Address' };
             // Reuse the PO number assigned at confirmation; fall back to a fresh one only if missing
@@ -9659,8 +9691,8 @@ window.moveSelectedPreordersToOrders = async function() {
                 userId: uid,
                 userName: p.customerName || 'Customer',
                 userPhone: p.customerPhone || '',
-                items: [item],
-                totalAmount: price * qty,        // shipping added at Stage 1 verify
+                items: orderItems,
+                totalAmount: orderTotal,         // shipping added at Stage 1 verify
                 customerShippingFee: 0,
                 advancePaid: Number(p.advanceAmount) || 0,
                 paymentMethod: 'Cash on Delivery',
@@ -9740,7 +9772,7 @@ window.preorderSaveAndConfirm = async function() {
 
         // Refresh local copy so customer-creation uses the edited values
         const p = window._preordersCache.find(x => x.id === id);
-        if (p) Object.assign(p, { customerName: name, customerPhone: phone, customerAddress: address, quantity: qty, advanceAmount: advance, bkashTxnId: txn || null, batch: batch || '', preorderDiscountType: discType, preorderDiscountValue: discValue });
+        if (p) Object.assign(p, { customerName: name, customerPhone: phone, customerAddress: address, quantity: qty, items: items, itemCount: items.length, advanceAmount: advance, bkashTxnId: txn || null, batch: batch || '', preorderDiscountType: discType, preorderDiscountValue: discValue });
 
         // 2. Auto-create CRM customer (best-effort), then confirm
         if (p && !p.userId) {
@@ -9762,10 +9794,51 @@ window.preorderSaveAndConfirm = async function() {
 };
 
 // ── EDIT (address / batch / qty / advance / txn) ──
+window._poEditRenderItems = function() {
+    const box = document.getElementById('po-edit-items');
+    if (!box) return;
+    const items = window._poEditItems || [];
+    box.innerHTML = items.map((it, idx) => `
+      <div class="flex items-center gap-2 border border-gray-100 rounded-xl p-2 bg-gray-50">
+        <img src="${it.productImage || 'placeholder.png'}" onerror="this.src='placeholder.png'" class="w-9 h-11 object-cover rounded shadow-sm shrink-0">
+        <div class="flex-1 min-w-0">
+          <p class="text-[11px] font-bold text-[#322C2B] truncate">${it.productName}</p>
+          <p class="text-[9px] text-gray-400">৳${fmt(it.productPrice)} each</p>
+        </div>
+        <div class="flex items-center gap-1 shrink-0">
+          <button type="button" onclick="_poEditSetQty(${idx},-1)" class="w-6 h-6 rounded-md border border-gray-200 text-sm font-bold text-gray-500 leading-none">−</button>
+          <span class="w-5 text-center text-xs font-bold">${it.quantity}</span>
+          <button type="button" onclick="_poEditSetQty(${idx},1)" class="w-6 h-6 rounded-md border border-gray-200 text-sm font-bold text-gray-500 leading-none">+</button>
+        </div>
+        ${items.length > 1 ? `<button type="button" onclick="_poEditRemoveItem(${idx})" title="Remove" class="text-gray-300 hover:text-red-500 text-lg leading-none shrink-0 ml-1">&times;</button>` : ''}
+      </div>`).join('');
+
+    const totQty = items.reduce((s, i) => s + i.quantity, 0);
+    const totVal = items.reduce((s, i) => s + i.quantity * i.productPrice, 0);
+    const t = document.getElementById('po-edit-items-total');
+    if (t) t.innerText = totQty + ' item' + (totQty > 1 ? 's' : '') + ' · Product total ৳' + fmt(totVal);
+};
+
+window._poEditSetQty = function(idx, delta) {
+    const items = window._poEditItems || [];
+    if (!items[idx]) return;
+    items[idx].quantity = Math.max(1, items[idx].quantity + delta);
+    window._poEditRenderItems();
+};
+
+window._poEditRemoveItem = function(idx) {
+    const items = window._poEditItems || [];
+    if (items.length <= 1) return;
+    items.splice(idx, 1);
+    window._poEditRenderItems();
+};
+
 window.preorderOpenEdit = function(id) {
     const p = window._preordersCache.find(x => x.id === id);
     if (!p) return;
     window._poEditId = id;
+    window._poEditItems = window._poItemsOf(p);
+    window._poEditRenderItems();
     document.getElementById('po-edit-name').value          = p.customerName    || '';
     document.getElementById('po-edit-phone').value         = p.customerPhone   || '';
     document.getElementById('po-edit-address').value       = p.customerAddress || '';
@@ -9804,7 +9877,12 @@ window.preorderSaveEdit = async function() {
     const name    = document.getElementById('po-edit-name').value.trim();
     const phone   = document.getElementById('po-edit-phone').value.trim();
     const address = document.getElementById('po-edit-address').value.trim();
-    const qty     = Math.max(1, Number(document.getElementById('po-edit-qty').value) || 1);
+    const items   = (window._poEditItems || []).map(i => ({
+        productId: i.productId, productName: i.productName, productImage: i.productImage,
+        productPrice: Number(i.productPrice) || 0, quantity: Math.max(1, Number(i.quantity) || 1),
+        advancePerUnit: Number(i.advancePerUnit) || 510
+    }));
+    const qty     = items.reduce((s, i) => s + i.quantity, 0) || 1;
     const advance = Number(document.getElementById('po-edit-advance').value) || 0;
     const txn     = document.getElementById('po-edit-txn').value.trim();
     const batch   = document.getElementById('po-edit-batch').value.trim();
@@ -9815,7 +9893,13 @@ window.preorderSaveEdit = async function() {
     try {
         await db.collection("preorders").doc(id).update({
             customerName: name, customerPhone: phone, customerAddress: address,
-            quantity: qty, advanceAmount: advance, bkashTxnId: txn || null, batch: batch || '',
+            quantity: qty, items: items, itemCount: items.length,
+            itemsSummary: items.map(i => i.productName + ' × ' + i.quantity).join(', '),
+            productId: items[0] ? items[0].productId : '',
+            productName: items.length > 1 ? items[0].productName + ' +' + (items.length - 1) + ' more' : (items[0] ? items[0].productName : ''),
+            productImage: items[0] ? items[0].productImage : '',
+            productPrice: items[0] ? items[0].productPrice : 0,
+            advanceAmount: advance, bkashTxnId: txn || null, batch: batch || '',
             preorderDiscountType: discType, preorderDiscountValue: discValue
         });
         await window.logAdminAction('Edited pre-order: ' + name + ' (' + phone + ')');
