@@ -1578,6 +1578,25 @@ if (tabId === 'contact-settings') {
     <p id="verify-logistics-msg" class="text-[10px] text-gray-400 hidden">Select partner and zone to see cost breakdown.</p>
 </div>
 
+<div class="rounded-xl p-4 space-y-3" style="background:#F5ECE9;border:1px solid #E5D3CD">
+    <p class="text-[10px] font-bold uppercase tracking-widest" style="color:#B36A5E">Sterling Shopping Bag (Optional)</p>
+    <div class="grid grid-cols-3 gap-3 items-end">
+        <div>
+            <p class="text-[9px] font-bold text-gray-400 uppercase mb-1">Quantity</p>
+            <input type="number" id="verify-bag-qty" min="0" value="0" oninput="recalcVerifyTotal(); if(typeof updateVerifyLogistics==='function') updateVerifyLogistics();" class="w-full border rounded-lg p-2 text-sm outline-none bg-white text-center font-bold" style="border-color:#E5D3CD">
+        </div>
+        <div>
+            <p class="text-[9px] font-bold text-gray-400 uppercase mb-1">Price each (৳)</p>
+            <input type="number" id="verify-bag-price" min="0" oninput="recalcVerifyTotal(); if(typeof updateVerifyLogistics==='function') updateVerifyLogistics();" class="w-full border rounded-lg p-2 text-sm outline-none bg-white text-center font-bold" style="border-color:#E5D3CD">
+        </div>
+        <div class="bg-white rounded-lg p-2 text-center" style="border:1px solid #E5D3CD">
+            <p class="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Bag Total</p>
+            <p id="verify-bag-total" class="text-sm font-bold text-[#322C2B]">—</p>
+        </div>
+    </div>
+    <p id="verify-bag-hint" class="text-[10px] font-bold"></p>
+</div>
+
 <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
     <p class="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Apply Discount (Optional)</p>
     <div class="grid grid-cols-3 gap-3 items-end">
@@ -4057,6 +4076,13 @@ let actualShipping = 0;
 
 inv += '<div class="total-row"><span>Shipping Fee:<\/span><span>৳' + fmt(actualShipping) + '<\/span><\/div>';
 
+const _invBagQty = Number(order.shoppingBagQty) || 0;
+if (_invBagQty > 0) {
+    const _invBagTot = Number(order.shoppingBagTotal) || 0;
+    inv += '<div class="total-row"><span>Shopping Bag (\u00d7' + _invBagQty + '):<\/span><span>' +
+           (_invBagTot > 0 ? '৳' + fmt(_invBagTot) : 'Free') + '<\/span><\/div>';
+}
+
 let finalGrandTotal = Number(order.totalAmount) || 0;
 if (finalGrandTotal <= 0) {
     const itemsSubtotalFinal = order.items
@@ -4094,6 +4120,11 @@ inv += '<div class="grand-total"><span>Grand Total:<\/span><span>৳' + fmt(fina
                 document.getElementById('verify-order-id').innerText = order.orderId;
                 document.getElementById('verify-discount-value').value = order.pendingDiscountValue ? order.pendingDiscountValue : '';
                 document.getElementById('verify-discount-type').value  = order.pendingDiscountType || 'fixed';
+                const _bqEl = document.getElementById('verify-bag-qty');
+                const _bpEl = document.getElementById('verify-bag-price');
+                if (_bqEl) _bqEl.value = Number(order.shoppingBagQty) || 0;
+                if (_bpEl) _bpEl.value = (order.shoppingBagPrice !== undefined && order.shoppingBagPrice !== null)
+                                         ? Number(order.shoppingBagPrice) : window.SHOPPING_BAG.defaultPrice;
                 document.getElementById('verify-new-total').innerText  = '—';
                 document.getElementById('verify-discount-msg').classList.add('hidden');
                 document.getElementById('verify-discount-msg').innerText = '';
@@ -4413,8 +4444,29 @@ window.recalcVerifyTotal = function() {
                               Number(order.deliveryFee) || 0;
     const shippingDiff = editedShipping - originalShipping;
 
-    // ── Adjusted base (original total + shipping change) ──
-    const adjustedTotal = originalTotal + shippingDiff;
+    // ── Shopping bag delta (same pattern as shipping) ──
+    const bag        = window._bagTotalsFrom('verify-bag-qty', 'verify-bag-price');
+    const origBagTot = Number(order.shoppingBagTotal) || 0;
+    const bagDiff    = bag.total - origBagTot;
+
+    const bagTotEl = document.getElementById('verify-bag-total');
+    if (bagTotEl) bagTotEl.innerText = bag.qty > 0 ? '\u09F3' + fmt(bag.total) : '—';
+    const bagHintEl = document.getElementById('verify-bag-hint');
+    if (bagHintEl) {
+        if (bag.qty <= 0) { bagHintEl.innerText = ''; }
+        else if (bag.price === 0) {
+            bagHintEl.innerText = 'Free bag — cost \u09F3' + fmt(window.SHOPPING_BAG.cost * bag.qty) + ' absorbed.';
+            bagHintEl.className = 'text-[10px] font-bold text-gray-500';
+        } else {
+            const bagMargin = Math.round((bag.price - window.SHOPPING_BAG.cost) * bag.qty * 100) / 100;
+            bagHintEl.innerText = (bagMargin >= 0 ? 'Bag margin +\u09F3' : 'Selling below cost: \u09F3')
+                                  + fmt(Math.abs(bagMargin)) + ' (cost \u09F3' + fmt(window.SHOPPING_BAG.cost) + ' each)';
+            bagHintEl.className = 'text-[10px] font-bold ' + (bagMargin >= 0 ? 'text-green-600' : 'text-red-500');
+        }
+    }
+
+    // ── Adjusted base (original total + shipping change + bag change) ──
+    const adjustedTotal = originalTotal + shippingDiff + bagDiff;
 
     // ── Update live total at top of modal ──
     if (liveTotalEl) {
@@ -4669,8 +4721,18 @@ const updatePayload = {
                                       Number(order.deliveryFee) || 0;
         const shippingDiffFinal     = editedShippingFinal - origShippingFinal;
 
-        // ── Adjusted total = original + shipping change ──
-        const adjustedBase = originalTotal + shippingDiffFinal;
+        // ── Shopping bag ──
+        const bagFinal     = window._bagTotalsFrom('verify-bag-qty', 'verify-bag-price');
+        const origBagFinal = Number(order.shoppingBagTotal) || 0;
+        const bagDiffFinal = bagFinal.total - origBagFinal;
+
+        updatePayload.shoppingBagQty   = bagFinal.qty;
+        updatePayload.shoppingBagPrice = bagFinal.price;
+        updatePayload.shoppingBagTotal = bagFinal.total;
+        updatePayload.shoppingBagCost  = Math.round(bagFinal.qty * window.SHOPPING_BAG.cost * 100) / 100;
+
+        // ── Adjusted total = original + shipping change + bag change ──
+        const adjustedBase = originalTotal + shippingDiffFinal + bagDiffFinal;
 
         if (shippingDiffFinal !== 0) {
             updatePayload.customerShippingFee      = editedShippingFinal;
@@ -4692,7 +4754,7 @@ const updatePayload = {
             updatePayload.discountValue       = discountVal;
             updatePayload.totalAmount         = adjustedBase - discountAmount;
             updatePayload.originalTotalAmount = originalTotal;
-        } else if (shippingDiffFinal !== 0) {
+        } else if (shippingDiffFinal !== 0 || bagDiffFinal !== 0) {
             updatePayload.totalAmount = adjustedBase;
         }
 
@@ -6833,14 +6895,16 @@ console.log('Total weight calculated:', totalWeight);
     const discountVal   = Number(document.getElementById('verify-discount-value') ? document.getElementById('verify-discount-value').value : 0) || 0;
     let discountAmount  = 0;
     if (discountVal > 0) {
-        const adjustedForDiscount = originalTotal + shippingDiff;
+        const adjustedForDiscount = originalTotal + shippingDiff + (window._bagTotalsFrom('verify-bag-qty','verify-bag-price').total - (Number(order.shoppingBagTotal) || 0));
         discountAmount = discountType === 'percent'
             ? Math.round(adjustedForDiscount * (discountVal / 100) * 100) / 100
             : discountVal;
     }
 
     // ── Live final total = original + shipping change - discount ──
-    const liveTotal  = Math.round((originalTotal + shippingDiff - discountAmount) * 100) / 100;
+    const _bagLive     = window._bagTotalsFrom('verify-bag-qty', 'verify-bag-price');
+    const _bagDiffLive = _bagLive.total - (Number(order.shoppingBagTotal) || 0);
+    const liveTotal  = Math.round((originalTotal + shippingDiff + _bagDiffLive - discountAmount) * 100) / 100;
     // Advance already paid by bKash is NOT collected on delivery — courier's COD fee
     // applies only to the cash actually collected from the customer.
     const advancePaidLive = Number(order.advancePaid) || 0;
@@ -9042,7 +9106,14 @@ window._buildPreorderReceipt = async function(preorderId, action) {
     // Totals
     pos += '<div class="divider"><\/div>';
     pos += '<table>';
-    pos += '<tr><td class="label">Subtotal<\/td><td style="text-align:right">\u09F3' + fmt(lineTotal) + '<\/td><\/tr>';
+    const _rBagQty = Number(p.shoppingBagQty) || 0;
+    const _rBagTot = Number(p.shoppingBagTotal) || 0;
+    if (_rBagQty > 0) {
+        pos += '<tr><td colspan="2" style="padding:3px 0;font-weight:800;font-size:14px">Sterling Shopping Bag<\/td><\/tr>';
+        pos += '<tr><td style="padding:0 0 5px 0;color:#444;font-size:13px">' + _rBagQty + ' x \u09F3' + fmt(Number(p.shoppingBagPrice) || 0) + '<\/td>' +
+               '<td style="text-align:right;padding:0 0 5px 0;font-weight:900;font-size:14px">' + (_rBagTot > 0 ? '\u09F3' + fmt(_rBagTot) : 'FREE') + '<\/td><\/tr>';
+    }
+    pos += '<tr><td class="label">Subtotal<\/td><td style="text-align:right">\u09F3' + fmt(lineTotal + _rBagTot) + '<\/td><\/tr>';
     if (discountAmt > 0)
         pos += '<tr><td class="label">Discount (' + discountLabel + ')<\/td><td style="text-align:right">-\u09F3' + fmt(discountAmt) + '<\/td><\/tr>';
     pos += '<tr><td class="label">Advance Paid<\/td><td style="text-align:right;color:#000;font-weight:700">-\u09F3' + fmt(advance) + '<\/td><\/tr>';
@@ -9223,6 +9294,24 @@ window.openActivityModal = async function(uid, fullName) {
                 <div id="po-edit-items" class="space-y-2"></div>
                 <div id="po-edit-items-total" class="text-[10px] text-gray-500 mt-2 text-right font-bold"></div>
             </div>
+            <div class="rounded-xl p-3" style="background:#F5ECE9;border:1px solid #E5D3CD">
+                <p class="text-[10px] font-bold uppercase tracking-widest mb-2" style="color:#B36A5E">Sterling Shopping Bag</p>
+                <div class="grid grid-cols-3 gap-2 items-end">
+                    <div>
+                        <p class="text-[9px] font-bold text-gray-400 uppercase mb-1">Qty</p>
+                        <input type="number" id="po-edit-bag-qty" min="0" value="0" oninput="_poEditBagRecalc()" class="w-full border rounded-lg p-2 text-sm outline-none bg-white text-center font-bold" style="border-color:#E5D3CD">
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-bold text-gray-400 uppercase mb-1">Price each</p>
+                        <input type="number" id="po-edit-bag-price" min="0" oninput="_poEditBagRecalc()" class="w-full border rounded-lg p-2 text-sm outline-none bg-white text-center font-bold" style="border-color:#E5D3CD">
+                    </div>
+                    <div class="bg-white rounded-lg p-2 text-center" style="border:1px solid #E5D3CD">
+                        <p class="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Total</p>
+                        <p id="po-edit-bag-total" class="text-sm font-bold text-[#322C2B]">—</p>
+                    </div>
+                </div>
+                <p id="po-edit-bag-hint" class="text-[10px] font-bold mt-2"></p>
+            </div>
             <div>
                 <label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Advance Paid (৳)</label>
                 <input type="number" id="po-edit-advance" class="w-full border-b py-2 text-sm outline-none focus:border-[#B36A5E] text-center font-bold">
@@ -9280,6 +9369,13 @@ window._preordersCache       = [];
 window._selectedPreorderIds  = new Set();
 window._poEditId             = null;
 window._poEditItems          = [];
+window.SHOPPING_BAG          = { defaultPrice: 200, cost: 217 };
+
+window._bagTotalsFrom = function(qtyEl, priceEl) {
+    const qty   = Math.max(0, Number(document.getElementById(qtyEl) ? document.getElementById(qtyEl).value : 0) || 0);
+    const price = Math.max(0, Number(document.getElementById(priceEl) ? document.getElementById(priceEl).value : 0) || 0);
+    return { qty: qty, price: price, total: Math.round(qty * price * 100) / 100 };
+};
 
 // Normalises old single-product pre-orders and new multi-item ones into one shape
 window._poItemsOf = function(p) {
@@ -9678,7 +9774,10 @@ window.moveSelectedPreordersToOrders = async function() {
                     originalPrice: Number(prod.originalPrice) || price
                 });
             }
-            const orderTotal = orderItems.reduce((s, i) => s + i.price * i.quantity, 0);
+            const bagQty   = Number(p.shoppingBagQty) || 0;
+            const bagPrice = Number(p.shoppingBagPrice) || 0;
+            const bagTotal = Math.round(bagQty * bagPrice * 100) / 100;
+            const orderTotal = orderItems.reduce((s, i) => s + i.price * i.quantity, 0) + bagTotal;
 
             const addrObj = { detail: p.customerAddress || '', fullDisplay: p.customerAddress || '', tag: 'Shipping Address' };
             // Reuse the PO number assigned at confirmation; fall back to a fresh one only if missing
@@ -9692,6 +9791,10 @@ window.moveSelectedPreordersToOrders = async function() {
                 userName: p.customerName || 'Customer',
                 userPhone: p.customerPhone || '',
                 items: orderItems,
+                shoppingBagQty:   bagQty,
+                shoppingBagPrice: bagPrice,
+                shoppingBagTotal: bagTotal,
+                shoppingBagCost:  Math.round(bagQty * window.SHOPPING_BAG.cost * 100) / 100,
                 totalAmount: orderTotal,         // shipping added at Stage 1 verify
                 customerShippingFee: 0,
                 advancePaid: Number(p.advanceAmount) || 0,
@@ -9777,6 +9880,9 @@ window.preorderSaveAndConfirm = async function() {
             productName: items.length > 1 ? items[0].productName + ' +' + (items.length - 1) + ' more' : (items[0] ? items[0].productName : ''),
             productImage: items[0] ? items[0].productImage : '',
             productPrice: items[0] ? items[0].productPrice : 0,
+            shoppingBagQty:   window._bagTotalsFrom('po-edit-bag-qty','po-edit-bag-price').qty,
+            shoppingBagPrice: window._bagTotalsFrom('po-edit-bag-qty','po-edit-bag-price').price,
+            shoppingBagTotal: window._bagTotalsFrom('po-edit-bag-qty','po-edit-bag-price').total,
             advanceAmount: advance, bkashTxnId: txn || null, batch: batch || '',
             preorderDiscountType: discType, preorderDiscountValue: discValue
         });
@@ -9844,12 +9950,35 @@ window._poEditRemoveItem = function(idx) {
     window._poEditRenderItems();
 };
 
+window._poEditBagRecalc = function() {
+    const b   = window._bagTotalsFrom('po-edit-bag-qty', 'po-edit-bag-price');
+    const tEl = document.getElementById('po-edit-bag-total');
+    const hEl = document.getElementById('po-edit-bag-hint');
+    if (tEl) tEl.innerText = b.qty > 0 ? '\u09F3' + fmt(b.total) : '—';
+    if (!hEl) return;
+    if (b.qty <= 0) { hEl.innerText = ''; return; }
+    if (b.price === 0) {
+        hEl.innerText = 'Free bag — cost \u09F3' + fmt(window.SHOPPING_BAG.cost * b.qty) + ' absorbed.';
+        hEl.className = 'text-[10px] font-bold mt-2 text-gray-500';
+    } else {
+        const m = Math.round((b.price - window.SHOPPING_BAG.cost) * b.qty * 100) / 100;
+        hEl.innerText = (m >= 0 ? 'Bag margin +\u09F3' : 'Below cost: \u09F3') + fmt(Math.abs(m));
+        hEl.className = 'text-[10px] font-bold mt-2 ' + (m >= 0 ? 'text-green-600' : 'text-red-500');
+    }
+};
+
 window.preorderOpenEdit = function(id) {
     const p = window._preordersCache.find(x => x.id === id);
     if (!p) return;
     window._poEditId = id;
     window._poEditItems = window._poItemsOf(p);
     window._poEditRenderItems();
+    const _pbq = document.getElementById('po-edit-bag-qty');
+    const _pbp = document.getElementById('po-edit-bag-price');
+    if (_pbq) _pbq.value = Number(p.shoppingBagQty) || 0;
+    if (_pbp) _pbp.value = (p.shoppingBagPrice !== undefined && p.shoppingBagPrice !== null)
+                           ? Number(p.shoppingBagPrice) : window.SHOPPING_BAG.defaultPrice;
+    window._poEditBagRecalc();
     document.getElementById('po-edit-name').value          = p.customerName    || '';
     document.getElementById('po-edit-phone').value         = p.customerPhone   || '';
     document.getElementById('po-edit-address').value       = p.customerAddress || '';
@@ -9909,6 +10038,9 @@ window.preorderSaveEdit = async function() {
             productName: items.length > 1 ? items[0].productName + ' +' + (items.length - 1) + ' more' : (items[0] ? items[0].productName : ''),
             productImage: items[0] ? items[0].productImage : '',
             productPrice: items[0] ? items[0].productPrice : 0,
+            shoppingBagQty:   window._bagTotalsFrom('po-edit-bag-qty','po-edit-bag-price').qty,
+            shoppingBagPrice: window._bagTotalsFrom('po-edit-bag-qty','po-edit-bag-price').price,
+            shoppingBagTotal: window._bagTotalsFrom('po-edit-bag-qty','po-edit-bag-price').total,
             advanceAmount: advance, bkashTxnId: txn || null, batch: batch || '',
             preorderDiscountType: discType, preorderDiscountValue: discValue
         });
