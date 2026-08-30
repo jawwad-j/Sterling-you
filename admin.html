@@ -8859,6 +8859,12 @@ lbl += '<\/div>';
     lbl += '<table class="details-table">';
     lbl += '<tr><td>Products<\/td><td>' + productDesc + '<\/td><\/tr>';
     lbl += '<tr><td>Product Amount<\/td><td>\u09F3' + fmt(itemTotal) + '<\/td><\/tr>';
+    const _lblBagQty = Number(order.shoppingBagQty) || 0;
+    if (_lblBagQty > 0) {
+        const _lblBagTot = Number(order.shoppingBagTotal) || 0;
+        lbl += '<tr><td>Shopping Bag<\/td><td>' + _lblBagQty + 'x \u09F3' + fmt(Number(order.shoppingBagPrice) || 0) +
+               ' = ' + (_lblBagTot > 0 ? '\u09F3' + fmt(_lblBagTot) : 'FREE') + '<\/td><\/tr>';
+    }
     lbl += (lblDiscount > 0 ? '<tr><td>Discount<\/td><td>-\u09F3' + fmt(lblDiscount) + '<\/td><\/tr>' : '');
     lbl += '<tr><td>Shipping Fee<\/td><td>\u09F3' + fmt(shipping) + '<\/td><\/tr>';
     lbl += (advancePaid > 0 ? '<tr><td>Advance Paid<\/td><td>-\u09F3' + fmt(advancePaid) + '<\/td><\/tr>' : '');
@@ -10179,6 +10185,9 @@ window.openOrderDetail = function(docId) {
             '<p class="text-[9px] font-bold uppercase text-gray-400 tracking-widest mb-2 border-b pb-1">Items</p>' +
             itemsHtml +
             '<div class="flex justify-between text-[11px] pt-2 mt-1 border-t border-gray-200"><span class="text-gray-500">Items Subtotal</span><span class="font-bold">\u09F3' + fmt(itemTotal) + '</span></div>' +
+            ((Number(o.shoppingBagQty) || 0) > 0 ?
+                '<div class="flex justify-between text-[11px] pt-1"><span class="text-gray-500">Shopping Bag \u00d7' + (Number(o.shoppingBagQty) || 0) + '</span><span class="font-bold">' +
+                ((Number(o.shoppingBagTotal) || 0) > 0 ? '\u09F3' + fmt(Number(o.shoppingBagTotal) || 0) : 'Free') + '</span></div>' : '') +
             (shipFee ? '<div class="flex justify-between text-[11px] pt-1"><span class="text-gray-500">Shipping</span><span class="font-bold">\u09F3' + fmt(shipFee) + '</span></div>' : '') +
             '<div class="flex justify-between text-[11px] pt-1"><span class="text-gray-500">Order Total</span><span class="font-bold text-[#322C2B]">\u09F3' + fmt(total) + '</span></div>' +
             (advance > 0 ?
