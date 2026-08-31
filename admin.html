@@ -7684,7 +7684,9 @@ window.renderPayoutTable = function() {
                 'data-id="' + o.id + '" data-net="' + net + '" data-partner="' + (o.logisticsPartner || '') + '" ' +
                 (isSelected ? 'checked' : '') + ' onchange="togglePayoutOrder(this)">' +
             '</td>' +
-            '<td class="p-4 font-mono font-bold text-blue-600">' + (o.orderId || '—') + '</td>' +
+            '<td class="p-4 font-mono font-bold text-blue-600">' + (o.orderId || '—') +
+                ' <button onclick="openPayoutEdit(\'' + o.id + '\',false)" title="Edit payout figures" class="ml-1 text-gray-300 hover:text-[#B36A5E] text-xs align-middle">&#9998;</button>' +
+            '</td>' +
             '<td class="text-gray-500">' + dateStr + '</td>' +
             '<td class="font-medium text-[#322C2B]">' + (o.userName || 'Unknown') + '</td>' +
             '<td><span class="bg-gray-100 px-2 py-0.5 rounded text-[10px] font-bold">' + (o.logisticsPartner || '—') + '</span></td>' +
@@ -7711,6 +7713,7 @@ window.renderPayoutTable = function() {
             '<td class="p-4 font-mono font-bold ' + (isProfit ? 'text-green-600' : 'text-red-600') + '">' +
                 (o.orderId || '—') +
                 ' <span class="text-[9px] ' + (isProfit ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600') + ' px-1.5 py-0.5 rounded font-bold uppercase">Return</span>' +
+                ' <button onclick="openPayoutEdit(\'' + o.id + '\',true)" title="Edit payout figures" class="ml-1 text-gray-400 hover:text-[#B36A5E] text-xs align-middle">&#9998;</button>' +
             '</td>' +
             '<td class="text-gray-500">' + dateStr + '</td>' +
             '<td class="font-medium ' + (isProfit ? 'text-green-700' : 'text-red-600') + '">' + (o.userName || 'Unknown') + '</td>' +
@@ -7739,6 +7742,152 @@ window.togglePayoutOrder = function(checkbox) {
     const row = checkbox.closest('tr');
     if (row) {
         row.classList.toggle('bg-green-50', checkbox.checked);
+    }
+};
+
+// ══════════ PAYOUT FIGURE EDITOR ══════════
+window._payoutEditId       = null;
+window._payoutEditIsReturn = false;
+
+window._injectPayoutEditModal = function() {
+    if (document.getElementById('payout-edit-modal')) return;
+    const d = document.createElement('div');
+    d.id = 'payout-edit-modal';
+    d.className = 'fixed inset-0 bg-black/50 z-[95] hidden items-center justify-center p-4';
+    d.innerHTML =
+      '<div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">' +
+        '<div class="p-4 border-b flex items-center justify-between" style="background:#F5ECE9">' +
+          '<div><p class="text-[10px] font-bold uppercase tracking-widest" style="color:#B36A5E">Edit Payout Figures</p>' +
+          '<p id="pe-title" class="text-sm font-bold text-[#322C2B]"></p></div>' +
+          '<button onclick="closePayoutEdit()" class="text-gray-400 hover:text-gray-700 text-xl leading-none">&times;</button>' +
+        '</div>' +
+        '<div class="p-5 space-y-3 max-h-[65vh] overflow-y-auto">' +
+          '<div><label id="pe-a-label" class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1"></label>' +
+            '<input type="number" id="pe-a" step="0.01" oninput="payoutEditRecalc()" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E]"></div>' +
+          '<div id="pe-b-wrap"><label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Advance Already Paid (৳)</label>' +
+            '<input type="number" id="pe-b" step="0.01" oninput="payoutEditRecalc()" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E]"></div>' +
+          '<div><label id="pe-c-label" class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1"></label>' +
+            '<input type="number" id="pe-c" step="0.01" oninput="payoutEditRecalc()" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E]">' +
+            '<p class="text-[9px] text-gray-400 mt-1">What the courier charges you — not what you charged the customer.</p></div>' +
+          '<div class="grid grid-cols-2 gap-3">' +
+            '<div><label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">COD %</label>' +
+              '<input type="number" id="pe-pct" step="0.01" oninput="payoutEditRecalc()" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E]"></div>' +
+            '<div><label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">COD Charge (৳)</label>' +
+              '<input type="number" id="pe-cod" step="0.01" oninput="document.getElementById(\'pe-auto\').checked=false; payoutEditRecalc();" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E]"></div>' +
+          '</div>' +
+          '<label class="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">' +
+            '<input type="checkbox" id="pe-auto" checked onchange="payoutEditRecalc()" class="accent-[#B36A5E]"> Auto-calculate COD charge</label>' +
+          '<div id="pe-paidby-wrap" class="hidden"><label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Return Fee Paid By</label>' +
+            '<select id="pe-paidby" class="w-full border rounded-lg p-2 text-sm outline-none focus:border-[#B36A5E] bg-white">' +
+              '<option value="client">Customer / Client pays</option><option value="sy">Sterling You pays</option></select></div>' +
+          '<div class="rounded-xl p-3 text-center" style="background:#F5ECE9;border:1px solid #E5D3CD">' +
+            '<p class="text-[9px] font-bold uppercase text-gray-500 tracking-widest mb-1">Net Payout</p>' +
+            '<p id="pe-net" class="text-2xl font-bold text-[#322C2B]">—</p>' +
+            '<p id="pe-formula" class="text-[9px] text-gray-500 mt-1"></p></div>' +
+        '</div>' +
+        '<div class="p-4 border-t flex gap-2">' +
+          '<button onclick="closePayoutEdit()" class="flex-1 border py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-500">Cancel</button>' +
+          '<button onclick="savePayoutEdit()" class="flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-white" style="background:#B36A5E">Save</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(d);
+};
+
+window.openPayoutEdit = function(id, isReturn) {
+    window._injectPayoutEditModal();
+    const src = isReturn ? (window._returnDeductions || []) : (window._payoutCache || []);
+    const o   = src.find(x => x.id === id);
+    if (!o) { alert('Order not found in the current payout list.'); return; }
+
+    window._payoutEditId       = id;
+    window._payoutEditIsReturn = !!isReturn;
+
+    document.getElementById('pe-title').innerText = (o.orderId || '—') + ' · ' + (o.userName || '');
+    document.getElementById('pe-a-label').innerText = isReturn ? 'COD Collected from Customer (৳)' : 'Order Total (৳)';
+    document.getElementById('pe-c-label').innerText = isReturn ? 'Return Courier Cost (৳)' : 'Courier Cost (৳)';
+    document.getElementById('pe-b-wrap').classList.toggle('hidden', !!isReturn);
+    document.getElementById('pe-paidby-wrap').classList.toggle('hidden', !isReturn);
+
+    if (isReturn) {
+        document.getElementById('pe-a').value   = Number(o.returnCodAmount)     || 0;
+        document.getElementById('pe-b').value   = 0;
+        document.getElementById('pe-c').value   = Number(o.returnShippingFee)   || 0;
+        document.getElementById('pe-pct').value = Number(o.returnCodPercentage) || Number(o.codPercentage) || 0;
+        document.getElementById('pe-cod').value = Number(o.returnCodCharge)     || 0;
+        document.getElementById('pe-paidby').value = o.returnDeliveryFeePaidBy || 'client';
+    } else {
+        document.getElementById('pe-a').value   = Number(o.totalAmount)   || 0;
+        document.getElementById('pe-b').value   = Number(o.advancePaid)   || 0;
+        document.getElementById('pe-c').value   = Number(o.courierCost)   || 0;
+        document.getElementById('pe-pct').value = Number(o.codPercentage) || 0;
+        document.getElementById('pe-cod').value = Number(o.codCharge)     || 0;
+    }
+    document.getElementById('pe-auto').checked = true;
+    payoutEditRecalc();
+
+    const m = document.getElementById('payout-edit-modal');
+    m.classList.remove('hidden'); m.classList.add('flex');
+};
+
+window.closePayoutEdit = function() {
+    const m = document.getElementById('payout-edit-modal');
+    if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+    window._payoutEditId = null;
+};
+
+window.payoutEditRecalc = function() {
+    const isRet = window._payoutEditIsReturn;
+    const a   = Number(document.getElementById('pe-a').value)   || 0;
+    const b   = isRet ? 0 : (Number(document.getElementById('pe-b').value) || 0);
+    const c   = Number(document.getElementById('pe-c').value)   || 0;
+    const pct = Number(document.getElementById('pe-pct').value) || 0;
+
+    const codBase = isRet ? a : Math.max(0, a - b);
+    let cod;
+    if (document.getElementById('pe-auto').checked) {
+        cod = Math.round(codBase * (pct / 100) * 100) / 100;
+        document.getElementById('pe-cod').value = cod;
+    } else {
+        cod = Number(document.getElementById('pe-cod').value) || 0;
+    }
+
+    const net = Math.round((a - b - c - cod) * 100) / 100;
+    const netEl = document.getElementById('pe-net');
+    netEl.innerText = (net >= 0 ? '৳' : '-৳') + fmt(Math.abs(net));
+    netEl.className = 'text-2xl font-bold ' + (net >= 0 ? 'text-green-600' : 'text-red-500');
+    document.getElementById('pe-formula').innerText =
+        '৳' + fmt(a) + (b ? ' − ৳' + fmt(b) + ' advance' : '') + ' − ৳' + fmt(c) + ' courier − ৳' + fmt(cod) +
+        ' COD fee (' + pct + '% of ৳' + fmt(codBase) + ')';
+};
+
+window.savePayoutEdit = async function() {
+    const id = window._payoutEditId;
+    if (!id) return;
+    const isRet = window._payoutEditIsReturn;
+
+    const a   = Number(document.getElementById('pe-a').value)   || 0;
+    const b   = isRet ? 0 : (Number(document.getElementById('pe-b').value) || 0);
+    const c   = Number(document.getElementById('pe-c').value)   || 0;
+    const pct = Number(document.getElementById('pe-pct').value) || 0;
+    const cod = Number(document.getElementById('pe-cod').value) || 0;
+
+    const payload = isRet
+        ? { returnCodAmount: a, returnShippingFee: c, returnCodPercentage: pct, returnCodCharge: cod,
+            returnDeliveryFeePaidBy: document.getElementById('pe-paidby').value,
+            lastUpdate: new Date().toISOString() }
+        : { totalAmount: a, advancePaid: b, courierCost: c, codPercentage: pct, codCharge: cod,
+            payoutFiguresEdited: true, lastUpdate: new Date().toISOString() };
+
+    try {
+        await db.collection("orders").doc(id).update(payload);
+        if (typeof logAdminAction === 'function') {
+            logAdminAction('Edited payout figures for order ' + id + ' (net ৳' + fmt(a - b - c - cod) + ')');
+        }
+        closePayoutEdit();
+        await window.loadPayoutTracker();
+    } catch (e) {
+        console.error('Payout edit save failed:', e);
+        alert('Could not save: ' + e.message);
     }
 };
 
