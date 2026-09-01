@@ -1660,6 +1660,20 @@ if (tabId === 'contact-settings') {
 
             <p class="text-xs text-gray-500">The return has been physically received. Fill in the details below.</p>
 
+            <div>
+                <p class="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-2">Which Items Are Coming Back?</p>
+                <div id="return-items-list" class="space-y-2"></div>
+                <div id="return-partial-box" class="hidden mt-3 rounded-xl p-4 space-y-3" style="background:#F5ECE9;border:1px solid #E5D3CD">
+                    <p class="text-[10px] font-bold uppercase tracking-widest" style="color:#B36A5E">Partial Return — Order Stays Delivered</p>
+                    <div>
+                        <label class="block text-[9px] font-bold uppercase text-gray-400 tracking-widest mb-1">Return Courier Charge (৳)</label>
+                        <input type="number" id="return-partial-courier" min="0" value="0" oninput="updateReturnPartialPreview()" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E] bg-white">
+                        <p class="text-[9px] text-gray-400 mt-1">What the courier bills you to bring the item back.</p>
+                    </div>
+                    <div id="return-partial-preview" class="text-[10px] text-gray-600 space-y-1 bg-white rounded-lg p-3" style="border:1px solid #E5D3CD"></div>
+                </div>
+            </div>
+
             <!-- Product Condition -->
             <div>
                 <p class="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-2">Product Condition</p>
@@ -2340,7 +2354,7 @@ window.loadSoldOutLog = async function() {
     try {
         const [productSnap, orderSnap] = await Promise.all([
             db.collection("products").get(),
-            db.collection("orders").where("status", "==", "Delivered").get()
+            db.collection("orders").where("status", "in", window.DELIVERED_STATUSES).get()
         ]);
 
         const productMap = {};
@@ -2642,7 +2656,7 @@ window.loadSoldOutLog = async function() {
     try {
         const [productSnap, orderSnap] = await Promise.all([
             db.collection("products").get(),
-            db.collection("orders").where("status", "==", "Delivered").get()
+            db.collection("orders").where("status", "in", window.DELIVERED_STATUSES).get()
         ]);
 
         // Build product map
@@ -3519,8 +3533,10 @@ prHTML += '<tr class="border-b hover:bg-gray-50 transition cursor-pointer" oncli
                     let badgeClass = '';
                     let actionBtn = '';
 
-                    if (status === 'Delivered') {
-                        badgeClass = 'bg-green-100 text-green-700 border border-green-200';
+                    if (status === 'Delivered' || status === 'Partially Delivered') {
+                        badgeClass = (status === 'Partially Delivered')
+                            ? 'bg-sky-100 text-sky-700 border border-sky-200'
+                            : 'bg-green-100 text-green-700 border border-green-200';
                         let timeExceededTag = '';
                         if (o.lastUpdate) {
                             const deliveredDate = new Date(o.lastUpdate).getTime();
@@ -3763,6 +3779,16 @@ window.openReceiveReturnModal = function(oid) {
     }
     document.getElementById('return-cost-summary').classList.add('hidden');
 
+    window._returnItemSel = (order.items || []).map(function(it, i) {
+        return { idx: i, id: it.id || it.productId || '', name: it.name || 'Item',
+                 image: it.image || '', price: Number(it.price) || 0,
+                 orig: Math.max(1, Number(it.quantity) || 1), returning: true, disposition: 'Restock',
+                 qty: Math.max(1, Number(it.quantity) || 1) };
+    });
+    const _rpc = document.getElementById('return-partial-courier');
+    if (_rpc) _rpc.value = 0;
+    renderReturnItems();
+
     // Reset radios
     const conditionInputs = document.querySelectorAll('input[name="return_condition"]');
     if (conditionInputs[0]) conditionInputs[0].checked = true;
@@ -3782,9 +3808,10 @@ window.closeReceiveReturnModal = function() {
 window.submitReceiveReturn = async function() {
     if (!activeReceiveOrderId) return;
 
-    const conditionInput = document.querySelector('input[name="return_condition"]:checked');
-    if (!conditionInput) return alert("Please select a condition.");
-    const condition = conditionInput.value;
+    const _selItems = (window._returnItemSel || []).filter(function(s) { return s.returning && s.qty > 0; });
+    if (!_selItems.length) return alert("Select at least one item that came back.");
+    const _dispSet  = [...new Set(_selItems.map(function(s) { return s.disposition; }))];
+    const condition = _dispSet.length > 1 ? 'Mixed' : (_dispSet[0] === 'Restock' ? 'Restock' : 'Defective');
 
     const deliveryFeeResp  = document.querySelector('input[name="delivery_fee_resp"]:checked')?.value || 'client';
 const returnShippingFee = Number(document.getElementById('return-shipping-fee').value)    || 0;
@@ -3794,8 +3821,58 @@ const returnShippingFee = Number(document.getElementById('return-shipping-fee').
     const returnPartner     = document.getElementById('return-logistics-partner').value || '';
 
     const order = ordersCache[activeReceiveOrderId];
+    const _sp   = window._returnSplit();
 
     try {
+        if (_sp.isPartial) {
+            const shipping = Number(order.customerShippingFee) || Number(order.shippingFee) || Number(order.shippingCost) || 0;
+            const bagTotal = Number(order.shoppingBagTotal) || 0;
+            const keptVal  = _sp.keptItems.reduce(function(a, i) { return a + (Number(i.price) || 0) * (Number(i.quantity) || 0); }, 0);
+            const newTotal = Math.round((keptVal + shipping + bagTotal) * 100) / 100;
+            const advance  = Number(order.advancePaid) || 0;
+            const pct      = Number(order.codPercentage) || 0;
+            const newCod   = Math.round(Math.max(0, newTotal - advance) * (pct / 100) * 100) / 100;
+            const retChg   = Number(document.getElementById('return-partial-courier').value) || 0;
+            const newCour  = Math.round(((Number(order.courierCost) || 0) + retChg) * 100) / 100;
+
+            const returnedLog = (window._returnItemSel || []).filter(function(s) { return s.returning && s.qty > 0; })
+                .map(function(s) { return { productId: s.id, name: s.name, quantity: s.qty, price: s.price, disposition: s.disposition }; });
+
+            await db.collection("orders").doc(activeReceiveOrderId).update({
+                status:            'Partially Delivered',
+                items:             _sp.keptItems,
+                totalAmount:       newTotal,
+                courierCost:       newCour,
+                codCharge:         newCod,
+                hasPartialReturn:  true,
+                partialReturns:    firebase.firestore.FieldValue.arrayUnion({
+                    date: new Date().toISOString(), condition: condition,
+                    returnCourierCharge: retChg, items: returnedLog,
+                    reason: order.returnReason || '', remarks: order.returnRemarks || ''
+                }),
+                lastUpdate: new Date().toISOString()
+            });
+
+            const b = db.batch(); let any = false;
+            returnedLog.forEach(function(r) {
+                if (r.productId && r.disposition === 'Restock') {
+                    b.update(db.collection("products").doc(r.productId),
+                        { stock: firebase.firestore.FieldValue.increment(r.quantity) }); any = true;
+                }
+            });
+            if (any) await b.commit();
+
+            await window.logAdminAction('Partial return on order #' + (order ? order.orderId : activeReceiveOrderId) +
+                ' — ' + returnedLog.map(function(r){ return r.name + ' \u00d7' + r.quantity; }).join(', ') +
+                ' | Return courier \u09F3' + retChg + ' | New total \u09F3' + newTotal);
+
+            alert('Partial return recorded. Order stays Delivered with ' + _sp.keptItems.length + ' item(s), total \u09F3' + fmt(newTotal) + '.');
+            closeReceiveReturnModal();
+            loadOrders();
+            if (typeof loadInventory === 'function') loadInventory();
+            return;
+        }
+
         await db.collection("orders").doc(activeReceiveOrderId).update({
             status:               'Returned',
             returnCondition:      condition,
@@ -3805,18 +3882,18 @@ const returnShippingFee = Number(document.getElementById('return-shipping-fee').
             returnLogisticsPartner: returnPartner || (order.logisticsPartner || ''),
             returnCodPercentage: returnCodPct,
             returnCodCharge:     returnCodCharge,
+            returnedItems:       _selItems.map(function(s) { return { productId: s.id, name: s.name, quantity: s.qty, price: s.price, disposition: s.disposition }; }),
             lastUpdate:           new Date().toISOString()
             
         });
 
-        if (condition === 'Restock' && order && order.items && order.items.length > 0) {
+        {
             const batch = db.batch();
             let hasUpdates = false;
-            order.items.forEach(function(item) {
-                const productId = item.id || item.productId;
-                if (productId) {
-                    const pRef = db.collection("products").doc(productId);
-                    batch.update(pRef, { stock: firebase.firestore.FieldValue.increment(item.quantity || 1) });
+            _selItems.forEach(function(s) {
+                if (s.id && s.disposition === 'Restock') {
+                    batch.update(db.collection("products").doc(s.id),
+                        { stock: firebase.firestore.FieldValue.increment(s.qty) });
                     hasUpdates = true;
                 }
             });
@@ -3839,6 +3916,108 @@ const returnShippingFee = Number(document.getElementById('return-shipping-fee').
     } catch (err) {
         alert("Error: " + err.message);
     }
+};
+
+window.renderReturnItems = function() {
+    const box = document.getElementById('return-items-list');
+    if (!box) return;
+    const sel = window._returnItemSel || [];
+    box.innerHTML = sel.map(function(s, i) {
+        return '<div class="border rounded-xl p-2 ' + (s.returning ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200') + '">' +
+          '<div class="flex items-center gap-2">' +
+            '<input type="checkbox" ' + (s.returning ? 'checked' : '') + ' onchange="toggleReturnItem(' + i + ')" class="w-4 h-4 accent-red-500 shrink-0">' +
+            '<img src="' + (s.image || 'placeholder.png') + '" onerror="this.src=\'placeholder.png\'" class="w-9 h-11 object-cover rounded shrink-0">' +
+            '<div class="flex-1 min-w-0"><p class="text-[11px] font-bold text-[#322C2B] truncate">' + s.name + '</p>' +
+            '<p class="text-[9px] text-gray-400">Ordered ' + s.orig + ' \u00d7 \u09F3' + fmt(s.price) + '</p></div>' +
+            (s.returning && s.orig > 1 ?
+              '<div class="flex items-center gap-1 shrink-0">' +
+                '<button type="button" onclick="setReturnQty(' + i + ',-1)" class="w-6 h-6 rounded border text-sm font-bold text-gray-500 leading-none">\u2212</button>' +
+                '<span class="w-5 text-center text-xs font-bold">' + s.qty + '</span>' +
+                '<button type="button" onclick="setReturnQty(' + i + ',1)" class="w-6 h-6 rounded border text-sm font-bold text-gray-500 leading-none">+</button>' +
+              '</div>' : '') +
+          '</div>' +
+          (s.returning ?
+            '<select onchange="setReturnDisposition(' + i + ', this.value)" class="mt-2 w-full border rounded-lg p-1.5 text-[11px] font-bold outline-none focus:border-[#B36A5E] bg-white">' +
+              '<option value="Restock"' + (s.disposition === 'Restock' ? ' selected' : '') + '>Good \u2014 Restock to inventory</option>' +
+              '<option value="Supplier"' + (s.disposition === 'Supplier' ? ' selected' : '') + '>Defective \u2014 Return to supplier</option>' +
+              '<option value="Defective"' + (s.disposition === 'Defective' ? ' selected' : '') + '>Defective \u2014 Write off as loss</option>' +
+            '</select>' : '') +
+        '</div>';
+    }).join('');
+    const condBlock = document.querySelector('input[name="return_condition"]');
+    if (condBlock && condBlock.closest('div')) {
+        const wrap = condBlock.closest('div').parentElement;
+        if (wrap) wrap.style.display = sel.length ? 'none' : '';
+    }
+    updateReturnPartialPreview();
+};
+
+window.setReturnDisposition = function(i, v) {
+    const s = (window._returnItemSel || [])[i];
+    if (s) s.disposition = v;
+};
+
+window.toggleReturnItem = function(i) {
+    const s = (window._returnItemSel || [])[i];
+    if (!s) return;
+    s.returning = !s.returning;
+    if (s.returning && s.qty < 1) s.qty = 1;
+    renderReturnItems();
+};
+
+window.setReturnQty = function(i, d) {
+    const s = (window._returnItemSel || [])[i];
+    if (!s) return;
+    s.qty = Math.min(s.orig, Math.max(1, s.qty + d));
+    renderReturnItems();
+};
+
+window._returnSplit = function() {
+    const order = ordersCache[activeReceiveOrderId] || {};
+    const sel   = window._returnItemSel || [];
+    const totalUnits  = sel.reduce(function(a, s) { return a + s.orig; }, 0);
+    const returnUnits = sel.reduce(function(a, s) { return a + (s.returning ? s.qty : 0); }, 0);
+    const keptItems = [];
+    sel.forEach(function(s) {
+        const keptQty = s.orig - (s.returning ? s.qty : 0);
+        if (keptQty > 0) {
+            const src = (order.items || [])[s.idx] || {};
+            const copy = Object.assign({}, src);
+            copy.quantity = keptQty;
+            keptItems.push(copy);
+        }
+    });
+    return { isPartial: returnUnits > 0 && returnUnits < totalUnits, returnUnits: returnUnits,
+             totalUnits: totalUnits, keptItems: keptItems, order: order };
+};
+
+window.updateReturnPartialPreview = function() {
+    const box = document.getElementById('return-partial-box');
+    if (!box) return;
+    const sp = window._returnSplit();
+    box.classList.toggle('hidden', !sp.isPartial);
+    if (!sp.isPartial) return;
+
+    const o        = sp.order;
+    const shipping = Number(o.customerShippingFee) || Number(o.shippingFee) || Number(o.shippingCost) || 0;
+    const bagTotal = Number(o.shoppingBagTotal) || 0;
+    const keptVal  = sp.keptItems.reduce(function(a, i) { return a + (Number(i.price) || 0) * (Number(i.quantity) || 0); }, 0);
+    const newTotal = Math.round((keptVal + shipping + bagTotal) * 100) / 100;
+    const advance  = Number(o.advancePaid) || 0;
+    const pct      = Number(o.codPercentage) || 0;
+    const newCod   = Math.round(Math.max(0, newTotal - advance) * (pct / 100) * 100) / 100;
+    const retChg   = Number(document.getElementById('return-partial-courier').value) || 0;
+    const newCour  = Math.round(((Number(o.courierCost) || 0) + retChg) * 100) / 100;
+    const net      = Math.round((newTotal - advance - newCour - newCod) * 100) / 100;
+
+    document.getElementById('return-partial-preview').innerHTML =
+        '<div class="flex justify-between"><span>Kept items</span><span class="font-bold">\u09F3' + fmt(keptVal) + '</span></div>' +
+        '<div class="flex justify-between"><span>Shipping' + (bagTotal ? ' + bag' : '') + '</span><span class="font-bold">\u09F3' + fmt(shipping + bagTotal) + '</span></div>' +
+        '<div class="flex justify-between border-t pt-1"><span>New order total</span><span class="font-bold">\u09F3' + fmt(newTotal) + '</span></div>' +
+        '<div class="flex justify-between"><span>Advance paid</span><span class="font-bold text-green-600">-\u09F3' + fmt(advance) + '</span></div>' +
+        '<div class="flex justify-between"><span>Courier (fwd + return)</span><span class="font-bold text-red-500">-\u09F3' + fmt(newCour) + '</span></div>' +
+        '<div class="flex justify-between"><span>COD charge (' + pct + '%)</span><span class="font-bold text-red-500">-\u09F3' + fmt(newCod) + '</span></div>' +
+        '<div class="flex justify-between border-t pt-1"><span class="font-bold">Net payout</span><span class="font-bold ' + (net >= 0 ? 'text-green-600' : 'text-red-500') + '">\u09F3' + fmt(net) + '</span></div>';
 };
 
 window.updateReturnCOD = function() { window.updateReturnSummary(); };
@@ -5067,7 +5246,7 @@ window.initCharts = async function() {
         return t >= pFrom.getTime() && t <= pTo.getTime();
     });
 
-    const delivered  = inPeriod.filter(o => o.status === 'Delivered');
+    const delivered  = inPeriod.filter(o => window.DELIVERED_STATUSES.includes(o.status));
     const returned   = inPeriod.filter(o => o.status === 'Returned');
     const cancelled  = inPeriod.filter(o => o.status === 'Cancelled');
     const pending    = (window.ordersArrayCache || []).filter(o => o.status === 'Pending');
@@ -5102,7 +5281,7 @@ window.initCharts = async function() {
     const returnLoss   = returned.reduce((s, o)  => s + (Number(o.totalAmount) || 0), 0);
 
     // Previous period orders count for % change
-    const prevDelivered = inPrev.filter(o => o.status === 'Delivered');
+    const prevDelivered = inPrev.filter(o => window.DELIVERED_STATUSES.includes(o.status));
     const prevCount     = prevDelivered.length;
     const currCount     = delivered.length;
     let changeText = '';
@@ -5163,7 +5342,7 @@ if (window.dashPeriod === 'lifetime') {
     let allDelivered = [];
     try {
         const lifetimeSnap = await db.collection("orders")
-            .where("status", "==", "Delivered")
+            .where("status", "in", window.DELIVERED_STATUSES)
             .get();
         lifetimeSnap.forEach(doc => {
             const o = doc.data();
@@ -5172,7 +5351,7 @@ if (window.dashPeriod === 'lifetime') {
         });
     } catch(e) {
         console.error("Lifetime chart fetch error:", e);
-        allDelivered = (window.ordersArrayCache || []).filter(o => o.status === 'Delivered');
+        allDelivered = (window.ordersArrayCache || []).filter(o => window.DELIVERED_STATUSES.includes(o.status));
     }
 
     if (allDelivered.length === 0) {
@@ -5321,7 +5500,7 @@ if (ctx1) {
     };
     const statusLabels = Object.keys(statusCounts).filter(k => statusCounts[k] > 0);
     const statusData   = statusLabels.map(k => statusCounts[k]);
-    const statusColors = { 'Delivered':'#10B981','Pending':'#F59E0B','Processing':'#8B5CF6','In Transit':'#F97316','Returned':'#EF4444','Cancelled':'#9CA3AF' };
+    const statusColors = { 'Delivered':'#10B981','Partially Delivered':'#0EA5E9','Pending':'#F59E0B','Processing':'#8B5CF6','In Transit':'#F97316','Returned':'#EF4444','Cancelled':'#9CA3AF' };
 
     if (dashCharts.status) dashCharts.status.destroy();
     const ctx2 = document.getElementById('chart-status');
@@ -5377,7 +5556,7 @@ if (ctx1) {
     allOrders.forEach(o => {
         const p = o.logisticsPartner;
         if (!p) return;
-        if (o.status === 'Delivered') partnerDelivered[p] = (partnerDelivered[p] || 0) + 1;
+        if (window.DELIVERED_STATUSES.includes(o.status)) partnerDelivered[p] = (partnerDelivered[p] || 0) + 1;
         if (o.status === 'Returned')  partnerReturned[p]  = (partnerReturned[p]  || 0) + 1;
     });
     const partners = [...new Set([...Object.keys(partnerDelivered), ...Object.keys(partnerReturned)])];
@@ -5419,7 +5598,8 @@ if (ctx1) {
                 const dateStr = o.orderDate ? (o.orderDate.toDate ? o.orderDate.toDate() : new Date(o.orderDate)).toLocaleDateString() : 'N/A';
                 const s = o.status || 'Pending';
                 let sColor = 'bg-orange-100 text-orange-600';
-                if (s === 'Delivered') sColor = 'bg-green-100 text-green-700';
+                if (s === 'Partially Delivered') sColor = 'bg-sky-100 text-sky-700';
+                else if (s === 'Delivered') sColor = 'bg-green-100 text-green-700';
                 if (s === 'Cancelled' || s === 'Returned') sColor = 'bg-red-100 text-red-600';
                 if (s === 'Handed over' || s === 'Packed' || s === 'Confirmed') sColor = 'bg-blue-100 text-blue-600';
                 return '<div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">' +
@@ -6240,7 +6420,7 @@ window.duplicateProduct = async function(id) {
                         .filter(o => o.userId === userId)
                         .sort((a, b) => new Date(b.orderDate || 0) - new Date(a.orderDate || 0)); 
                         
-                    const successfulOrders = userOrders.filter(o => o.status === 'Completed' || o.status === 'Delivered');
+                    const successfulOrders = userOrders.filter(o => o.status === 'Completed' || window.DELIVERED_STATUSES.includes(o.status));
                     const returnedOrders = userOrders.filter(o => o.status === 'Returned' || o.status === 'Return Initiated');
                     const cancelledOrders = userOrders.filter(o => o.status === 'Cancelled');
                     
@@ -6476,7 +6656,8 @@ if (countEl) countEl.innerText = filtered.length + ' customers';
                     const oDate = o.orderDate ? new Date(o.orderDate).toLocaleDateString() : 'N/A';
                     const s = o.status || 'Pending';
                     let sColor = 'text-orange-500 bg-orange-50';
-                    if (s === 'Delivered' || s === 'Completed') sColor = 'text-green-600 bg-green-50';
+                    if (s === 'Partially Delivered') sColor = 'text-sky-600 bg-sky-50';
+                    else if (s === 'Delivered' || s === 'Completed') sColor = 'text-green-600 bg-green-50';
                     if (s === 'Cancelled' || s === 'Returned' || s === 'Return Initiated') sColor = 'text-red-600 bg-red-50';
                     if (s === 'Handed over' || s === 'Packed') sColor = 'text-blue-600 bg-blue-50';
                     
@@ -7490,6 +7671,7 @@ document.addEventListener('DOMContentLoaded', window.checkAndHighlightOrder);
 // ─────────────────────────────────────────────────────────────────────
 // PAYOUT TRACKER
 // ─────────────────────────────────────────────────────────────────────
+window.DELIVERED_STATUSES = ['Delivered', 'Partially Delivered'];
 window._payoutCache       = [];
 window._returnDeductions  = [];
 window._selectedPayoutIds = new Set();
@@ -7497,7 +7679,7 @@ window._selectedPayoutIds = new Set();
 window.loadPayoutTracker = async function() {
     try {
         const snap = await db.collection("orders")
-            .where("status", "==", "Delivered")
+            .where("status", "in", window.DELIVERED_STATUSES)
             .get();
 
         const pendingPayouts = [];
@@ -10313,7 +10495,8 @@ window.openOrderDetail = function(docId) {
     const shipAddr = window.getAddressDisplay(o.shippingAddress || o.address || {});
 
     let statusColor = 'bg-gray-100 text-gray-600';
-    if (status === 'Delivered') statusColor = 'bg-green-100 text-green-700';
+    if (status === 'Partially Delivered') statusColor = 'bg-sky-100 text-sky-700';
+    else if (status === 'Delivered') statusColor = 'bg-green-100 text-green-700';
     else if (status === 'Cancelled' || status === 'Returned') statusColor = 'bg-red-100 text-red-600';
     else if (['Confirmed','Packed','Handed over'].includes(status)) statusColor = 'bg-blue-100 text-blue-600';
 
