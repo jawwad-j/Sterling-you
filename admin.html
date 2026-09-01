@@ -1670,6 +1670,10 @@ if (tabId === 'contact-settings') {
                         <input type="number" id="return-partial-courier" min="0" value="0" oninput="updateReturnPartialPreview()" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E] bg-white">
                         <p class="text-[9px] text-gray-400 mt-1">What the courier bills you to bring the item back.</p>
                     </div>
+                    <div id="return-bag-wrap">
+                        <label class="block text-[9px] font-bold uppercase text-gray-400 tracking-widest mb-1">Shopping Bags Kept (qty)</label>
+                        <input type="number" id="return-kept-bags" min="0" value="0" oninput="updateReturnPartialPreview()" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E] bg-white">
+                    </div>
                     <div id="return-partial-preview" class="text-[10px] text-gray-600 space-y-1 bg-white rounded-lg p-3" style="border:1px solid #E5D3CD"></div>
                 </div>
             </div>
@@ -3552,7 +3556,8 @@ prHTML += '<tr class="border-b hover:bg-gray-50 transition cursor-pointer" oncli
                     } else if (status === 'Returned') {
                         badgeClass = 'bg-red-600 text-white border border-red-700';
                         let conditionBadge = o.returnCondition === 'Defective' ? '<span class="bg-red-100 text-red-600 px-1 py-0.5 rounded text-[8px] ml-1">DEFECTIVE<\/span>' : '';
-                        actionBtn = '<div class="flex flex-col gap-1 items-start"><button onclick="alert(\'Reason: ' + (o.returnReason||'N/A') + '\\nRemarks: ' + (o.returnRemarks||'None') + '\')" class="text-gray-500 font-bold text-[9px] uppercase hover:underline transition">View Reason<\/button>' + conditionBadge + '<\/div>';
+                        actionBtn = '<div class="flex flex-col gap-1 items-start"><button onclick="alert(\'Reason: ' + (o.returnReason||'N/A') + '\\nRemarks: ' + (o.returnRemarks||'None') + '\')" class="text-gray-500 font-bold text-[9px] uppercase hover:underline transition">View Reason<\/button>' +
+                            '<button onclick="undoReturn(\'' + oid + '\')" class="text-blue-500 font-bold underline text-[9px] uppercase hover:text-blue-700 transition">Undo Return<\/button>' + conditionBadge + '<\/div>';
                         
                     } else {
                         badgeClass = 'bg-red-100 text-red-700 border border-red-200';
@@ -3610,6 +3615,53 @@ window.quickUpdate = async function(id, status) {
 };
 
         
+window.undoReturn = async function(id) {
+    if (!confirm('Undo this return? The order goes back to Delivered and any restocked items are removed from inventory again.')) return;
+    try {
+        const order = ordersCache[id];
+        if (!order) return alert('Order not found.');
+
+        let toReverse = (order.returnedItems || []).filter(function(r) { return r.disposition === 'Restock'; });
+        if (!toReverse.length && order.returnCondition === 'Restock') {
+            toReverse = (order.items || []).map(function(i) {
+                return { productId: i.id || i.productId, quantity: Number(i.quantity) || 1 };
+            });
+        }
+        if (toReverse.length) {
+            const b = db.batch(); let any = false;
+            toReverse.forEach(function(r) {
+                if (r.productId) {
+                    b.update(db.collection("products").doc(r.productId),
+                        { stock: firebase.firestore.FieldValue.increment(-(Number(r.quantity) || 1)) });
+                    any = true;
+                }
+            });
+            if (any) await b.commit();
+        }
+
+        const del = firebase.firestore.FieldValue.delete();
+        await db.collection("orders").doc(id).update({
+            status:                  'Delivered',
+            returnCondition:         del,
+            returnDeliveryFeePaidBy: del,
+            returnShippingFee:       del,
+            returnCodAmount:         del,
+            returnCodPercentage:     del,
+            returnCodCharge:         del,
+            returnLogisticsPartner:  del,
+            returnedItems:           del,
+            lastUpdate:              new Date().toISOString()
+        });
+
+        await window.logAdminAction('Undid return for order #' + (order.orderId || id) + ' — restored to Delivered');
+        alert('Return undone. Order restored to Delivered.');
+        loadOrders();
+        if (typeof loadInventory === 'function') loadInventory();
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+};
+
 window.revertToPending = async function(id) {
     if (!confirm('Revert this order back to Stage 1 (Pending)?')) return;
     try {
@@ -3789,6 +3841,8 @@ window.openReceiveReturnModal = function(oid) {
     });
     const _rpc = document.getElementById('return-partial-courier');
     if (_rpc) _rpc.value = 0;
+    const _rkb = document.getElementById('return-kept-bags');
+    if (_rkb) { _rkb.value = 0; _rkb.dataset.init = ''; }
     renderReturnItems();
 
     // Reset radios
@@ -3828,7 +3882,9 @@ const returnShippingFee = Number(document.getElementById('return-shipping-fee').
     try {
         if (_sp.isPartial) {
             const shipping = Number(order.customerShippingFee) || Number(order.shippingFee) || Number(order.shippingCost) || 0;
-            const bagTotal = Number(order.shoppingBagTotal) || 0;
+            const keptBags = Number(document.getElementById('return-kept-bags').value) || 0;
+            const bagPrice = Number(order.shoppingBagPrice) || 0;
+            const bagTotal = Math.round(keptBags * bagPrice * 100) / 100;
             const keptVal  = _sp.keptItems.reduce(function(a, i) { return a + (Number(i.price) || 0) * (Number(i.quantity) || 0); }, 0);
             const newTotal = Math.round((keptVal + shipping + bagTotal) * 100) / 100;
             const advance  = Number(order.advancePaid) || 0;
@@ -3847,6 +3903,9 @@ const returnShippingFee = Number(document.getElementById('return-shipping-fee').
                 courierCost:       newCour,
                 codCharge:         newCod,
                 hasPartialReturn:  true,
+                shoppingBagQty:    keptBags,
+                shoppingBagTotal:  bagTotal,
+                shoppingBagCost:   Math.round(keptBags * (window.SHOPPING_BAG ? window.SHOPPING_BAG.cost : 217) * 100) / 100,
                 partialReturns:    firebase.firestore.FieldValue.arrayUnion({
                     date: new Date().toISOString(), condition: condition,
                     returnCourierCharge: retChg, items: returnedLog,
@@ -4008,7 +4067,15 @@ window.updateReturnPartialPreview = function() {
 
     const o        = sp.order;
     const shipping = Number(o.customerShippingFee) || Number(o.shippingFee) || Number(o.shippingCost) || 0;
-    const bagTotal = Number(o.shoppingBagTotal) || 0;
+    const bagPrice = Number(o.shoppingBagPrice) || 0;
+    const bagWrap  = document.getElementById('return-bag-wrap');
+    const keptBagEl = document.getElementById('return-kept-bags');
+    if (bagWrap) bagWrap.style.display = (Number(o.shoppingBagQty) || 0) > 0 ? '' : 'none';
+    if (keptBagEl && keptBagEl.dataset.init !== '1') {
+        keptBagEl.value = sp.keptItems.length;
+        keptBagEl.dataset.init = '1';
+    }
+    const bagTotal = Math.round((Number(keptBagEl ? keptBagEl.value : 0) || 0) * bagPrice * 100) / 100;
     const keptVal  = sp.keptItems.reduce(function(a, i) { return a + (Number(i.price) || 0) * (Number(i.quantity) || 0); }, 0);
     const newTotal = Math.round((keptVal + shipping + bagTotal) * 100) / 100;
     const advance  = Number(o.advancePaid) || 0;
