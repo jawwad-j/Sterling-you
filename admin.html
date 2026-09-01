@@ -1903,6 +1903,8 @@ if (tabId === 'contact-settings') {
         const storage = firebase.storage();
         const auth = firebase.auth();
 
+        window.DELIVERED_STATUSES = ['Delivered', 'Partially Delivered'];
+
                 // ── MONEY FORMATTER ──────────────────────────────────────────────────────────
         window.fmt = function(amount) {
             return Number(amount || 0).toLocaleString('en-BD', {
@@ -7671,7 +7673,7 @@ document.addEventListener('DOMContentLoaded', window.checkAndHighlightOrder);
 // ─────────────────────────────────────────────────────────────────────
 // PAYOUT TRACKER
 // ─────────────────────────────────────────────────────────────────────
-window.DELIVERED_STATUSES = ['Delivered', 'Partially Delivered'];
+
 window._payoutCache       = [];
 window._returnDeductions  = [];
 window._selectedPayoutIds = new Set();
