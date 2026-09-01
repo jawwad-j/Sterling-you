@@ -1675,7 +1675,7 @@ if (tabId === 'contact-settings') {
             </div>
 
             <!-- Product Condition -->
-            <div>
+            <div id="return-condition-block">
                 <p class="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-2">Product Condition</p>
                 <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 mb-2">
                     <input type="radio" name="return_condition" value="Restock" checked class="w-4 h-4 accent-[#10B981]">
@@ -3946,12 +3946,18 @@ window.renderReturnItems = function() {
             '</select>' : '') +
         '</div>';
     }).join('');
-    const condBlock = document.querySelector('input[name="return_condition"]');
-    if (condBlock && condBlock.closest('div')) {
-        const wrap = condBlock.closest('div').parentElement;
-        if (wrap) wrap.style.display = sel.length ? 'none' : '';
-    }
+    const condBlock = document.getElementById('return-condition-block');
+    if (condBlock) condBlock.style.display = sel.length ? 'none' : '';
     updateReturnPartialPreview();
+
+    const btn = document.querySelector('#receiveReturnModal button[onclick*="submitReceiveReturn"]');
+    if (btn) {
+        const sp = window._returnSplit();
+        const n  = sel.filter(function(s){ return s.returning && s.qty > 0; }).length;
+        btn.innerText = n === 0 ? 'SELECT ITEMS FIRST'
+                      : (sp.isPartial ? 'RECORD PARTIAL RETURN (' + sp.returnUnits + ' OF ' + sp.totalUnits + ')'
+                                      : 'CONFIRM & MARK FULL RETURN');
+    }
 };
 
 window.setReturnDisposition = function(i, v) {
