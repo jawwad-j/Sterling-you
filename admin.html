@@ -1663,7 +1663,8 @@ if (tabId === 'contact-settings') {
             <div>
                 <label class="block text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-1">What Happens To This Order?</label>
                 <select id="return-outcome" onchange="onReturnOutcomeChange()" class="w-full border rounded-xl p-2.5 text-sm font-bold outline-none focus:border-[#B36A5E] bg-white">
-                    <option value="returned">Close it — mark as Returned</option>
+                    <option value="returned">Close it — mark as Returned (everything came back)</option>
+                    <option value="partial">Mark as Partially Delivered (some items kept)</option>
                     <option value="hold">Recalled before delivery — send back to Stage 2 as On Hold</option>
                 </select>
                 <p class="text-[9px] text-gray-400 mt-1">Choose "On Hold" if the customer asked you to hold it and may still take delivery.</p>
@@ -3948,7 +3949,14 @@ const returnShippingFee = Number(document.getElementById('return-shipping-fee').
     }
 
     try {
-        if (_sp.isPartial) {
+        const _outcome = (document.getElementById('return-outcome') || {}).value || 'returned';
+        if (_outcome === 'partial' && !_sp.keptItems.length) {
+            return alert('You chose Partially Delivered but every item is ticked as returned.\n\nUntick the items the customer is keeping, or switch to "mark as Returned".');
+        }
+        if (_outcome === 'returned' && _sp.isPartial) {
+            return alert('You chose "mark as Returned" but some items are unticked.\n\nTick every item, or switch to "Mark as Partially Delivered".');
+        }
+        if (_outcome === 'partial') {
             const shipping = Number(order.customerShippingFee) || Number(order.shippingFee) || Number(order.shippingCost) || 0;
             const keptBags = Number(document.getElementById('return-kept-bags').value) || 0;
             const bagPrice = Number(order.shoppingBagPrice) || 0;
@@ -4082,23 +4090,28 @@ window.renderReturnItems = function() {
 
     const btn = document.querySelector('#receiveReturnModal button[onclick*="submitReceiveReturn"]');
     if (btn) {
+        const outcome = (document.getElementById('return-outcome') || {}).value || 'returned';
         const sp = window._returnSplit();
         const n  = sel.filter(function(s){ return s.returning && s.qty > 0; }).length;
-        btn.innerText = n === 0 ? 'SELECT ITEMS FIRST'
-                      : (sp.isPartial ? 'RECORD PARTIAL RETURN (' + sp.returnUnits + ' OF ' + sp.totalUnits + ')'
-                                      : 'CONFIRM & MARK FULL RETURN');
+        if (outcome === 'hold')          btn.innerText = 'RECEIVE BACK & PUT ON HOLD';
+        else if (n === 0)                btn.innerText = 'SELECT ITEMS FIRST';
+        else if (outcome === 'partial')  btn.innerText = 'MARK PARTIALLY DELIVERED (' + sp.returnUnits + ' OF ' + sp.totalUnits + ' BACK)';
+        else                             btn.innerText = 'CONFIRM & MARK FULL RETURN';
     }
 };
 
 window.onReturnOutcomeChange = function() {
-    const isHold = (document.getElementById('return-outcome') || {}).value === 'hold';
-    ['return-items-list', 'return-condition-block', 'return-partial-box', 'return-forfeit-block'].forEach(function(id) {
-        const el = document.getElementById(id);
-        if (el) el.style.display = isHold ? 'none' : '';
-    });
+    const outcome = (document.getElementById('return-outcome') || {}).value || 'returned';
+    const show = function(id, on) { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
+
+    show('return-items-list',   outcome !== 'hold');
+    show('return-forfeit-block',outcome !== 'hold');
+    show('return-partial-box',  outcome === 'partial');
+    show('return-condition-block', false);
+
     const btn = document.querySelector('#receiveReturnModal button[onclick*="submitReceiveReturn"]');
-    if (btn && isHold) btn.innerText = 'RECEIVE BACK & PUT ON HOLD';
-    else if (btn && typeof renderReturnItems === 'function') renderReturnItems();
+    if (btn && outcome === 'hold') { btn.innerText = 'RECEIVE BACK & PUT ON HOLD'; return; }
+    if (typeof renderReturnItems === 'function') renderReturnItems();
 };
 
 window.resumeFromHold = async function(id) {
