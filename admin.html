@@ -1675,6 +1675,11 @@ if (tabId === 'contact-settings') {
                 <div id="return-partial-box" class="hidden mt-3 rounded-xl p-4 space-y-3" style="background:#F5ECE9;border:1px solid #E5D3CD">
                     <p class="text-[10px] font-bold uppercase tracking-widest" style="color:#B36A5E">Partial Return — Order Stays Delivered</p>
                     <div>
+                        <label class="block text-[9px] font-bold uppercase text-gray-400 tracking-widest mb-1">Forward Courier Cost (৳)</label>
+                        <input type="number" id="return-fwd-courier" min="0" value="0" oninput="updateReturnPartialPreview()" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E] bg-white">
+                        <p class="text-[9px] text-gray-400 mt-1">What the courier billed for the original delivery.</p>
+                    </div>
+                    <div>
                         <label class="block text-[9px] font-bold uppercase text-gray-400 tracking-widest mb-1">Return Courier Charge (৳)</label>
                         <input type="number" id="return-partial-courier" min="0" value="0" oninput="updateReturnPartialPreview()" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E] bg-white">
                         <p class="text-[9px] text-gray-400 mt-1">What the courier bills you to bring the item back.</p>
@@ -3880,6 +3885,8 @@ window.openReceiveReturnModal = function(oid) {
     if (_fh) _fh.innerText = 'Customer loses \u09F3' + fmt(_adv) + ' — kept as income.';
     const _rkb = document.getElementById('return-kept-bags');
     if (_rkb) { _rkb.value = 0; _rkb.dataset.init = ''; }
+    const _rfc = document.getElementById('return-fwd-courier');
+    if (_rfc) { _rfc.value = 0; _rfc.dataset.init = ''; }
     renderReturnItems();
 
     // Reset radios
@@ -3952,7 +3959,8 @@ const returnShippingFee = Number(document.getElementById('return-shipping-fee').
             const pct      = Number(order.codPercentage) || 0;
             const newCod   = Math.round(Math.max(0, newTotal - advance) * (pct / 100) * 100) / 100;
             const retChg   = Number(document.getElementById('return-partial-courier').value) || 0;
-            const newCour  = Math.round(((Number(order.courierCost) || 0) + retChg) * 100) / 100;
+            const fwdCour  = Number(document.getElementById('return-fwd-courier').value) || 0;
+            const newCour  = Math.round((fwdCour + retChg) * 100) / 100;
 
             const returnedLog = (window._returnItemSel || []).filter(function(s) { return s.returning && s.qty > 0; })
                 .map(function(s) { return { productId: s.id, name: s.name, quantity: s.qty, price: s.price, disposition: s.disposition }; });
@@ -4193,7 +4201,7 @@ window.updateReturnPartialPreview = function() {
     const keptBagEl = document.getElementById('return-kept-bags');
     if (bagWrap) bagWrap.style.display = (Number(o.shoppingBagQty) || 0) > 0 ? '' : 'none';
     if (keptBagEl && keptBagEl.dataset.init !== '1') {
-        keptBagEl.value = sp.keptItems.length;
+        keptBagEl.value = Math.min(Number(o.shoppingBagQty) || 0, sp.keptItems.length);
         keptBagEl.dataset.init = '1';
     }
     const bagTotal = Math.round((Number(keptBagEl ? keptBagEl.value : 0) || 0) * bagPrice * 100) / 100;
@@ -4203,7 +4211,10 @@ window.updateReturnPartialPreview = function() {
     const pct      = Number(o.codPercentage) || 0;
     const newCod   = Math.round(Math.max(0, newTotal - advance) * (pct / 100) * 100) / 100;
     const retChg   = Number(document.getElementById('return-partial-courier').value) || 0;
-    const newCour  = Math.round(((Number(o.courierCost) || 0) + retChg) * 100) / 100;
+    const fwdEl = document.getElementById('return-fwd-courier');
+    if (fwdEl && fwdEl.dataset.init !== '1') { fwdEl.value = Number(o.courierCost) || 0; fwdEl.dataset.init = '1'; }
+    const fwdCour  = Number(fwdEl ? fwdEl.value : 0) || 0;
+    const newCour  = Math.round((fwdCour + retChg) * 100) / 100;
     const net      = Math.round((newTotal - advance - newCour - newCod) * 100) / 100;
 
     document.getElementById('return-partial-preview').innerHTML =
