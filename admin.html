@@ -3530,29 +3530,35 @@ pHTML += '<tr class="border-b hover:bg-gray-50 transition">' +
                     let badgeClass = 'bg-blue-50 text-blue-600 border border-blue-100';
 
 if (status === 'Confirmed') {
-     nextAction = '<div class="flex gap-2 flex-wrap">' +
+     nextAction = '<div class="flex gap-2 flex-wrap items-center">' +
          '<button onclick="quickUpdate(\'' + oid + '\', \'Packed\')" class="bg-purple-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Mark Packed<\/button>' +
-         '<button onclick="quickUpdate(\'' + oid + '\', \'On Hold\')" class="bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Hold<\/button>' +
-         '<button onclick="revertToPending(\'' + oid + '\')" class="bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:bg-gray-300 transition whitespace-nowrap">↩ Revert<\/button>' +
+         '<button onclick="event.stopPropagation(); toggleRowActions(\'' + oid + '\')" title="More actions" class="text-gray-400 hover:text-gray-700 px-2 py-1.5 rounded-lg font-bold text-xs leading-none transition">\u22EF<\/button>' +
+         '<span id="more-' + oid + '" style="display:none" class="gap-2 items-center">' +
+             '<button onclick="quickUpdate(\'' + oid + '\', \'On Hold\')" class="bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Hold<\/button>' +
+             '<button onclick="revertToPending(\'' + oid + '\')" class="bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:bg-gray-300 transition whitespace-nowrap ml-2">↩ Revert<\/button>' +
+         '<\/span>' +
      '<\/div>';
 } else if (status === 'Packed') {
      badgeClass = 'bg-purple-50 text-purple-600 border border-purple-100';
-     nextAction = '<div class="flex gap-2 flex-wrap">' +
+     nextAction = '<div class="flex gap-2 flex-wrap items-center">' +
          '<button onclick="quickUpdate(\'' + oid + '\', \'Handed over\')" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Hand Over<\/button>' +
-         '<button onclick="quickUpdate(\'' + oid + '\', \'On Hold\')" class="bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Hold<\/button>' +
-         '<button onclick="revertToPending(\'' + oid + '\')" class="bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:bg-gray-300 transition whitespace-nowrap">↩ Revert<\/button>' +
+         '<button onclick="event.stopPropagation(); toggleRowActions(\'' + oid + '\')" title="More actions" class="text-gray-400 hover:text-gray-700 px-2 py-1.5 rounded-lg font-bold text-xs leading-none transition">\u22EF<\/button>' +
+         '<span id="more-' + oid + '" style="display:none" class="gap-2 items-center">' +
+             '<button onclick="quickUpdate(\'' + oid + '\', \'On Hold\')" class="bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Hold<\/button>' +
+             '<button onclick="revertToPending(\'' + oid + '\')" class="bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:bg-gray-300 transition whitespace-nowrap ml-2">↩ Revert<\/button>' +
+         '<\/span>' +
      '<\/div>';
 } else if (status === 'Handed over') {
                          badgeClass = 'bg-orange-50 text-orange-600 border border-orange-100';
-                         nextAction = '<div class="flex gap-2 flex-wrap">' +
-                            '<button onclick="quickUpdate(\'' + oid + '\', \'Delivered\')" class="bg-green-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Mark Delivered<\/button>' +
-                            '<button onclick="openReturnModal(\'' + oid + '\')" class="bg-red-500 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Recall / Return<\/button>' +
-                         '<\/div>';
+                         nextAction = '<button onclick="quickUpdate(\'' + oid + '\', \'Delivered\')" class="bg-green-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Mark Delivered<\/button>';
                     } else if (status === 'On Hold') {
                          badgeClass = 'bg-yellow-50 text-yellow-700 border border-yellow-300';
                          nextAction = '<div class="flex gap-2 flex-wrap">' +
                             '<button onclick="resumeFromHold(\'' + oid + '\')" class="bg-green-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Resume<\/button>' +
-                            '<button onclick="cancelStage2Order(\'' + oid + '\')" class="bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Cancel Order<\/button>' +
+                            '<button onclick="event.stopPropagation(); toggleRowActions(\'' + oid + '\')" title="More actions" class="text-gray-400 hover:text-gray-700 px-2 py-1.5 rounded-lg font-bold text-xs leading-none transition">\u22EF<\/button>' +
+                            '<span id="more-' + oid + '" style="display:none" class="gap-2 items-center">' +
+                                '<button onclick="cancelStage2Order(\'' + oid + '\')" class="bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Cancel Order<\/button>' +
+                            '<\/span>' +
                          '<\/div>';
                     } else if (status === 'Return Initiated') {
                          badgeClass = 'bg-red-50 text-red-600 border border-red-200 animate-pulse';
@@ -4112,6 +4118,12 @@ window.onReturnOutcomeChange = function() {
     const btn = document.querySelector('#receiveReturnModal button[onclick*="submitReceiveReturn"]');
     if (btn && outcome === 'hold') { btn.innerText = 'RECEIVE BACK & PUT ON HOLD'; return; }
     if (typeof renderReturnItems === 'function') renderReturnItems();
+};
+
+window.toggleRowActions = function(oid) {
+    const el = document.getElementById('more-' + oid);
+    if (!el) return;
+    el.style.display = (el.style.display === 'none' || !el.style.display) ? 'inline-flex' : 'none';
 };
 
 window.resumeFromHold = async function(id) {
