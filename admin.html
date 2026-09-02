@@ -1661,6 +1661,15 @@ if (tabId === 'contact-settings') {
             <p class="text-xs text-gray-500">The return has been physically received. Fill in the details below.</p>
 
             <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-1">What Happens To This Order?</label>
+                <select id="return-outcome" onchange="onReturnOutcomeChange()" class="w-full border rounded-xl p-2.5 text-sm font-bold outline-none focus:border-[#B36A5E] bg-white">
+                    <option value="returned">Close it — mark as Returned</option>
+                    <option value="hold">Recalled before delivery — send back to Stage 2 as On Hold</option>
+                </select>
+                <p class="text-[9px] text-gray-400 mt-1">Choose "On Hold" if the customer asked you to hold it and may still take delivery.</p>
+            </div>
+
+            <div>
                 <p class="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-2">Which Items Are Coming Back?</p>
                 <div id="return-items-list" class="space-y-2"></div>
                 <div id="return-partial-box" class="hidden mt-3 rounded-xl p-4 space-y-3" style="background:#F5ECE9;border:1px solid #E5D3CD">
@@ -1676,6 +1685,16 @@ if (tabId === 'contact-settings') {
                     </div>
                     <div id="return-partial-preview" class="text-[10px] text-gray-600 space-y-1 bg-white rounded-lg p-3" style="border:1px solid #E5D3CD"></div>
                 </div>
+            </div>
+
+            <div id="return-forfeit-block" class="rounded-xl p-3" style="background:#F5ECE9;border:1px solid #E5D3CD">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="return-forfeit-advance" onchange="updateReturnSummary(); updateReturnPartialPreview();" class="w-4 h-4 accent-[#B36A5E]">
+                    <div>
+                        <p class="text-[11px] font-bold text-[#322C2B]">Forfeit the advance</p>
+                        <p id="return-forfeit-hint" class="text-[9px] text-gray-500">Customer loses their advance — it is kept as income.</p>
+                    </div>
+                </label>
             </div>
 
             <!-- Product Condition -->
@@ -3400,7 +3419,7 @@ if (searchVal) {
             filteredOrders.forEach(o => {
                 const status = o.status || 'Pending';
                 if (status === 'Pending') pendingArr.push(o);
-                else if (['Confirmed', 'Packed', 'Handed over', 'Return Initiated'].includes(status)) processingArr.push(o);
+                else if (['Confirmed', 'Packed', 'Handed over', 'Return Initiated', 'On Hold'].includes(status)) processingArr.push(o);
                 else historyArr.push(o);
             });
 
@@ -3507,17 +3526,28 @@ pHTML += '<tr class="border-b hover:bg-gray-50 transition">' +
 if (status === 'Confirmed') {
      nextAction = '<div class="flex gap-2 flex-wrap">' +
          '<button onclick="quickUpdate(\'' + oid + '\', \'Packed\')" class="bg-purple-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Mark Packed<\/button>' +
+         '<button onclick="quickUpdate(\'' + oid + '\', \'On Hold\')" class="bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Hold<\/button>' +
          '<button onclick="revertToPending(\'' + oid + '\')" class="bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:bg-gray-300 transition whitespace-nowrap">↩ Revert<\/button>' +
      '<\/div>';
 } else if (status === 'Packed') {
      badgeClass = 'bg-purple-50 text-purple-600 border border-purple-100';
      nextAction = '<div class="flex gap-2 flex-wrap">' +
          '<button onclick="quickUpdate(\'' + oid + '\', \'Handed over\')" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Hand Over<\/button>' +
+         '<button onclick="quickUpdate(\'' + oid + '\', \'On Hold\')" class="bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Hold<\/button>' +
          '<button onclick="revertToPending(\'' + oid + '\')" class="bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:bg-gray-300 transition whitespace-nowrap">↩ Revert<\/button>' +
      '<\/div>';
 } else if (status === 'Handed over') {
                          badgeClass = 'bg-orange-50 text-orange-600 border border-orange-100';
-                         nextAction = '<button onclick="quickUpdate(\'' + oid + '\', \'Delivered\')" class="bg-green-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Mark Delivered<\/button>';
+                         nextAction = '<div class="flex gap-2 flex-wrap">' +
+                            '<button onclick="quickUpdate(\'' + oid + '\', \'Delivered\')" class="bg-green-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Mark Delivered<\/button>' +
+                            '<button onclick="openReturnModal(\'' + oid + '\')" class="bg-red-500 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Recall / Return<\/button>' +
+                         '<\/div>';
+                    } else if (status === 'On Hold') {
+                         badgeClass = 'bg-yellow-50 text-yellow-700 border border-yellow-300';
+                         nextAction = '<div class="flex gap-2 flex-wrap">' +
+                            '<button onclick="resumeFromHold(\'' + oid + '\')" class="bg-green-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Resume<\/button>' +
+                            '<button onclick="cancelStage2Order(\'' + oid + '\')" class="bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-sm hover:opacity-90 transition whitespace-nowrap">Cancel Order<\/button>' +
+                         '<\/div>';
                     } else if (status === 'Return Initiated') {
                          badgeClass = 'bg-red-50 text-red-600 border border-red-200 animate-pulse';
                          nextAction = '<button onclick="openReceiveReturnModal(\'' + oid + '\')" class="bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase shadow-md hover:bg-red-700 transition whitespace-nowrap">Process Return Receipt<\/button>';
@@ -3841,6 +3871,13 @@ window.openReceiveReturnModal = function(oid) {
     });
     const _rpc = document.getElementById('return-partial-courier');
     if (_rpc) _rpc.value = 0;
+    const _adv = Number(order.advancePaid) || 0;
+    const _fb  = document.getElementById('return-forfeit-block');
+    const _fc  = document.getElementById('return-forfeit-advance');
+    const _fh  = document.getElementById('return-forfeit-hint');
+    if (_fb) _fb.style.display = _adv > 0 ? '' : 'none';
+    if (_fc) _fc.checked = false;
+    if (_fh) _fh.innerText = 'Customer loses \u09F3' + fmt(_adv) + ' — kept as income.';
     const _rkb = document.getElementById('return-kept-bags');
     if (_rkb) { _rkb.value = 0; _rkb.dataset.init = ''; }
     renderReturnItems();
@@ -3878,6 +3915,30 @@ const returnShippingFee = Number(document.getElementById('return-shipping-fee').
 
     const order = ordersCache[activeReceiveOrderId];
     const _sp   = window._returnSplit();
+
+    if ((document.getElementById('return-outcome') || {}).value === 'hold') {
+        const recallCost = (Number(document.getElementById('return-shipping-fee').value) || 0) +
+                           (Number(document.getElementById('return-cod-charge-input').value) || 0);
+        try {
+            await db.collection("orders").doc(activeReceiveOrderId).update({
+                status:      'On Hold',
+                courierCost: Math.round(((Number(order.courierCost) || 0) + recallCost) * 100) / 100,
+                holdHistory: firebase.firestore.FieldValue.arrayUnion({
+                    date: new Date().toISOString(), recallCost: recallCost,
+                    reason: order.returnReason || '', remarks: order.returnRemarks || ''
+                }),
+                returnReason:  firebase.firestore.FieldValue.delete(),
+                returnRemarks: firebase.firestore.FieldValue.delete(),
+                lastUpdate:    new Date().toISOString()
+            });
+            await window.logAdminAction('Recalled order #' + (order ? order.orderId : activeReceiveOrderId) +
+                ' back to Stage 2 as On Hold — recall cost \u09F3' + recallCost);
+            alert('Order received back and placed On Hold in Stage 2. Recall cost \u09F3' + fmt(recallCost) + ' added to courier cost.');
+            closeReceiveReturnModal();
+            loadOrders();
+            return;
+        } catch (e) { return alert('Error: ' + e.message); }
+    }
 
     try {
         if (_sp.isPartial) {
@@ -3943,6 +4004,8 @@ const returnShippingFee = Number(document.getElementById('return-shipping-fee').
             returnLogisticsPartner: returnPartner || (order.logisticsPartner || ''),
             returnCodPercentage: returnCodPct,
             returnCodCharge:     returnCodCharge,
+            advanceForfeited:    !!(document.getElementById('return-forfeit-advance') || {}).checked,
+            forfeitedAmount:     (document.getElementById('return-forfeit-advance') || {}).checked ? (Number(order.advancePaid) || 0) : 0,
             returnedItems:       _selItems.map(function(s) { return { productId: s.id, name: s.name, quantity: s.qty, price: s.price, disposition: s.disposition }; }),
             lastUpdate:           new Date().toISOString()
             
@@ -4017,6 +4080,64 @@ window.renderReturnItems = function() {
                       : (sp.isPartial ? 'RECORD PARTIAL RETURN (' + sp.returnUnits + ' OF ' + sp.totalUnits + ')'
                                       : 'CONFIRM & MARK FULL RETURN');
     }
+};
+
+window.onReturnOutcomeChange = function() {
+    const isHold = (document.getElementById('return-outcome') || {}).value === 'hold';
+    ['return-items-list', 'return-condition-block', 'return-partial-box', 'return-forfeit-block'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = isHold ? 'none' : '';
+    });
+    const btn = document.querySelector('#receiveReturnModal button[onclick*="submitReceiveReturn"]');
+    if (btn && isHold) btn.innerText = 'RECEIVE BACK & PUT ON HOLD';
+    else if (btn && typeof renderReturnItems === 'function') renderReturnItems();
+};
+
+window.resumeFromHold = async function(id) {
+    const order = ordersCache[id];
+    if (!order) return alert('Order not found.');
+    const entry = prompt('Resuming this order.\n\nCourier charge for the NEW delivery attempt (৳)?\nCurrent courier cost so far: ৳' + fmt(Number(order.courierCost) || 0) + '\n\nEnter 0 if the courier is not charging again.', '0');
+    if (entry === null) return;
+    const extra = Number(entry) || 0;
+    try {
+        await db.collection("orders").doc(id).update({
+            status:      'Confirmed',
+            courierCost: Math.round(((Number(order.courierCost) || 0) + extra) * 100) / 100,
+            lastUpdate:  new Date().toISOString()
+        });
+        await window.logAdminAction('Resumed order #' + (order.orderId || id) + ' from On Hold' +
+            (extra ? ' — added \u09F3' + extra + ' redelivery courier charge' : ''));
+        loadOrders();
+    } catch (e) { alert('Error: ' + e.message); }
+};
+
+window.cancelStage2Order = async function(id) {
+    const order = ordersCache[id];
+    if (!order) return alert('Order not found.');
+    const adv = Number(order.advancePaid) || 0;
+    if (!confirm('Cancel this order? Items will be restocked.')) return;
+    const forfeit = adv > 0 ? confirm('Forfeit the customer\'s advance of \u09F3' + fmt(adv) + '?\n\nOK = keep it as income.\nCancel = advance is refunded (not counted as income).') : false;
+    try {
+        const b = db.batch(); let any = false;
+        (order.items || []).forEach(function(it) {
+            const pid = it.id || it.productId;
+            if (pid) { b.update(db.collection("products").doc(pid),
+                { stock: firebase.firestore.FieldValue.increment(Number(it.quantity) || 1) }); any = true; }
+        });
+        if (any) await b.commit();
+
+        await db.collection("orders").doc(id).update({
+            status:           'Cancelled',
+            advanceForfeited: forfeit,
+            forfeitedAmount:  forfeit ? adv : 0,
+            cancelledAt:      new Date().toISOString(),
+            lastUpdate:       new Date().toISOString()
+        });
+        await window.logAdminAction('Cancelled order #' + (order.orderId || id) + ' from Stage 2' + (forfeit ? ' — advance \u09F3' + adv + ' forfeited' : ''));
+        alert('Order cancelled.' + (forfeit ? ' Advance \u09F3' + fmt(adv) + ' kept as income.' : ''));
+        loadOrders();
+        if (typeof loadInventory === 'function') loadInventory();
+    } catch (e) { alert('Error: ' + e.message); }
 };
 
 window.setReturnDisposition = function(i, v) {
@@ -5349,7 +5470,17 @@ window.initCharts = async function() {
         totalCodCharge   += Number(o.codCharge)   || 0;
     });
 
-    const netProfit  = grossProfit - totalCourierCost - totalCodCharge;
+    // ── Forfeited advances (returned + cancelled orders where the customer lost their advance) ──
+    const forfeitedIncome = inPeriod.reduce(function(s, o) {
+        return s + (o.advanceForfeited ? (Number(o.forfeitedAmount) || Number(o.advancePaid) || 0) : 0);
+    }, 0);
+
+    // ── Costs on returned orders (courier still bills you even when nothing sells) ──
+    const returnCosts = returned.reduce(function(s, o) {
+        return s + (Number(o.returnShippingFee) || 0) + (Number(o.returnCodCharge) || 0);
+    }, 0);
+
+    const netProfit  = grossProfit - totalCourierCost - totalCodCharge + forfeitedIncome - returnCosts;
     const netMargin  = revenue > 0 ? Math.round((netProfit / revenue) * 100) : 0;
 
     const transitTotal = inTransit.reduce((s, o) => s + (Number(o.totalAmount) || 0), 0);
@@ -5385,6 +5516,10 @@ window.initCharts = async function() {
     document.getElementById('kpi-revenue').innerText       = '৳' + fmt(revenue);
     document.getElementById('kpi-revenue-count').innerText = currCount + ' orders';
     document.getElementById('kpi-gross').innerText         = '৳' + fmt(grossProfit);
+    const _netEl = document.getElementById('kpi-net');
+    if (_netEl) _netEl.title = 'Gross ৳' + fmt(grossProfit) + ' − courier ৳' + fmt(totalCourierCost) +
+        ' − COD ৳' + fmt(totalCodCharge) + ' + forfeited advances ৳' + fmt(forfeitedIncome) +
+        ' − return costs ৳' + fmt(returnCosts);
     document.getElementById('kpi-gross-margin').innerText  = grossMargin + '% margin';
     document.getElementById('kpi-net').innerText           = '৳' + fmt(netProfit);
     document.getElementById('kpi-net').className           = 'text-2xl font-bold mt-1 ' + (netProfit >= 0 ? 'text-[#B36A5E]' : 'text-red-600');
@@ -5575,7 +5710,7 @@ if (ctx1) {
     };
     const statusLabels = Object.keys(statusCounts).filter(k => statusCounts[k] > 0);
     const statusData   = statusLabels.map(k => statusCounts[k]);
-    const statusColors = { 'Delivered':'#10B981','Partially Delivered':'#0EA5E9','Pending':'#F59E0B','Processing':'#8B5CF6','In Transit':'#F97316','Returned':'#EF4444','Cancelled':'#9CA3AF' };
+    const statusColors = { 'Delivered':'#10B981','Partially Delivered':'#0EA5E9','On Hold':'#EAB308','Pending':'#F59E0B','Processing':'#8B5CF6','In Transit':'#F97316','Returned':'#EF4444','Cancelled':'#9CA3AF' };
 
     if (dashCharts.status) dashCharts.status.destroy();
     const ctx2 = document.getElementById('chart-status');
@@ -7783,7 +7918,8 @@ const returnDeductions = [];
 
                 // Client pays: partner collects from customer, pays SY after deducting courier + COD
                 // SY pays: partner deducts from SY's pending payout
-                const net = Math.round((returnCod - returnShipping - codCharge) * 100) / 100;
+                const forfeited = o.advanceForfeited ? (Number(o.forfeitedAmount) || Number(o.advancePaid) || 0) : 0;
+                const net = Math.round((forfeited + returnCod - returnShipping - codCharge) * 100) / 100;
 
                 o._returnNetDeduction = net;  // positive = profit, negative = loss
                 o._isReturnDeduction  = true;
