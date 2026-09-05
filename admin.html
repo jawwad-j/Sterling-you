@@ -7955,8 +7955,7 @@ const returnDeductions = [];
 
                 // Client pays: partner collects from customer, pays SY after deducting courier + COD
                 // SY pays: partner deducts from SY's pending payout
-                const forfeited = o.advanceForfeited ? (Number(o.forfeitedAmount) || Number(o.advancePaid) || 0) : 0;
-                const net = Math.round((forfeited + returnCod - returnShipping - codCharge) * 100) / 100;
+                const net = Math.round((returnCod - returnShipping - codCharge) * 100) / 100;
 
                 o._returnNetDeduction = net;  // positive = profit, negative = loss
                 o._isReturnDeduction  = true;
