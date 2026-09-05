@@ -10342,6 +10342,9 @@ window.askShipmentCost = function(orderCount, bagCount) {
               '<div><label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Supplier Shipping Cost Per Bag (৳)</label>' +
                 '<input type="number" id="sc-per-bag" min="0" step="0.01" placeholder="e.g. 700" oninput="document.getElementById(\'sc-total\').innerText = \'\u09F3\' + ((Number(this.value)||0) * ' + bagCount + ').toLocaleString()" class="w-full border rounded-lg p-2.5 text-sm text-center font-bold outline-none focus:border-[#B36A5E]">' +
                 '<p class="text-[9px] text-gray-400 mt-1">Applies to every bag in this shipment. Leave blank to keep each product\'s saved cost.</p></div>' +
+              '<label class="flex items-start gap-2 cursor-pointer">' +
+                '<input type="checkbox" id="sc-update-products" checked class="w-4 h-4 accent-[#B36A5E] mt-0.5">' +
+                '<span class="text-[10px] text-gray-600 leading-snug"><b>Also update the product records</b> — sets this as each bag\'s default freight cost and stamps the newest FIFO lot.</span></label>' +
               '<div class="rounded-xl p-3 text-center" style="background:#F5ECE9;border:1px solid #E5D3CD">' +
                 '<p class="text-[9px] font-bold uppercase text-gray-500 tracking-widest mb-1">Total Freight For This Shipment</p>' +
                 '<p id="sc-total" class="text-xl font-bold text-[#322C2B]">—</p></div>' +
@@ -10355,11 +10358,11 @@ window.askShipmentCost = function(orderCount, bagCount) {
         document.body.appendChild(m);
         const done = function(v) { m.remove(); resolve(v); };
         document.getElementById('sc-cancel').onclick = function() { done(null); };
-        document.getElementById('sc-skip').onclick   = function() { done({ perBag: null }); };
+        document.getElementById('sc-skip').onclick   = function() { done({ perBag: null, updateProducts: false }); };
         document.getElementById('sc-go').onclick     = function() {
             const v = document.getElementById('sc-per-bag').value;
             if (v === '' || Number(v) < 0) return alert('Enter a cost per bag, or choose "Keep Saved".');
-            done({ perBag: Number(v) });
+            done({ perBag: Number(v), updateProducts: document.getElementById('sc-update-products').checked });
         };
         setTimeout(function(){ const el = document.getElementById('sc-per-bag'); if (el) el.focus(); }, 50);
     });
@@ -10376,6 +10379,29 @@ window.moveSelectedPreordersToOrders = async function() {
     const _freight = await window.askShipmentCost(selected.length, _bagCount);
     if (_freight === null) return;
     const _perBagFreight = _freight.perBag;
+
+    if (_perBagFreight !== null && _freight.updateProducts) {
+        const _pids = [...new Set(selected.reduce(function(acc, p) {
+            window._poItemsOf(p).forEach(function(i) { if (i.productId) acc.push(String(i.productId)); });
+            return acc;
+        }, []))];
+        for (const pid of _pids) {
+            try {
+                const pRef  = db.collection("products").doc(pid);
+                const pSnap = await pRef.get();
+                if (!pSnap.exists) continue;
+                const pData = pSnap.data();
+                const lots  = (pData.stockLots || []).slice();
+                if (lots.length) lots[lots.length - 1].supplierShippingCost = _perBagFreight;
+                await pRef.update({
+                    supplierShippingCost: _perBagFreight,
+                    stockLots: lots,
+                    lastFreightUpdate: new Date().toISOString()
+                });
+            } catch (e) { console.error('Freight update failed for product ' + pid, e); }
+        }
+        await window.logAdminAction('Set supplier freight \u09F3' + _perBagFreight + '/bag on ' + _pids.length + ' product(s) for shipment of ' + _bagCount + ' bag(s)');
+    }
 
     const btn = document.getElementById('btn-move-preorders');
     if (btn) { btn.innerText = 'Moving...'; btn.disabled = true; }
