@@ -5516,7 +5516,8 @@ window.initCharts = async function() {
         return s + (Number(o.returnShippingFee) || 0) + (Number(o.returnCodCharge) || 0);
     }, 0);
 
-    const netProfit  = grossProfit - totalCourierCost - totalCodCharge + forfeitedIncome - returnCosts;
+    const overpaidIncome = delivered.reduce(function(s, o) { return s + (Number(o.overpaidAmount) || 0); }, 0);
+    const netProfit  = grossProfit - totalCourierCost - totalCodCharge + forfeitedIncome + overpaidIncome - returnCosts;
     const netMargin  = revenue > 0 ? Math.round((netProfit / revenue) * 100) : 0;
 
     const transitTotal = inTransit.reduce((s, o) => s + (Number(o.totalAmount) || 0), 0);
@@ -8195,6 +8196,9 @@ window._injectPayoutEditModal = function() {
             '<input type="number" id="pe-a" step="0.01" oninput="payoutEditRecalc()" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E]"></div>' +
           '<div id="pe-b-wrap"><label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Advance Already Paid (৳)</label>' +
             '<input type="number" id="pe-b" step="0.01" oninput="payoutEditRecalc()" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E]"></div>' +
+          '<div id="pe-direct-wrap"><label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Paid Directly to You (৳)</label>' +
+            '<input type="number" id="pe-direct" step="0.01" oninput="payoutEditRecalc()" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E]">' +
+            '<p class="text-[9px] text-gray-400 mt-1">bKash/bank paid at the door, bypassing the courier. Reduces what the courier collects, so no COD fee applies to it.</p></div>' +
           '<div><label id="pe-c-label" class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1"></label>' +
             '<input type="number" id="pe-c" step="0.01" oninput="payoutEditRecalc()" class="w-full border rounded-lg p-2 text-sm text-center font-bold outline-none focus:border-[#B36A5E]">' +
             '<p class="text-[9px] text-gray-400 mt-1">What the courier charges you — not what you charged the customer.</p></div>' +
@@ -8235,6 +8239,7 @@ window.openPayoutEdit = function(id, isReturn) {
     document.getElementById('pe-a-label').innerText = isReturn ? 'COD Collected from Customer (৳)' : 'Order Total (৳)';
     document.getElementById('pe-c-label').innerText = isReturn ? 'Return Courier Cost (৳)' : 'Courier Cost (৳)';
     document.getElementById('pe-b-wrap').classList.toggle('hidden', !!isReturn);
+    document.getElementById('pe-direct-wrap').classList.toggle('hidden', !!isReturn);
     document.getElementById('pe-paidby-wrap').classList.toggle('hidden', !isReturn);
 
     if (isReturn) {
@@ -8247,6 +8252,7 @@ window.openPayoutEdit = function(id, isReturn) {
     } else {
         document.getElementById('pe-a').value   = Number(o.totalAmount)   || 0;
         document.getElementById('pe-b').value   = Number(o.advancePaid)   || 0;
+        document.getElementById('pe-direct').value = Number(o.directPaymentAmount) || 0;
         document.getElementById('pe-c').value   = Number(o.courierCost)   || 0;
         document.getElementById('pe-pct').value = Number(o.codPercentage) || 0;
         document.getElementById('pe-cod').value = Number(o.codCharge)     || 0;
@@ -8271,7 +8277,8 @@ window.payoutEditRecalc = function() {
     const c   = Number(document.getElementById('pe-c').value)   || 0;
     const pct = Number(document.getElementById('pe-pct').value) || 0;
 
-    const codBase = isRet ? a : Math.max(0, a - b);
+    const dir     = isRet ? 0 : (Number(document.getElementById('pe-direct').value) || 0);
+    const codBase = isRet ? a : Math.max(0, a - b - dir);
     let cod;
     if (document.getElementById('pe-auto').checked) {
         cod = Math.round(codBase * (pct / 100) * 100) / 100;
@@ -8280,13 +8287,16 @@ window.payoutEditRecalc = function() {
         cod = Number(document.getElementById('pe-cod').value) || 0;
     }
 
-    const net = Math.round((a - b - c - cod) * 100) / 100;
+    const net = Math.round((a - b - dir - c - cod) * 100) / 100;
     const netEl = document.getElementById('pe-net');
     netEl.innerText = (net >= 0 ? '৳' : '-৳') + fmt(Math.abs(net));
     netEl.className = 'text-2xl font-bold ' + (net >= 0 ? 'text-green-600' : 'text-red-500');
+    const over = dir > 0 ? Math.round((b + dir - a) * 100) / 100 : 0;
     document.getElementById('pe-formula').innerText =
-        '৳' + fmt(a) + (b ? ' − ৳' + fmt(b) + ' advance' : '') + ' − ৳' + fmt(c) + ' courier − ৳' + fmt(cod) +
-        ' COD fee (' + pct + '% of ৳' + fmt(codBase) + ')';
+        'Courier collects ৳' + fmt(codBase) + ' · ' + '৳' + fmt(a) +
+        (b ? ' − ৳' + fmt(b) + ' advance' : '') + (dir ? ' − ৳' + fmt(dir) + ' direct' : '') +
+        ' − ৳' + fmt(c) + ' courier − ৳' + fmt(cod) + ' COD fee (' + pct + '%)' +
+        (over > 0 ? ' · Overpaid by ৳' + fmt(over) : '');
 };
 
 window.savePayoutEdit = async function() {
@@ -8305,6 +8315,8 @@ window.savePayoutEdit = async function() {
             returnDeliveryFeePaidBy: document.getElementById('pe-paidby').value,
             lastUpdate: new Date().toISOString() }
         : { totalAmount: a, advancePaid: b, courierCost: c, codPercentage: pct, codCharge: cod,
+            directPaymentAmount: Number(document.getElementById('pe-direct').value) || 0,
+            overpaidAmount: Math.max(0, Math.round((b + (Number(document.getElementById('pe-direct').value) || 0) - a) * 100) / 100),
             payoutFiguresEdited: true, lastUpdate: new Date().toISOString() };
 
     try {
