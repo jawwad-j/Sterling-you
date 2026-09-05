@@ -8209,7 +8209,10 @@ window._injectPayoutEditModal = function() {
           '</div>' +
           '<label class="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">' +
             '<input type="checkbox" id="pe-auto" checked onchange="payoutEditRecalc()" class="accent-[#B36A5E]"> Auto-calculate COD charge</label>' +
-          '<div id="pe-paidby-wrap" class="hidden"><label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Return Fee Paid By</label>' +
+                        '<div><label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Delivery / Return Date</label>' +
+                '<input type="date" id="pe-date" class="w-full border rounded-lg p-2 text-sm outline-none focus:border-[#B36A5E]">' +
+                '<p class="text-[9px] text-gray-400 mt-1">Only change this if the recorded date is wrong.</p></div>' +
+              '<div id="pe-paidby-wrap" class="hidden"><label class="block text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Return Fee Paid By</label>' +
             '<select id="pe-paidby" class="w-full border rounded-lg p-2 text-sm outline-none focus:border-[#B36A5E] bg-white">' +
               '<option value="client">Customer / Client pays</option><option value="sy">Sterling You pays</option></select></div>' +
           '<div class="rounded-xl p-3 text-center" style="background:#F5ECE9;border:1px solid #E5D3CD">' +
@@ -8255,6 +8258,12 @@ window.openPayoutEdit = function(id, isReturn) {
         document.getElementById('pe-c').value   = Number(o.courierCost)   || 0;
         document.getElementById('pe-pct').value = Number(o.codPercentage) || 0;
         document.getElementById('pe-cod').value = Number(o.codCharge)     || 0;
+    }
+    const _dEl = document.getElementById('pe-date');
+    if (_dEl) {
+        const _t = o.lastUpdate ? new Date(o.lastUpdate) : null;
+        _dEl.value = _t && !isNaN(_t) ? _t.toISOString().slice(0, 10) : '';
+        _dEl.dataset.orig = _dEl.value;
     }
     document.getElementById('pe-auto').checked = true;
     payoutEditRecalc();
@@ -8312,11 +8321,16 @@ window.savePayoutEdit = async function() {
     const payload = isRet
         ? { returnCodAmount: a, returnShippingFee: c, returnCodPercentage: pct, returnCodCharge: cod,
             returnDeliveryFeePaidBy: document.getElementById('pe-paidby').value,
-            lastUpdate: new Date().toISOString() }
+            payoutEditedAt: new Date().toISOString() }
         : { totalAmount: a, advancePaid: b, courierCost: c, codPercentage: pct, codCharge: cod,
             directPaymentAmount: Number(document.getElementById('pe-direct').value) || 0,
             overpaidAmount: Math.max(0, Math.round((b + (Number(document.getElementById('pe-direct').value) || 0) - a) * 100) / 100),
-            payoutFiguresEdited: true, lastUpdate: new Date().toISOString() };
+            payoutFiguresEdited: true, payoutEditedAt: new Date().toISOString() };
+
+    const _dIn = document.getElementById('pe-date');
+    if (_dIn && _dIn.value && _dIn.value !== _dIn.dataset.orig) {
+        payload.lastUpdate = new Date(_dIn.value + 'T12:00:00').toISOString();
+    }
 
     try {
         await db.collection("orders").doc(id).update(payload);
