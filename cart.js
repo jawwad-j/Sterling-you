@@ -841,19 +841,25 @@ window.poClosePicker = function() {
 window.poLoadPickerProducts = async function() {
     if (window._poPickerCache) { poRenderPicker(); return; }
     try {
-        const snap = await db.collection("products").where("isPreorder", "==", true).limit(60).get();
-        window._poPickerCache = snap.docs.map(d => {
-            const p = d.data();
-            return {
-                id: String(d.id).trim(), name: p.name || '', image: p.image || '',
-                price: Number(p.price) || 0,
-                preorderAdvance: Number(p.preorderAdvance) || 510
-            };
-        });
+        // isPreorder is stored as boolean true on some docs and the string 'true' on others,
+        // so filter client-side instead of with a typed Firestore where() clause.
+        const snap = await db.collection("products").limit(300).get();
+        window._poPickerCache = snap.docs
+            .map(d => ({ id: String(d.id).trim(), data: d.data() }))
+            .filter(x => x.data.isPreorder === true || x.data.isPreorder === 'true')
+            .map(x => ({
+                id: x.id,
+                name: x.data.name || '',
+                image: x.data.image || '',
+                price: Number(x.data.price) || 0,
+                preorderAdvance: Number(x.data.preorderAdvance) || 510
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name));
         poRenderPicker();
     } catch (e) {
+        console.error('Pre-order picker load failed:', e);
         document.getElementById('po-picker-grid').innerHTML =
-            '<p class="col-span-2 text-center text-xs text-red-500 py-6">Could not load products.</p>';
+            '<p class="col-span-2 text-center text-xs text-red-500 py-6">Could not load products. Please try again.</p>';
     }
 };
 
