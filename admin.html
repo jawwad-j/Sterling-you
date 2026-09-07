@@ -5398,10 +5398,19 @@ window.loadVisitorStats = async function(from, to) {
                 pv += Number(doc.data().pageViews)      || 0;
                 uv += Number(doc.data().uniqueVisitors) || 0;
             });
+            let gaPv = 0, gaUv = 0;
+            try {
+                const r = await fetch('https://us-central1-sterling-erp.cloudfunctions.net/ga4Stats?startDate=2020-01-01&endDate=' + new Date().toISOString().split('T')[0]);
+                const j = await r.json();
+                if (j.success && j.data) j.data.forEach(row => { gaPv += row.pageViews || 0; gaUv += row.totalUsers || 0; });
+            } catch(e2) {}
+
             const pvEl = document.getElementById('qs-pageviews');
             const uvEl = document.getElementById('qs-unique-visitors');
-            if (pvEl) pvEl.innerText = pv.toLocaleString();
-            if (uvEl) uvEl.innerText = uv.toLocaleString();
+            if (pvEl) { pvEl.innerText = Math.max(pv, gaPv).toLocaleString();
+                        pvEl.title = 'Own counters: ' + pv.toLocaleString() + ' · GA4 (last ~2 months): ' + gaPv.toLocaleString(); }
+            if (uvEl) { uvEl.innerText = Math.max(uv, gaUv).toLocaleString();
+                        uvEl.title = 'Own counters: ' + uv.toLocaleString() + ' · GA4 (last ~2 months): ' + gaUv.toLocaleString(); }
             return;
         } catch(e) { console.error("Lifetime visitor stats error:", e); /* fall through to GA4 */ }
     }
@@ -10091,11 +10100,19 @@ window.renderPreorders = function() {
         return matchSearch && matchBatch && matchStage && matchStatus;
     });
 
-    // Stage tab counts (from full cache)
-    const cPending   = all.filter(p => (p.status || 'Pending') === 'Pending').length;
-    const cConfirmed = all.filter(p => p.status === 'Confirmed').length;
-    const cConverted = all.filter(p => p.status === 'Converted').length;
-    const cCancelled = all.filter(p => p.status === 'Cancelled' || p.status === 'Refunded').length;
+    // Scope = search + batch filter only (ignores stage tab, so counts don't shift between tabs)
+    const scoped = all.filter(p => {
+        const matchSearch = !searchVal ||
+            (p.customerName || '').toLowerCase().includes(searchVal) ||
+            (p.customerPhone || '').toLowerCase().includes(searchVal) ||
+            (p.poNumber || '').toLowerCase().includes(searchVal);
+        return matchSearch && (!batchVal || p.batch === batchVal);
+    });
+
+    const cPending   = scoped.filter(p => (p.status || 'Pending') === 'Pending').length;
+    const cConfirmed = scoped.filter(p => p.status === 'Confirmed').length;
+    const cConverted = scoped.filter(p => p.status === 'Converted').length;
+    const cCancelled = scoped.filter(p => p.status === 'Cancelled' || p.status === 'Refunded').length;
     const setc = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = '(' + v + ')'; };
     setc('po-stage-pending-count', cPending);
     setc('po-stage-confirmed-count', cConfirmed);
@@ -10103,16 +10120,24 @@ window.renderPreorders = function() {
     setc('po-stage-cancelled-count', cCancelled);
 
     // ── Stats (from full cache) ──
-    const awaiting       = all.filter(p => p.status === 'Pending' && !p.bkashTxnId).length;
-    const pendingAdvance = all.filter(p => p.status === 'Pending').reduce((s, p) => s + (Number(p.advanceAmount) || 0), 0);
-    const confirmed      = all.filter(p => p.status === 'Confirmed').length;
+    const awaiting       = scoped.filter(p => p.status === 'Pending' && !p.bkashTxnId).length;
+    const pendingAdvance = scoped.filter(p => p.status === 'Pending').reduce((s, p) => s + (Number(p.advanceAmount) || 0), 0);
+    const confirmed      = scoped.filter(p => p.status === 'Confirmed').length;
+
+    const bagCount = function(arr) {
+        return arr.reduce((s, p) => s + window._poItemsOf(p).reduce((a, i) => a + (Number(i.quantity) || 1), 0), 0);
+    };
+    const scopedBags  = bagCount(scoped);
+    const listBags    = bagCount(list);
+    const confirmBags = bagCount(scoped.filter(p => p.status === 'Confirmed'));
 
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
-    set('preorder-stat-total', all.length);
+    set('preorder-stat-total', scoped.length + ' / ' + scopedBags + ' bags');
     set('preorder-stat-awaiting', awaiting);
     set('preorder-stat-advance', '৳' + fmt(pendingAdvance));
-    set('preorder-stat-confirmed', confirmed);
-    set('preorder-total-count', list.length + ' showing · ' + all.length + ' total');
+    set('preorder-stat-confirmed', confirmed + ' / ' + confirmBags + ' bags');
+    set('preorder-total-count', list.length + ' showing (' + listBags + ' bags) · ' +
+        (batchVal ? scoped.length + ' in ' + batchVal : all.length + ' total'));
 
     if (list.length === 0) {
         tbody.innerHTML = '<tr><td colspan="12" class="p-8 text-center text-gray-400">No pre-orders match your filters.</td></tr>';
