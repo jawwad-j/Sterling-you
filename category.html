@@ -396,9 +396,10 @@
             return `<div class="col-span-full mt-12 border-t border-gray-200 pt-8 text-center">
                 <p class="text-sm font-bold uppercase tracking-[0.2em] text-[#322C2B]">Didn't find what you're looking for?</p>
                 <p class="text-[12px] text-gray-600 mt-2 max-w-md mx-auto leading-relaxed">
-                    Don't wait for stock — you can always pre-order. Reserve your bag with an advance and we'll bring it in on our next shipment${etaStr ? `, arriving <b>${etaStr}</b>` : ''}.
+                    Don't wait for stock — place your pre-order and we'll bring it in on our next shipment.
                 </p>
-                <a href="category.html?type=All" class="inline-block mt-4 px-6 py-3 text-white text-[10px] font-bold tracking-widest uppercase" style="background:#B36A5E">Browse Pre-Order Bags</a>
+                ${etaStr ? `<p class="text-[12px] font-bold mt-3 tracking-wide" style="color:#B36A5E">Next Shipment Arrives by ${etaStr}</p>` : ''}
+                <a href="category.html?type=All" class="inline-block mt-5 px-6 py-3 text-white text-[10px] font-bold tracking-widest uppercase" style="background:#B36A5E">Browse Pre-Order Bags</a>
             </div>`;
         }
 
