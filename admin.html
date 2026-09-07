@@ -536,6 +536,7 @@ if (tabId === 'contact-settings') {
             <p class="text-[9px] font-bold text-gray-400 uppercase">Total Revenue</p>
             <h2 id="kpi-revenue" class="text-xl font-bold mt-1">৳0</h2>
             <p id="kpi-revenue-count" class="text-[10px] text-gray-400 mt-1">0 orders</p>
+            <p id="kpi-bags-count" class="text-[10px] font-bold mt-0.5" style="color:#B36A5E">0 bags sold</p>
         </div>
         <div class="bg-white p-4 rounded-2xl shadow-sm border-b-4 border-green-500">
             <p class="text-[9px] font-bold text-gray-400 uppercase">Gross Profit</p>
@@ -5561,6 +5562,11 @@ window.initCharts = async function() {
     // ── UPDATE KPI CARDS ──
     document.getElementById('kpi-revenue').innerText       = '৳' + fmt(revenue);
     document.getElementById('kpi-revenue-count').innerText = currCount + ' orders';
+    const _bagsSold = delivered.reduce(function(s, o) {
+        return s + (o.items || []).reduce(function(a, i) { return a + (Number(i.quantity) || 0); }, 0);
+    }, 0);
+    const _bagsEl = document.getElementById('kpi-bags-count');
+    if (_bagsEl) _bagsEl.innerText = _bagsSold + ' bag' + (_bagsSold === 1 ? '' : 's') + ' sold';
     document.getElementById('kpi-gross').innerText         = '৳' + fmt(grossProfit);
     const _netEl = document.getElementById('kpi-net');
     if (_netEl) _netEl.title = 'Gross ৳' + fmt(grossProfit) + ' − courier ৳' + fmt(totalCourierCost) +

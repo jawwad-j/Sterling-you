@@ -43,6 +43,7 @@ async function loadNavbar() {
             h += `<li><a href="index.html" class="${baseClass}">Home</a></li>`;
         }
         h += `<li><a href="category.html?type=New" class="${boldClass}">NEW</a></li>`;
+        h += `<li><a href="category.html?type=InStock" class="hover:opacity-80 transition pb-1 font-bold" style="color:#2E7D5B">IN STOCK</a></li>`;
 
         // Render banner-ordered categories first
         orderedList.forEach(cat => {
