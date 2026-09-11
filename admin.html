@@ -1450,8 +1450,8 @@ if (tabId === 'contact-settings') {
 </div>
                         <div class="grid grid-cols-3 gap-2">
                             <div class="border-2 border-dashed rounded-lg p-1 h-24 relative flex items-center justify-center bg-gray-50"><input type="file" class="absolute inset-0 opacity-0 cursor-pointer" onchange="processGalleryImage(this, 'preview1', 1)"><img id="preview1" class="hidden h-full w-full object-cover rounded"><span id="placeholder1" class="text-[8px] font-bold text-gray-400">MAIN</span></div>
-                            <div class="border-2 border-dashed rounded-lg p-1 h-24 relative flex items-center justify-center bg-gray-50"><input type="file" class="absolute inset-0 opacity-0 cursor-pointer" onchange="processGalleryImage(this, 'preview2', 2)"><img id="preview2" class="hidden h-full w-full object-cover rounded"><span id="placeholder2" class="text-[8px] font-bold text-gray-400">+ IMG 2</span></div>
-                            <div class="border-2 border-dashed rounded-lg p-1 h-24 relative flex items-center justify-center bg-gray-50"><input type="file" class="absolute inset-0 opacity-0 cursor-pointer" onchange="processGalleryImage(this, 'preview3', 3)"><img id="preview3" class="hidden h-full w-full object-cover rounded"><span id="placeholder3" class="text-[8px] font-bold text-gray-400">+ IMG 3</span></div>
+                            <div class="border-2 border-dashed rounded-lg p-1 h-24 relative flex items-center justify-center bg-gray-50"><input type="file" class="absolute inset-0 opacity-0 cursor-pointer" onchange="processGalleryImage(this, 'preview2', 2)"><img id="preview2" class="hidden h-full w-full object-cover rounded"><span id="placeholder2" class="text-[8px] font-bold text-gray-400">+ IMG 2</span><button type="button" id="clear2" onclick="event.stopPropagation(); clearGallerySlot(2)" title="Remove image 2" class="hidden absolute -top-2 -right-2 z-10 w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold leading-none shadow">&times;</button></div>
+                            <div class="border-2 border-dashed rounded-lg p-1 h-24 relative flex items-center justify-center bg-gray-50"><input type="file" class="absolute inset-0 opacity-0 cursor-pointer" onchange="processGalleryImage(this, 'preview3', 3)"><img id="preview3" class="hidden h-full w-full object-cover rounded"><span id="placeholder3" class="text-[8px] font-bold text-gray-400">+ IMG 3</span><button type="button" id="clear3" onclick="event.stopPropagation(); clearGallerySlot(3)" title="Remove image 3" class="hidden absolute -top-2 -right-2 z-10 w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold leading-none shadow">&times;</button></div>
                         </div>
                         <p id="compress-msg" class="hidden text-[10px] text-[#B36A5E] text-center animate-pulse">Processing images...</p>
                     </div>
@@ -6436,6 +6436,9 @@ window.processGalleryImage = function(input, previewId, slot) {
                     preview.classList.remove('hidden'); 
                     document.getElementById('placeholder' + slot).classList.add('hidden'); 
                     document.getElementById('compress-msg').classList.add('hidden');
+                    if (window._clearedSlots) window._clearedSlots[slot] = false;
+                    const _cb = document.getElementById('clear' + slot);
+                    if (_cb && slot !== 1) _cb.classList.remove('hidden');
                     window.updateFocusPickerImage(blobUrl, slot);
                 }, 'image/webp', 0.82); 
             } 
@@ -6458,6 +6461,8 @@ window.processGalleryImage = function(input, previewId, slot) {
                         const ref = storage.ref('products/' + Date.now() + '_' + i + '.jpg'); 
                         const snap = await ref.put(galleryBlobs[i]); 
                         imageUrls[i] = await snap.ref.getDownloadURL(); 
+                    } else if (window._clearedSlots && window._clearedSlots[i]) {
+                        imageUrls[i] = null;   // admin explicitly removed this slot
                     } else if (editProductId) { 
                         imageUrls[i] = i === 1 ? existingData.image : (existingData['image' + i] || null); 
                     } else if (window._duplicateImageUrls) {
@@ -6633,12 +6638,10 @@ window.duplicateProduct = async function(id) {
     // Carry over the source's image URLs so the copy shows the same photos.
     // galleryBlobs stay null → on save, editProductId is null so productForm's
     // submit handler needs these URLs; we stash them for the submit to pick up.
-    window._duplicateImageUrls = { 1: p.image || null, 2: p.image2 || null, 3: p.image3 || null };
+    window._duplicateImageUrls = { 1: p.image || null, 2: null, 3: null };
     window._duplicateFocus     = { 1: p.imageFocus || '50% 50%', 2: p.imageFocus2 || '50% 50%', 3: p.imageFocus3 || '50% 50%' };
 
     window.updateFocusPickerImage(p.image, 1);
-    if (p.image2) window.updateFocusPickerImage(p.image2, 2);
-    if (p.image3) window.updateFocusPickerImage(p.image3, 3);
     window.setFocusFromSaved(1, p.imageFocus  || '50% 50%');
     window.setFocusFromSaved(2, p.imageFocus2 || '50% 50%');
     window.setFocusFromSaved(3, p.imageFocus3 || '50% 50%');
@@ -6658,7 +6661,33 @@ window.duplicateProduct = async function(id) {
     document.getElementById('submitBtn').innerText = "Save as New Product";
 };
         
-        function resetGalleryUI() { galleryBlobs = { 1: null, 2: null, 3: null }; [1, 2, 3].forEach(function(i) { document.getElementById('preview'+i).classList.add('hidden'); document.getElementById('placeholder'+i).classList.remove('hidden'); }); }
+        function resetGalleryUI() {
+            galleryBlobs = { 1: null, 2: null, 3: null };
+            window._clearedSlots = {};
+            [1, 2, 3].forEach(function(i) {
+                document.getElementById('preview'+i).classList.add('hidden');
+                document.getElementById('placeholder'+i).classList.remove('hidden');
+                const c = document.getElementById('clear'+i);
+                if (c) c.classList.add('hidden');
+            });
+        }
+
+        window.clearGallerySlot = function(slot) {
+            if (slot === 1) return alert('The main image cannot be removed — upload a replacement instead.');
+            galleryBlobs[slot] = null;
+            window._clearedSlots = window._clearedSlots || {};
+            window._clearedSlots[slot] = true;
+            if (window._duplicateImageUrls) window._duplicateImageUrls[slot] = null;
+
+            const pv = document.getElementById('preview' + slot);
+            if (pv) { pv.src = ''; pv.classList.add('hidden'); }
+            document.getElementById('placeholder' + slot).classList.remove('hidden');
+            const c = document.getElementById('clear' + slot);
+            if (c) c.classList.add('hidden');
+            const fi = document.querySelector('input[onchange*="preview' + slot + '"]');
+            if (fi) fi.value = '';
+            if (typeof window.updateFocusPickerImage === 'function') window.updateFocusPickerImage(null, slot);
+        };
 
         // --- CRM INTELLIGENCE ---
         window.crmDataCache = [];
@@ -8843,6 +8872,8 @@ window.savePreorderSettings = async function() {
 
     window.updateFocusPickerImage = function(src, slot) {
         slot = slot || 1;
+        const _cbtn = document.getElementById('clear' + slot);
+        if (_cbtn && slot !== 1) _cbtn.classList.toggle('hidden', !src);
         slotState[slot].src = src;
         slotState[slot].ox  = 0;
         slotState[slot].oy  = 0;
