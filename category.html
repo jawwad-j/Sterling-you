@@ -378,8 +378,7 @@
             grid.innerHTML =
                 sectionHeader('In Stock', 'Ready to ship from Dhaka') + cards(inStockList) +
                 (preList.length ? sectionHeader('Pre-Order', eta ? 'Next shipment ' + eta : 'Reserve yours for the next shipment') + cards(preList) : '') +
-                (soldOutList.length ? sectionHeader('Sold Out', '') + cards(soldOutList) : '') +
-                footerNote(eta);
+                (soldOutList.length ? sectionHeader('Sold Out', '') + cards(soldOutList) : '');
             return;
         }
 
