@@ -5775,29 +5775,46 @@ if (ctx1) {
             preList = psnap.docs.map(d => d.data());
         }
 
-        const dayKey = function(iso) {
-            const t = new Date(iso);
-            if (isNaN(t)) return null;
-            return dayLabels.length && dayLabels[0].indexOf('-') > -1
-                ? t.toISOString().split('T')[0]
-                : t.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const mN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const dN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+        // Mirrors exactly how dayLabels are built for each period
+        const dayKey = function(val) {
+            const d = (val && val.toDate) ? val.toDate() : new Date(val);
+            if (isNaN(d)) return null;
+            const p = window.dashPeriod;
+            if (p === 'lifetime') return mN[d.getMonth()] + ' ' + d.getFullYear();
+            if (p === 'today')    return d.getHours() + ':00';
+            if (p === 'week')     return dN[d.getDay()];
+            if (p === 'pick-month' || p === 'custom') {
+                const diffDays = Math.round((to - from) / 86400000);
+                return diffDays <= 31 ? (d.getDate() + ' ' + mN[d.getMonth()])
+                                      : (mN[d.getMonth()] + ' ' + d.getFullYear());
+            }
+            return d.getDate().toString();
         };
 
+        const labelSet  = new Set(dayLabels);
         const directMap = {}, preMap = {};
 
         inPeriod.forEach(function(o) {
             if (o.source === 'preorder') return;           // already counted as a pre-order
             const k = dayKey(o.orderDate || o.lastUpdate);
-            if (k) directMap[k] = (directMap[k] || 0) + 1;
+            if (k && labelSet.has(k)) directMap[k] = (directMap[k] || 0) + 1;
         });
 
+        const hasRange = (typeof from !== 'undefined' && typeof to !== 'undefined' && window.dashPeriod !== 'lifetime');
         preList.forEach(function(p) {
             if (p.status === 'Cancelled' || p.status === 'Refunded') return;
-            const t = new Date(p.createdAt || 0);
-            if (isNaN(t) || t < startDate || t > endDate) return;
-            const k = dayKey(p.createdAt);
-            if (k) preMap[k] = (preMap[k] || 0) + 1;
+            const raw = p.createdAt;
+            const t = (raw && raw.toDate) ? raw.toDate() : new Date(raw || 0);
+            if (isNaN(t)) return;
+            if (hasRange && (t < from || t > to)) return;
+            const k = dayKey(t);
+            if (k && labelSet.has(k)) preMap[k] = (preMap[k] || 0) + 1;
         });
+
+        console.log('[orders-chart] labels:', dayLabels.slice(0, 5), 'direct:', Object.keys(directMap).length, 'pre:', Object.keys(preMap).length, 'preorders loaded:', preList.length);
 
         const directData = dayLabels.map(l => directMap[l] || 0);
         const preData    = dayLabels.map(l => preMap[l] || 0);
