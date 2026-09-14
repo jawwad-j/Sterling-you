@@ -73,6 +73,16 @@
     }
 
     @media (max-width: 768px) {
+    /* Any grid holding a chart drops to one column so canvases get full width */
+    #dashboard .grid:has(canvas) {
+        grid-template-columns: 1fr !important;
+    }
+    #dashboard .grid > div:has(canvas) {
+        grid-column: 1 / -1 !important;
+    }
+    #dashboard canvas {
+        min-height: 240px;
+    }
     #charts-main-row {
         grid-template-columns: 1fr !important;
     }
