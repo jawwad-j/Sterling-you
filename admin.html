@@ -620,6 +620,12 @@ if (tabId === 'contact-settings') {
         </div>
     </div>
 
+    <div class="bg-white p-6 rounded-2xl shadow-sm mb-6">
+        <h3 class="font-bold text-gray-400 text-xs uppercase mb-1">Orders Received Per Day</h3>
+        <p class="text-[10px] text-gray-400 mb-4">Direct orders and pre-orders, counted on the day they came in</p>
+        <div class="h-64"><canvas id="chart-orders-daily"></canvas></div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div class="bg-white p-6 rounded-2xl shadow-sm">
             <h3 class="font-bold text-gray-400 text-xs uppercase mb-4">Top 5 Products by Units Sold</h3>
@@ -5750,6 +5756,70 @@ if (ctx1) {
         }
     });
 }
+
+    // ── CHART: Orders Received Per Day (direct + pre-orders) ──
+    try {
+        let preList = window._preordersCache;
+        if (!preList || !preList.length) {
+            const psnap = await db.collection("preorders").get();
+            preList = psnap.docs.map(d => d.data());
+        }
+
+        const dayKey = function(iso) {
+            const t = new Date(iso);
+            if (isNaN(t)) return null;
+            return dayLabels.length && dayLabels[0].indexOf('-') > -1
+                ? t.toISOString().split('T')[0]
+                : t.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        };
+
+        const directMap = {}, preMap = {};
+
+        inPeriod.forEach(function(o) {
+            if (o.source === 'preorder') return;           // already counted as a pre-order
+            const k = dayKey(o.orderDate || o.lastUpdate);
+            if (k) directMap[k] = (directMap[k] || 0) + 1;
+        });
+
+        preList.forEach(function(p) {
+            if (p.status === 'Cancelled' || p.status === 'Refunded') return;
+            const t = new Date(p.createdAt || 0);
+            if (isNaN(t) || t < startDate || t > endDate) return;
+            const k = dayKey(p.createdAt);
+            if (k) preMap[k] = (preMap[k] || 0) + 1;
+        });
+
+        const directData = dayLabels.map(l => directMap[l] || 0);
+        const preData    = dayLabels.map(l => preMap[l] || 0);
+
+        if (dashCharts.ordersDaily) dashCharts.ordersDaily.destroy();
+        const ctxOD = document.getElementById('chart-orders-daily');
+        if (ctxOD) {
+            dashCharts.ordersDaily = new Chart(ctxOD, {
+                type: 'bar',
+                data: {
+                    labels: dayLabels,
+                    datasets: [
+                        { label: 'Direct Orders', data: directData, backgroundColor: '#B36A5E', stack: 's', borderRadius: 3 },
+                        { label: 'Pre-Orders',    data: preData,    backgroundColor: '#E5B9AE', stack: 's', borderRadius: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                        tooltip: { callbacks: { footer: function(items) {
+                            return 'Total: ' + items.reduce(function(s, i) { return s + i.parsed.y; }, 0) + ' orders';
+                        } } }
+                    },
+                    scales: {
+                        x: { stacked: true, ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true } },
+                        y: { stacked: true, beginAtZero: true, ticks: { precision: 0, font: { size: 9 } } }
+                    }
+                }
+            });
+        }
+    } catch (e) { console.error('Orders-per-day chart failed:', e); }
 
     // ── CHART 2: Order Status Breakdown ──
     const statusCounts = {
