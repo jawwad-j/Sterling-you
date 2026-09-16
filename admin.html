@@ -742,7 +742,7 @@ if (tabId === 'contact-settings') {
                                         <th>Customer</th>
                                         <th>Contact</th>
                                         <th>Amount</th>
-                                        <th class="cursor-pointer hover:text-orange-700 transition" onclick="sortOrders('Processing', 'status')">Status ↕</th>
+                                        <th class="cursor-pointer hover:text-gray-700 transition" onclick="sortOrders('History', 'status')">Status ↕</th>
                                         <th>Action</th>
                                         <th>Invoice</th>
                                     </tr>
@@ -4161,12 +4161,54 @@ window.resumeFromHold = async function(id) {
     } catch (e) { alert('Error: ' + e.message); }
 };
 
+window._askCancelChoice = function(order, adv) {
+    return new Promise(function(resolve) {
+        let m = document.getElementById('cancel-choice-modal');
+        if (m) m.remove();
+        m = document.createElement('div');
+        m.id = 'cancel-choice-modal';
+        m.className = 'fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4';
+        m.innerHTML =
+          '<div id="cc-card" class="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">' +
+            '<div class="p-4" style="background:#F5ECE9;border-bottom:1px solid #E5D3CD">' +
+              '<p class="text-[10px] font-bold uppercase tracking-widest" style="color:#B36A5E">Cancel Order</p>' +
+              '<p class="text-sm font-bold text-[#322C2B]">' + (order.orderId || '') + ' \u00b7 ' + (order.userName || '') + '</p></div>' +
+            '<div class="p-5 space-y-2">' +
+              '<p class="text-xs text-gray-600">Items will be restocked. Choose what happens to the advance:</p>' +
+              (adv > 0
+                ? '<p class="text-sm font-bold text-[#322C2B]">Advance paid: \u09F3' + fmt(adv) + '</p>'
+                : '<p class="text-xs text-gray-400">No advance was paid on this order.</p>') +
+            '</div>' +
+            '<div class="p-4 border-t space-y-2">' +
+              (adv > 0
+                ? '<button id="cc-forfeit" class="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-white" style="background:#B36A5E">Cancel &amp; Forfeit Advance</button>' +
+                  '<button id="cc-refund" class="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest border" style="border-color:#B36A5E;color:#B36A5E">Cancel &amp; Refund Advance</button>'
+                : '<button id="cc-refund" class="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-white" style="background:#B36A5E">Cancel Order</button>') +
+              '<button id="cc-close" class="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-500 border">Close \u2014 Do Nothing</button>' +
+            '</div>' +
+          '</div>';
+        document.body.appendChild(m);
+
+        const done = function(v) { m.remove(); resolve(v); };
+        const fEl = document.getElementById('cc-forfeit');
+        if (fEl) fEl.onclick = function() { done('forfeit'); };
+        document.getElementById('cc-refund').onclick = function() { done('refund'); };
+        document.getElementById('cc-close').onclick  = function() { done(null); };
+        // Clicking the backdrop or pressing Esc closes with NO action
+        m.onclick = function(e) { if (e.target === m) done(null); };
+        document.addEventListener('keydown', function esc(e) {
+            if (e.key === 'Escape') { document.removeEventListener('keydown', esc); done(null); }
+        });
+    });
+};
+
 window.cancelStage2Order = async function(id) {
     const order = ordersCache[id];
     if (!order) return alert('Order not found.');
     const adv = Number(order.advancePaid) || 0;
-    if (!confirm('Cancel this order? Items will be restocked.')) return;
-    const forfeit = adv > 0 ? confirm('Forfeit the customer\'s advance of \u09F3' + fmt(adv) + '?\n\nOK = keep it as income.\nCancel = advance is refunded (not counted as income).') : false;
+    const choice = await window._askCancelChoice(order, adv);
+    if (!choice) return;                  // Close, backdrop click, or Esc — nothing happens
+    const forfeit = (choice === 'forfeit');
     try {
         const b = db.batch(); let any = false;
         (order.items || []).forEach(function(it) {
