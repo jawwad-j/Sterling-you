@@ -3,475 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sterling You | Elevate Your Everyday</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <title>XTORE - Homepage</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;500;700&display=swap');
-        body { font-family: 'Montserrat', sans-serif; }
-        .font-serif { font-family: 'Playfair Display', serif; }
-        .active-filter { color: #B36A5E !important; border-bottom: 2px solid #B36A5E !important; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.8s ease-out forwards; }
-        .product-card .add-to-cart-container { transform: translateY(100%); transition: transform 0.3s ease-out; }
-        .product-card:hover .add-to-cart-container { transform: translateY(0); }
-        #cart-drawer { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000 !important; }
-        #cart-overlay { z-index: 999 !important; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
-        #top-bar { max-height: 50px; overflow: hidden; transition: max-height 0.4s ease, padding 0.4s ease, opacity 0.3s ease; }
-        img { -webkit-user-drag: none; user-drag: none; pointer-events: none; }
-
-        /* Watermark */
-        .img-watermark-wrap { position: relative; display: block; overflow: hidden; }
-        .img-watermark-wrap::after {
-            content: 'STERLING YOU';
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            font-family: 'Montserrat', sans-serif;
-            font-size: 16px; font-weight: 700;
-            letter-spacing: 0.35em;
-            color: rgba(255,255,255,0.25);
-            text-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            pointer-events: none; user-select: none;
-            z-index: 5; white-space: nowrap;
-        }
+        .xtore-bg { background-color: #1a163a; }
+        .xtore-pink { background-color: #f72c74; }
+        .xtore-pink-text { color: #f72c74; }
+        .xtore-purple { background-color: #634bfb; }
     </style>
-    <script>
-        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-        fbq('init','1307429974563033'); fbq('track','PageView');
-    </script>
-    <meta name="description" content="Sterling You — curated luxury handbags, footwear, beauty & accessories.">
-    <meta name="author" content="Sterling You">
-    <link rel="canonical" href="https://sterlingyou.com/">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Sterling You | Curated Luxury">
-    <meta property="og:image" content="https://sterlingyou.com/web-logo2.png">
-    <meta property="og:url" content="https://sterlingyou.com/">
-    <meta name="twitter:card" content="summary_large_image">
-    <link rel="icon" type="image/png" href="favicon.png">
-
-    <!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-EPT9FZHCYL"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-EPT9FZHCYL');
-</script>
-
-<!-- EmailJS -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>emailjs.init('2TAdXFg4p3bYGexd7');</script>
-
-<link rel="preload" as="image" href="web-logo2.png">
-<link rel="preload" as="image" href="ComingSoonPageLogo.png">
-
 </head>
-<body class="bg-white">
+<body class="bg-white text-gray-800 font-sans">
 
-<header id="main-header" class="w-full bg-white border-b border-gray-100 sticky top-0 z-50 transition-all duration-300">
-    <!-- Announcement bar -->
-    <div id="top-bar" class="bg-[#322C2B] text-white py-2">
-        <div class="max-w-7xl mx-auto px-6 md:px-10">
-            <p class="text-[11px] tracking-[0.2em] uppercase font-light">&nbsp;</p>
+    <!-- Top Bar -->
+    <div class="xtore-bg text-gray-300 text-xs py-2 px-8 flex justify-between items-center border-b border-gray-700">
+        <div class="flex gap-4">
+            <span>Language: ENGLISH <i class="fas fa-angle-down"></i></span>
+            <span>Currency: USD <i class="fas fa-angle-down"></i></span>
+        </div>
+        <div class="text-center flex-1">Get 20% off today with code XTORE. Limited stock!</div>
+        <div class="flex gap-4">
+            <span><i class="far fa-compass"></i> Track Order</span>
+            <span><i class="far fa-life-ring"></i> Help Center</span>
         </div>
     </div>
 
-    <!-- Nav row -->
-    <div class="max-w-7xl mx-auto px-6 md:px-10">
-        <div class="flex justify-between items-center h-16">
-
-            <!-- LEFT: hamburger mobile only -->
-            <button onclick="toggleMobileMenu()" class="md:hidden flex flex-col gap-1.5 p-2 text-[#322C2B] hover:text-[#B36A5E] transition" style="pointer-events:all">
-                <span class="w-5 h-0.5 bg-current block"></span>
-                <span class="w-5 h-0.5 bg-current block"></span>
-                <span class="w-5 h-0.5 bg-current block"></span>
-            </button>
-
-            <!-- CENTER: desktop nav -->
-            <nav class="hidden md:flex flex-grow">
-                <ul id="dynamic-nav" class="flex items-center space-x-8 text-[12px] font-bold tracking-[0.1em] text-[#322C2B] uppercase"></ul>
-            </nav>
-
-            <!-- RIGHT: icons -->
-            <div class="flex items-center space-x-4 text-[#322C2B]">
-                <div class="relative flex items-center">
-                    <input type="text" id="nav-search-input" placeholder="Search..." autocomplete="off"
-                           oninput="handleLiveSearch(this.value)"
-                           style="pointer-events:all"
-                           class="w-0 focus:w-28 md:focus:w-48 transition-all duration-300 outline-none border-b border-gray-300 text-[10px] uppercase tracking-widest px-2 py-1 bg-transparent">
-                    <button onclick="toggleSearch()" style="pointer-events:all" class="hover:text-[#B36A5E] transition">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                    </button>
-                    <div id="search-results-dropdown" class="absolute top-full right-0 mt-2 w-64 md:w-80 bg-white shadow-2xl rounded-xl overflow-hidden hidden z-[200] border border-gray-100">
-                        <div id="live-search-items" class="max-h-96 overflow-y-auto custom-scrollbar"></div>
-                        <div class="p-3 bg-gray-50 border-t text-center">
-                            <button onclick="handleSearch()" style="pointer-events:all" class="text-[9px] font-bold uppercase tracking-widest text-[#B36A5E] hover:underline">View All Results</button>
-                        </div>
-                    </div>
-                </div>
-
-                <button onclick="toggleCart()" style="pointer-events:all" class="relative p-2 flex items-center justify-center hover:text-[#B36A5E] transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
-                    </svg>
-                    <span id="cart-count-badge" class="absolute top-0 right-0 bg-[#B36A5E] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border-2 border-white min-w-[18px] text-center">0</span>
-                </button>
-
-                <div class="relative">
-                    <button id="nav-user-btn" onclick="toggleUserDropdown()" style="pointer-events:all" class="flex items-center justify-center p-2 text-[#322C2B] focus:outline-none hover:text-[#B36A5E] transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
-                        </svg>
-                    </button>
-                    <div id="user-dropdown" class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 hidden z-[500] overflow-hidden">
-                        <div class="p-4 border-b bg-gray-50">
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Account</p>
-                            <div id="dropdown-header-content" class="text-xs font-bold text-[#322C2B] mt-1"></div>
-                        </div>
-                        <div class="py-2">
-                            <div id="auth-links" class="hidden">
-                                <a href="account.html" style="pointer-events:all" class="block px-4 py-2 text-[11px] font-bold text-gray-600 hover:bg-gray-50 hover:text-[#B36A5E]">View Profile & Orders</a>
-                                <a href="account.html#payments" style="pointer-events:all" class="block px-4 py-2 text-[11px] font-bold text-gray-600 hover:bg-gray-50">Payment Methods</a>
-                                <button onclick="window.logout()" style="pointer-events:all" class="w-full text-left px-4 py-2 text-[11px] font-bold text-red-400 hover:bg-red-50">Sign Out</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Main Header -->
+    <header class="xtore-bg text-white py-6 px-8 flex items-center justify-between">
+        <!-- Logo -->
+        <div class="text-3xl font-bold flex items-center gap-2">
+            <span class="text-white">X</span><span class="xtore-pink-text">TORE</span>
         </div>
-    </div>
 
-    <!-- Mobile menu drawer -->
-    <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 shadow-lg">
-        <ul id="dynamic-nav-mobile" class="flex flex-col px-6 py-4 space-y-4 text-[12px] font-bold tracking-[0.15em] text-[#322C2B] uppercase"></ul>
-    </div>
-</header>
+        <!-- Search Bar -->
+        <div class="flex w-1/2 max-w-2xl bg-white rounded-md overflow-hidden h-10">
+            <input type="text" placeholder="Search..." class="flex-1 px-4 text-gray-700 outline-none">
+            <button class="xtore-pink text-white px-8 font-semibold uppercase text-sm">Search</button>
+        </div>
 
-<main>
-    <header class="py-16 text-center">
-        <img src="ComingSoonPageLogo.png" alt="Sterling You" class="h-24 md:h-32 w-auto mx-auto mb-6" onerror="this.style.display='none'">
-        <p class="text-xs font-bold tracking-[0.3em] uppercase text-gray-400">Elevate Your Everyday</p>
+        <!-- Icons -->
+        <div class="flex gap-6 text-xl">
+            <button class="w-10 h-10 border border-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700"><i class="far fa-user"></i></button>
+            <button class="w-10 h-10 border border-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700"><i class="far fa-heart"></i></button>
+            <button class="w-10 h-10 border border-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700"><i class="fas fa-shopping-bag"></i></button>
+        </div>
     </header>
 
-    <section class="max-w-7xl mx-auto px-6 pb-12">
-        <div id="category-banner-grid" class="flex flex-wrap justify-center gap-4 md:gap-6"></div>
-    </section>
-
-    <section id="new-arrivals" class="max-w-7xl mx-auto py-12 px-6">
-        <div class="text-center mb-12">
-            <h2 class="text-[20px] font-bold tracking-[0.4em] uppercase text-[#322C2B]">New Arrivals</h2>
-            <div class="flex flex-wrap justify-center gap-4 md:gap-8 mt-8"></div>
+    <!-- Navigation -->
+    <nav class="xtore-bg text-white px-8 flex items-center border-b-4 border-white pb-4">
+        <div class="w-64 bg-white text-gray-800 rounded-t-xl px-4 py-3 flex items-center gap-3 font-semibold relative top-4 shadow-lg cursor-pointer">
+            <div class="w-6 h-6 xtore-purple rounded-full text-white flex items-center justify-center text-xs"><i class="fas fa-th-large"></i></div>
+            All Categories
         </div>
-        <div id="product-grid" class="grid grid-cols-2 md:grid-cols-4 gap-x-4 md:gap-x-6 gap-y-12 min-h-[400px]"></div>
-    </section>
-
-    <section class="bg-gray-50 py-20 px-6">
-        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-12">
-            <div class="w-full md:w-1/2">
-                <div class="relative">
-                    <div class="absolute -top-4 -left-4 w-full h-full border-2 border-[#B36A5E] rounded-lg"></div>
-                    <img src="about-sterling.png" alt="The Sterling Woman" class="relative z-10 rounded-lg shadow-xl w-full object-cover aspect-[3/4]" onerror="this.src='https://via.placeholder.com/600x800?text=Sterling+Woman'">
-                </div>
-            </div>
-            <div class="w-full md:w-1/2 space-y-6 text-center md:text-left">
-                <h2 class="text-4xl font-serif text-[#322C2B]">Because <span class="text-[#B36A5E] italic">You Are The Star</span></h2>
-                <p class="text-sm md:text-base text-[#5F5751] leading-relaxed">At Sterling You, we believe that luxury isn't just about a price tag—it's about how a product makes you feel. Whether it's the perfect handbag that holds your world, or an accessory that simplifies your routine, our curated collection is designed to elevate your everyday life.</p>
-                <div class="pt-4">
-                    <a href="category.html" style="pointer-events:all" class="inline-block bg-[#322C2B] text-white px-8 py-3 rounded-full hover:bg-[#B36A5E] transition duration-300 tracking-widest text-[10px] uppercase font-bold">Start Shopping</a>
-                </div>
-            </div>
+        <ul class="flex gap-8 ml-8 text-sm font-semibold">
+            <li class="xtore-pink-text">Home <i class="fas fa-angle-down text-xs"></i></li>
+            <li class="hover:text-gray-300 cursor-pointer">Features <i class="fas fa-angle-down text-xs"></i></li>
+            <li class="hover:text-gray-300 cursor-pointer">Shop</li>
+            <li class="hover:text-gray-300 cursor-pointer">Pages <i class="fas fa-angle-down text-xs"></i></li>
+            <li class="hover:text-gray-300 cursor-pointer">Contact</li>
+            <li class="hover:text-gray-300 cursor-pointer">Blog</li>
+            <li class="hover:text-gray-300 cursor-pointer">About</li>
+        </ul>
+        <div class="ml-auto flex items-center gap-2 font-semibold">
+            <i class="fas fa-tag"></i> Shop Today's Deals
         </div>
-    </section>
-</main>
+    </nav>
 
-<footer class="bg-[#322C2B] text-white pt-12 pb-8 border-t border-gray-800">
-    <div class="max-w-7xl mx-auto px-6 md:px-10">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
-            <div class="space-y-4">
-                <img src="web-logo2.png" alt="Sterling You" class="h-16 w-auto brightness-0 invert" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <h4 class="hidden text-xl font-serif italic">Sterling.</h4>
-                <p class="text-[11px] text-gray-400 leading-relaxed tracking-wide">Elevate your everyday with curated luxury.</p>
-                <form class="flex flex-col space-y-2 pt-2">
-                    <input type="email" placeholder="YOUR EMAIL" style="pointer-events:all" class="bg-transparent border-b border-gray-600 py-2 text-[11px] tracking-widest focus:border-[#B36A5E] outline-none transition-colors uppercase text-white">
-                    <button type="submit" style="pointer-events:all" class="text-left text-[10px] font-bold tracking-[0.2em] uppercase hover:text-[#B36A5E] transition">Subscribe →</button>
-                </form>
+    <!-- Main Content Area (Hero) -->
+    <div class="max-w-[1400px] mx-auto px-8 flex mt-4 gap-8">
+        <!-- Vertical Categories Sidebar -->
+        <aside class="w-64 bg-white shadow-lg rounded-b-xl border border-gray-100 z-10 flex flex-col pb-4 h-max">
+            <ul class="text-sm text-gray-600">
+                <li class="px-4 py-3 border-b flex items-center gap-3 hover:bg-gray-50 cursor-pointer text-red-500 font-semibold"><span class="bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">%</span> Hot Deals</li>
+                <li class="px-4 py-3 border-b flex items-center justify-between hover:bg-gray-50 cursor-pointer group">
+                    <div class="flex items-center gap-3"><span class="bg-blue-100 text-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-xs"><i class="fas fa-laptop"></i></span> Electronics</div>
+                    <i class="fas fa-angle-right text-xs"></i>
+                </li>
+                <li class="px-4 py-3 border-b flex items-center justify-between hover:bg-gray-50 cursor-pointer">
+                    <div class="flex items-center gap-3"><span class="bg-purple-100 text-purple-500 w-6 h-6 rounded-full flex items-center justify-center text-xs"><i class="fas fa-couch"></i></span> Furniture</div>
+                </li>
+                <li class="px-4 py-3 border-b flex items-center justify-between hover:bg-gray-50 cursor-pointer">
+                    <div class="flex items-center gap-3"><span class="bg-yellow-100 text-yellow-500 w-6 h-6 rounded-full flex items-center justify-center text-xs"><i class="fas fa-tshirt"></i></span> Fashion</div>
+                    <i class="fas fa-angle-right text-xs"></i>
+                </li>
+                <li class="px-4 py-3 border-b flex items-center gap-3 hover:bg-gray-50 cursor-pointer"><span class="bg-teal-100 text-teal-500 w-6 h-6 rounded-full flex items-center justify-center text-xs"><i class="fas fa-gem"></i></span> Jewelry & Accessories</li>
+                <li class="px-4 py-3 border-b flex items-center gap-3 hover:bg-gray-50 cursor-pointer"><span class="bg-pink-100 text-pink-500 w-6 h-6 rounded-full flex items-center justify-center text-xs"><i class="fas fa-heartbeat"></i></span> Health & Beauty</li>
+                <li class="px-4 py-3 border-b flex items-center gap-3 hover:bg-gray-50 cursor-pointer"><span class="bg-orange-100 text-orange-500 w-6 h-6 rounded-full flex items-center justify-center text-xs"><i class="fas fa-baby"></i></span> Mom & Baby</li>
+            </ul>
+        </aside>
+
+        <!-- Hero Slider -->
+        <main class="flex-1">
+            <div class="flex gap-4 text-xs font-semibold text-gray-500 mb-4 bg-gray-50 py-3 px-6 rounded-full w-max">
+                <span class="hover:text-black cursor-pointer">Women's Bag</span>
+                <span class="hover:text-black cursor-pointer border-l pl-4">iPhone 15</span>
+                <span class="hover:text-black cursor-pointer border-l pl-4">Laptop Dell</span>
+                <span class="hover:text-black cursor-pointer border-l pl-4">Autoparts</span>
+                <span class="hover:text-black cursor-pointer border-l pl-4">Furniture</span>
+                <span class="hover:text-black cursor-pointer border-l pl-4">Black Friday</span>
             </div>
-            <div class="space-y-4">
-                <h4 class="text-[11px] font-bold tracking-[0.3em] uppercase text-gray-500">Support</h4>
-                <ul id="dynamic-support" class="text-[12px] text-gray-300 space-y-2"><li><span class="text-gray-500 text-[10px]">Loading...</span></li></ul>
-            </div>
-            <div class="space-y-4">
-                <h4 class="text-[11px] font-bold tracking-[0.3em] uppercase text-gray-500">Shop</h4>
-                <ul id="footer-shop-list" class="text-[12px] text-gray-300 space-y-2"></ul>
-            </div>
-            <div class="space-y-6 text-left md:text-right">
-                <div>
-                    <h4 class="text-[11px] font-bold tracking-[0.3em] uppercase text-gray-500 mb-3">Follow Us</h4>
-                    <div id="dynamic-socials" class="flex items-center gap-5 md:justify-end"></div>
+            
+            <div class="bg-[#58a6df] rounded-xl overflow-hidden relative h-[400px] flex items-center p-12">
+                <div class="z-10 w-1/2">
+                    <span class="xtore-pink text-white px-3 py-1 font-bold rounded mb-4 inline-block text-sm">Sale Up To 50% Off</span>
+                    <h2 class="text-4xl font-black text-white leading-tight mt-2">WIRELESS MECHANICAL<br>K8 PRO KEYBOARD</h2>
                 </div>
-                <div>
-                    <h4 class="text-[11px] font-bold tracking-[0.3em] uppercase text-gray-500 mb-2">Contact</h4>
-                    <p id="footer-phone" class="text-[13px] font-medium">+880 1800 000 775</p>
-                    <p id="footer-email" class="text-[11px] text-gray-400 lowercase italic"></p>
-                    <p id="footer-address" class="text-[11px] text-gray-400">Dhaka, Bangladesh</p>
-                </div>
+                <!-- Mock Image for Keyboard -->
+                <img src="https://via.placeholder.com/600x400?text=Mechanical+Keyboard" class="absolute right-0 top-0 h-full object-cover w-2/3 opacity-80" alt="Keyboard">
             </div>
+        </main>
+    </div>
+
+    <!-- Shop By Collections -->
+    <div class="max-w-[1400px] mx-auto px-8 mt-12">
+        <div class="flex justify-between items-center border-b pb-4 mb-8">
+            <h3 class="text-2xl font-bold">Shop By Collections</h3>
+            <a href="#" class="text-sm font-semibold hover:underline">+ See All Categories</a>
         </div>
-        <div class="border-t border-gray-700 pt-6 flex justify-between items-center">
-            <p class="text-[9px] tracking-[0.2em] uppercase text-gray-500">© 2026 Sterling You.</p>
+        <div class="flex justify-between text-center">
+            <div>
+                <div class="w-32 h-32 rounded-full bg-teal-50 border p-4 mx-auto mb-3"><img src="https://via.placeholder.com/100" class="rounded-full"></div>
+                <p class="font-semibold text-gray-600">Cell Phones</p>
+            </div>
+            <div>
+                <div class="w-32 h-32 rounded-full bg-orange-50 border p-4 mx-auto mb-3"><img src="https://via.placeholder.com/100" class="rounded-full"></div>
+                <p class="font-semibold xtore-pink-text">Fashion</p>
+            </div>
+            <div>
+                <div class="w-32 h-32 rounded-full bg-yellow-50 border p-4 mx-auto mb-3"><img src="https://via.placeholder.com/100" class="rounded-full"></div>
+                <p class="font-semibold text-gray-600">Electronics</p>
+            </div>
+            <div>
+                <div class="w-32 h-32 rounded-full bg-gray-100 border p-4 mx-auto mb-3"><img src="https://via.placeholder.com/100" class="rounded-full"></div>
+                <p class="font-semibold text-gray-600">Mom & Baby</p>
+            </div>
+            <div>
+                <div class="w-32 h-32 rounded-full bg-blue-50 border p-4 mx-auto mb-3"><img src="https://via.placeholder.com/100" class="rounded-full"></div>
+                <p class="font-semibold text-gray-600">Furniture</p>
+            </div>
+            <div>
+                <div class="w-32 h-32 rounded-full bg-pink-50 border p-4 mx-auto mb-3"><img src="https://via.placeholder.com/100" class="rounded-full"></div>
+                <p class="font-semibold xtore-pink-text">Cosmetics</p>
+            </div>
         </div>
     </div>
-</footer>
-
-<div id="cart-overlay" class="fixed inset-0 bg-black/50 z-[100] hidden backdrop-blur-sm" onclick="toggleCart()"></div>
-<div id="cart-drawer" class="fixed top-0 right-0 h-full w-80 md:w-96 bg-white z-[110] shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
-    <div class="p-6 border-b flex justify-between items-center bg-gray-50">
-        <h2 class="text-sm font-bold uppercase tracking-widest text-[#322C2B]">Your Bag</h2>
-        <button onclick="toggleCart()" style="pointer-events:all" class="text-gray-400 hover:text-black text-2xl">&times;</button>
-    </div>
-    <div id="sidebar-cart-list" class="flex-1 overflow-y-auto p-6 custom-scrollbar"></div>
-    <div class="p-6 border-t space-y-4">
-        <div class="flex justify-between font-bold text-[#322C2B]"><span class="text-xs uppercase tracking-widest">Subtotal</span><span id="sidebar-total">৳0</span></div>
-        <button onclick="window.location.href='checkout.html'" style="pointer-events:all" class="w-full bg-[#322C2B] text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-[#B36A5E] transition shadow-lg">Checkout Now</button>
-    </div>
-</div>
-
-<script src="cart.js?v=12"></script>
-<script>
-    const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const auth = firebase.auth();
-
-    window.toggleMobileMenu = () => document.getElementById('mobile-menu').classList.toggle('hidden');
-    window.toggleSearch = () => document.getElementById('nav-search-input').focus();
-    window.toggleUserDropdown = () => document.getElementById('user-dropdown').classList.toggle('hidden');
-    window.logout = () => auth.signOut().then(() => location.reload());
-
-    document.addEventListener('click', (e) => {
-        const sc = document.querySelector('.relative.flex.items-center');
-        const dd = document.getElementById('search-results-dropdown');
-        if (sc && !sc.contains(e.target) && dd) dd.classList.add('hidden');
-        const ud = document.getElementById('user-dropdown');
-        const ub = document.getElementById('nav-user-btn');
-        if (ud && ub && !ub.contains(e.target) && !ud.contains(e.target)) ud.classList.add('hidden');
-    });
-
-    let topBarHidden = false;
-    window.addEventListener('scroll', () => {
-        const t = document.getElementById('top-bar');
-        if (!topBarHidden && window.scrollY > 60) {
-            topBarHidden = true;
-            t.style.maxHeight = '0px'; t.style.paddingTop = '0px'; t.style.paddingBottom = '0px'; t.style.opacity = '0';
-            document.getElementById('main-header').classList.add('shadow-sm');
-        } else if (topBarHidden && window.scrollY < 10) {
-            topBarHidden = false;
-            t.style.maxHeight = '50px'; t.style.paddingTop = '8px'; t.style.paddingBottom = '8px'; t.style.opacity = '1';
-            document.getElementById('main-header').classList.remove('shadow-sm');
-        }
-    }, { passive: true });
-
-    auth.onAuthStateChanged(async (user) => {
-        const iconBtn = document.getElementById('nav-user-btn');
-        const headerContent = document.getElementById('dropdown-header-content');
-        const authLinks = document.getElementById('auth-links');
-        if (user) {
-            iconBtn.classList.add('text-[#B36A5E]');
-            authLinks.classList.remove('hidden');
-            const doc = await db.collection("users").doc(user.uid).get();
-            headerContent.innerHTML = `Hi, ${doc.exists ? doc.data().fullName : 'User'}`;
-        } else {
-            iconBtn.classList.remove('text-[#B36A5E]');
-            authLinks.classList.add('hidden');
-            headerContent.innerHTML = `<a href="account.html" style="pointer-events:all" class="text-[#B36A5E] font-bold hover:underline">Sign In / Register</a>`;
-        }
-    });
-
-    window.handleSearch = () => { const q = document.getElementById('nav-search-input').value; if(q) window.location.href = `category.html?search=${encodeURIComponent(q)}`; };
-    let searchTimeout;
-    window.handleLiveSearch = (query) => {
-        const dropdown = document.getElementById('search-results-dropdown');
-        const container = document.getElementById('live-search-items');
-        clearTimeout(searchTimeout);
-        if (query.trim().length < 2) { dropdown.classList.add('hidden'); return; }
-        searchTimeout = setTimeout(async () => {
-            const snapshot = await db.collection("products").where("isVisible", "==", true).get();
-            const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-                .filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || p.category.toLowerCase().includes(query.toLowerCase()))
-                .slice(0, 5);
-            dropdown.classList.remove('hidden');
-            container.innerHTML = results.length ? results.map(p => `
-                <a href="product.html?id=${p.id}" style="pointer-events:all" class="flex items-center gap-4 p-3 hover:bg-gray-50 border-b border-gray-50 last:border-0">
-                    <img src="${p.image}" class="w-10 h-10 rounded object-cover">
-                    <div class="flex-1 min-w-0"><p class="text-[10px] font-bold text-[#322C2B] truncate uppercase">${p.name}</p><p class="text-[11px] text-[#B36A5E] font-bold">৳${Number(p.price).toLocaleString()}</p></div>
-                </a>`).join('') : `<p class="p-4 text-[10px] text-gray-400 text-center uppercase">No products found</p>`;
-        }, 300);
-    };
-
-    let allCloudProducts = [];
-
-    async function loadCategoryBanners() {
-        const grid = document.getElementById('category-banner-grid');
-        if (!grid) return;
-        try {
-            const snap = await db.collection("category_banners").orderBy("order").get();
-            const fallback = [
-                { category: 'Handbags', image: 'bag.png' },
-                { category: 'Footwear', image: 'shoes.png' },
-                { category: 'Beauty',   image: 'beauty-makeup-items.png' },
-                { category: 'Accessories', image: 'accessories.png' }
-            ];
-            const items = snap.empty ? fallback : snap.docs.map(d => d.data());
-            grid.innerHTML = items.map(d => `
-                <a href="category.html?type=${encodeURIComponent(d.category)}" style="pointer-events:all" class="group cursor-pointer block w-[calc(50%-8px)] lg:w-[calc(25%-12px)]">
-                    <div class="relative overflow-hidden rounded-lg bg-gray-50 shadow-sm border border-[#E5E4E2]">
-                        <img src="${d.image}" alt="${d.label || d.category}" class="w-full aspect-[4/5] object-cover group-hover:scale-105 transition duration-500">
-                    </div>
-                    <h3 class="mt-4 text-center font-bold tracking-widest text-[10px] md:text-[11px] text-[#322C2B] uppercase">${d.label || d.category}</h3>
-                </a>`).join('');
-        } catch(e) { console.error("Category banners error:", e); }
-    }
-
-    async function connectStorefrontToCloud() {
-        if (window.loadPreorderSettings) { try { await window.loadPreorderSettings(); } catch(e){} }
-        const productGrid = document.getElementById('product-grid');
-        productGrid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-400">Loading...</div>`;
-        const catSnap = await db.collection("categories").get();
-        const validCategories = new Set(catSnap.docs.map(doc => doc.data().name));
-        db.collection("products").onSnapshot((snapshot) => {
-            const rawData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            allCloudProducts = rawData.filter(p => p.isNew === true && p.isVisible !== false && validCategories.has(p.category));
-            renderGrid(allCloudProducts);
-            updateFilterButtons(validCategories);
-        });
-    }
-
-    function updateFilterButtons(validCats) {
-        const container = document.querySelector('#new-arrivals .flex-wrap');
-        if (!container) return;
-        let html = `<button onclick="filterProducts('All')" style="pointer-events:all" class="filter-btn active-filter text-[11px] font-bold tracking-widest uppercase pb-1 border-b-2 border-transparent transition-all">All</button>`;
-        validCats.forEach(cat => {
-            html += `<button onclick="filterProducts('${cat}')" style="pointer-events:all" class="filter-btn text-[11px] font-bold tracking-widest uppercase pb-1 border-b-2 border-transparent hover:border-[#B36A5E] transition-all ml-4">${cat}</button>`;
-        });
-        container.innerHTML = html;
-    }
-
-    window.filterProducts = (category) => {
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.remove('active-filter');
-            if (btn.innerText.trim() === category) btn.classList.add('active-filter');
-        });
-        renderGrid(category === 'All' ? allCloudProducts : allCloudProducts.filter(p => p.category === category));
-    };
-
-    function renderGrid(data) {
-        const grid = document.getElementById('product-grid');
-        if (!data.length) { grid.innerHTML = `<p class="col-span-full text-center py-20 text-gray-400 italic">No new arrivals.</p>`; return; }
-        grid.innerHTML = data.map(p => {
-            const price = Number(p.price);
-            const oldPrice = p.originalPrice ? Number(p.originalPrice) : price;
-            const hasDiscount = oldPrice > price;
-            const discountPercent = hasDiscount ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
-            const isOutOfStock = p.stock <= 0;
-            const isPreorder   = p.isPreorder === true;
-            const canPreorder  = isOutOfStock && isPreorder;
-            const productId = String(p.id).trim();
-            const focusVal = p.imageFocus || 'center';
-            const poEta    = (window._preorderSettings && window._preorderSettings.globalEta) || '';
-            const pStr = JSON.stringify({ id: productId, name: p.name.replace(/'/g, "\\'").replace(/"/g, '&quot;'), price: p.price, originalPrice: oldPrice, image: p.image, stock: p.stock, isPreorder: isPreorder, preorderAdvance: Number(p.preorderAdvance) || 510 }).replace(/"/g, '&quot;');
-            return `
-            <a href="product.html?id=${productId}" style="pointer-events:all" class="product-card group cursor-pointer animate-fadeIn block">
-                <div class="relative overflow-hidden bg-gray-50 mb-3 aspect-[3/4] img-watermark-wrap">
-                    <img src="${p.image}" loading="lazy" style="object-position:${focusVal};width:100%;height:100%;object-fit:cover;" class="group-hover:scale-105 transition duration-700">
-                    <div class="absolute top-3 left-3 flex flex-col gap-2 z-10">
-                        <span class="bg-white text-[#322C2B] px-3 py-1 text-[9px] font-bold uppercase shadow-sm">New</span>
-                        ${hasDiscount ? `<span class="bg-[#B36A5E] text-white px-3 py-1 text-[9px] font-bold uppercase shadow-sm">SALE ${discountPercent}% OFF</span>` : ''}
-                        ${canPreorder ? `<span class="text-white px-3 py-1 text-[9px] font-bold uppercase shadow-sm" style="background:#B36A5E">Pre-order</span>` : (isOutOfStock ? `<span class="bg-gray-900 text-white px-3 py-1 text-[9px] font-bold uppercase shadow-sm">Sold Out</span>` : '')}
-                    </div>
-                    <div class="add-to-cart-container absolute bottom-0 left-0 w-full z-20">
-                        ${canPreorder
-                            ? `<button onclick="event.preventDefault(); openPreorderModal(${pStr});" style="pointer-events:all;background:#B36A5E" class="w-full text-white py-3 text-[10px] font-bold tracking-widest uppercase transition-colors hover:brightness-90">Pre-order Now</button>`
-                            : (isOutOfStock
-                            ? `<button onclick="event.preventDefault(); requestProduct('${productId}','${p.name.replace(/'/g,"\\'")}');" style="pointer-events:all" class="w-full bg-gray-400 text-white py-3 text-[10px] font-bold tracking-widest uppercase">Request Stock</button>`
-                            : `<button onclick="event.preventDefault(); addToCart(${pStr});" style="pointer-events:all" class="w-full bg-[#322C2B]/95 text-white py-3 text-[10px] font-bold tracking-widest uppercase hover:bg-[#B36A5E] transition-colors">Add To Cart</button>`)}
-                    </div>
-                </div>
-                <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-1">${p.category}</p>
-                <h3 class="text-[12px] font-bold text-[#322C2B] uppercase tracking-wider mb-1 line-clamp-1">${p.name}</h3>
-                <div class="flex items-center gap-3">
-                    <span class="text-[13px] font-bold text-[#322C2B]">৳${price.toLocaleString()}</span>
-                    ${hasDiscount ? `<span class="text-[11px] text-gray-400 line-through">৳${oldPrice.toLocaleString()}</span>` : ''}
-                </div>
-                ${canPreorder && poEta ? `<p class="text-[9px] font-medium mt-1 italic" style="color:#B36A5E">${poEta}</p>` : ''}
-            </a>`;
-        }).join('');
-    }
-
-    window.onload = () => { connectStorefrontToCloud(); loadCategoryBanners(); window.loadFooterData(); };
-
-
-(function trackVisit() {
-    try {
-        const today = new Date().toISOString().split('T')[0];
-        const page  = window.location.pathname.split('/').pop() || 'index.html';
-
-        let visitorId = localStorage.getItem('sy_visitor_id');
-        if (!visitorId) {
-            visitorId = 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-            localStorage.setItem('sy_visitor_id', visitorId);
-        }
-
-        const sessionKey = 'tracked_' + today + '_' + page;
-        if (sessionStorage.getItem(sessionKey)) return;
-        sessionStorage.setItem(sessionKey, '1');
-
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        const dayRef = db.collection('site_analytics').doc(today);
-        const visitorRef = db.collection('site_visitors').doc(today + '_' + visitorId);
-
-        // Increment page views and per-page count
-        db.runTransaction(async t => {
-            const dayDoc = await t.get(dayRef);
-            const visitorDoc = await t.get(visitorRef);
-            const isUnique = !visitorDoc.exists;
-
-            if (!dayDoc.exists) {
-                t.set(dayRef, {
-                    date: today,
-                    pageViews: 1,
-                    uniqueVisitors: isUnique ? 1 : 0,
-                    pages: { [page]: 1 }
-                });
-} else {
-    const d = dayDoc.data();
-    const pages = d.pages || {};
-    t.update(dayRef, {
-        pageViews: (d.pageViews || 0) + 1,
-        ...(isUnique ? { uniqueVisitors: firebase.firestore.FieldValue.increment(1) } : {}),
-        [`pages.${page}`]: (pages[page] || 0) + 1
-    });
-}
-
-            if (isUnique) {
-                t.set(visitorRef, { visitorId, date: today, firstPage: page });
-            }
-        });
-    } catch(e) { /* silent fail */ }
-})();
-
-fbq('track', 'ViewContent', { content_type: 'product_group', currency: 'BDT', value: 0 });
-
-
-</script>
-
-
 </body>
 </html>
