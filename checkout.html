@@ -206,10 +206,10 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
         </div>
     </div>
 
-    <script src="cart.js?v=12"></script>
+    <script src="cart.js?v=13"></script>
 <script src="locations.js?v=1"></script>
 <script src="address.js?v=1"></script>
-<script src="checkout-auth.js?v=2"></script>
+<script src="checkout-auth.js?v=3"></script>
 
 <script>
         const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
@@ -249,7 +249,7 @@ window.SterlingAuthOnSuccess = function() {
 };
 
 async function runCheckoutAuth(user) {
-    console.log('[DEBUG-4] runCheckoutAuth called | user:', user ? user.uid : null, '| popupActive:', window._authPopupActive);
+    
     if (!user) {
         if (window._authPopupActive) return;
         openAuthPopup();
@@ -953,15 +953,7 @@ try {
     } catch(e) { /* silent fail */ }
 })(); 
 
-// Prevent redirect loop — clear if we've been redirected more than once
-const redirectCount = parseInt(sessionStorage.getItem('checkout_redirect_count') || '0');
-if (redirectCount > 1) {
-    sessionStorage.removeItem('checkout_redirect_count');
-    document.getElementById('address-container').innerHTML = 
-        '<p class="text-sm text-red-400">Session error. Please <a href="login.html?redirect=checkout.html" class="underline text-[#B36A5E] font-bold">login again</a>.</p>';
-} else {
-    sessionStorage.setItem('checkout_redirect_count', redirectCount + 1);
-}
+// (redirect-loop guard removed — checkout now uses the in-page auth popup)
 
     </script>
 </body>

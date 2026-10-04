@@ -955,12 +955,6 @@ const poNumber = 'PO-' + Math.floor(100000 + Math.random() * 900000);
         window._poNumber = poNumber;
         document.querySelectorAll('.po-number-display').forEach(el => { el.innerText = poNumber; });
 
-                items: [{
-                    item_id: String(window._poProduct.id),
-                    item_name: window._poProduct.name,
-                    price: Number(window._poProduct.price) || 0,
-                    quantity: qty
-                }]
 
         // GA4 pre-order event
         try {

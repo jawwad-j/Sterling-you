@@ -241,7 +241,7 @@
     </div>
 </div>
 
-<script src="cart.js?v=12"></script>
+<script src="cart.js?v=13"></script>
 <script>
     const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -307,6 +307,9 @@
             document.getElementById('clear-search').classList.remove('hidden');
             title.innerText = `Results for: "${searchQuery}"`;
             categoryName = "Search: " + searchQuery;
+        } else if (categoryType === 'InStock') {
+            title.innerText = "In Stock — Ready to Ship";
+            categoryName = "In Stock";
         } else if (categoryType === 'New') {
             title.innerText = "New Arrivals";
             categoryName = "New Arrivals";
@@ -319,7 +322,7 @@
         fbq('track', 'ViewContent', { content_category: categoryName, content_type: 'product_group', currency: 'BDT', value: 0 });
 
         let query = db.collection("products").where("isVisible", "==", true);
-        if (categoryType && categoryType !== 'All' && categoryType !== 'Sale' && categoryType !== 'New') {
+        if (categoryType && categoryType !== 'All' && categoryType !== 'Sale' && categoryType !== 'New' && categoryType !== 'InStock') {
             query = query.where("category", "==", categoryType);
         }
 
@@ -331,12 +334,13 @@
             allProducts = allProducts.filter(p => p.name.toLowerCase().includes(t) || p.category.toLowerCase().includes(t) || (p.subcategory && p.subcategory.toLowerCase().includes(t)));
         }
         if (categoryType === 'Sale') allProducts = allProducts.filter(p => p.originalPrice && Number(p.originalPrice) > Number(p.price));
-        if (categoryType === 'New')  allProducts = allProducts.filter(p => p.isNew === true);
+        if (categoryType === 'New')     allProducts = allProducts.filter(p => p.isNew === true);
+        if (categoryType === 'InStock') allProducts = allProducts.filter(p => (Number(p.stock) || 0) > 0);
 
         const stockRank = (p) => {
             const inStock = (Number(p.stock) || 0) > 0;
             if (inStock) return 0;                 // in-stock first
-            if (p.isPreorder === true) return 1;   // then pre-orderable
+            if (p.isPreorder === true || p.isPreorder === 'true') return 1;
             return 2;                              // sold-out & not pre-orderable last
         };
         allProducts.sort((a, b) => {
@@ -362,12 +366,43 @@
     }
 
     function renderGrid(list) {
-        document.getElementById('product-grid').innerHTML = list.map(p => {
+        const isPre = (p) => p.isPreorder === true || p.isPreorder === 'true';
+        const grid  = document.getElementById('product-grid');
+        const eta   = (window._preorderSettings && window._preorderSettings.globalEta) || '';
+
+        const inStockList = list.filter(p => (Number(p.stock) || 0) > 0);
+        const preList     = list.filter(p => (Number(p.stock) || 0) <= 0 && isPre(p));
+        const soldOutList = list.filter(p => (Number(p.stock) || 0) <= 0 && !isPre(p));
+
+        const sectionHeader = (label, sub) => `<div class="col-span-full mt-8 first:mt-0 mb-2 border-t border-gray-200 pt-6"><h3 class="text-sm font-bold uppercase tracking-[0.2em] text-[#322C2B]">${label}</h3>${sub ? `<p class="text-[11px] text-gray-500 mt-1">${sub}</p>` : ''}</div>`;
+
+        const footerNote = () => `<div class="col-span-full mt-12 border-t border-gray-200 pt-8 text-center">
+            <p class="text-sm font-bold uppercase tracking-[0.2em] text-[#322C2B]">Didn't find what you're looking for?</p>
+            <p class="text-[12px] text-gray-600 mt-2 max-w-md mx-auto leading-relaxed">Don't wait for stock — place your pre-order and we'll bring it in on our next shipment.</p>
+            ${eta ? `<p class="text-[12px] font-bold mt-3 tracking-wide" style="color:#B36A5E">Next Shipment Arrives by ${eta}</p>` : ''}
+            <a href="category.html?type=All" class="inline-block mt-5 px-6 py-3 text-white text-[10px] font-bold tracking-widest uppercase" style="background:#B36A5E">Browse Pre-Order Bags</a>
+        </div>`;
+
+        const cards = (arr) => arr.map(cardHtml).join('');
+
+        if (categoryType !== 'InStock' && inStockList.length && (preList.length || soldOutList.length)) {
+            grid.innerHTML =
+                sectionHeader('In Stock', 'Ready to ship from Dhaka') + cards(inStockList) +
+                (preList.length ? sectionHeader('Pre-Order', eta ? 'Next shipment ' + eta : 'Reserve yours for the next shipment') + cards(preList) : '') +
+                (soldOutList.length ? sectionHeader('Sold Out', '') + cards(soldOutList) : '');
+            return;
+        }
+
+        grid.innerHTML = cards(list) + (categoryType === 'InStock' ? footerNote() : '');
+    }
+
+    function cardHtml(p) {
+        {
             const pr = Number(p.price), old = p.originalPrice ? Number(p.originalPrice) : 0, hasD = old > pr;
             const perc = hasD ? Math.round(((old - pr) / old) * 100) : 0;
             const isOutOfStock = p.stock <= 0;
             const isLowStock   = p.stock > 0 && p.stock <= 5;
-            const isPreorder   = p.isPreorder === true;
+            const isPreorder   = p.isPreorder === true || p.isPreorder === 'true';
             const canPreorder  = isOutOfStock && isPreorder;
             const productId    = String(p.id).trim();
             const focusVal     = p.imageFocus || 'center';
@@ -407,7 +442,7 @@
                 </div>
                 ${canPreorder && poEta ? `<p class="text-[9px] font-medium mt-1 italic" style="color:#B36A5E">${poEta}</p>` : ''}
             </a>`;
-        }).join('');
+        }
     }
 
     function generateSubCategoryNav() {
@@ -468,7 +503,7 @@
             const stockRank = (p) => {
                 const inStock = (Number(p.stock) || 0) > 0;
                 if (inStock) return 0;
-                if (p.isPreorder === true) return 1;
+                if (p.isPreorder === true || p.isPreorder === 'true') return 1;
                 return 2;
             };
             const base = currentFilteredProducts.map(p => p.id);

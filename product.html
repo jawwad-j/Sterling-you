@@ -277,7 +277,7 @@
     </div>
 </div>
 
-<script src="cart.js?v=12"></script>
+<script src="cart.js?v=13"></script>
 <script>
     const firebaseConfig = { apiKey: "AIzaSyBF-N3tX8PcqxMtDI1wOXr8XGlgNOTnFC0", authDomain: "sterling-erp.firebaseapp.com", projectId: "sterling-erp", storageBucket: "sterling-erp.firebasestorage.app", messagingSenderId: "692099720173", appId: "1:692099720173:web:2a615f750352021d693de4" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -391,8 +391,9 @@ async function loadProductData() {
         if (stock > 0 && stock <= 5) { alertBox.classList.remove('hidden'); alertBox.classList.add('flex'); document.getElementById('stock-count').innerText = stock; }
 
         const _poEta = (window._preorderSettings && window._preorderSettings.globalEta) || '';
-        const _isPo  = (stock <= 0) && (p.isPreorder === true);
-        const _btnHtml = window.renderActionButtons({ id: String(doc.id).trim(), name: p.name, price: pr, originalPrice: old, image: p.image, stock: stock, isPreorder: p.isPreorder === true, preorderAdvance: Number(p.preorderAdvance) || 510 });
+        const _pIsPre = (p.isPreorder === true || p.isPreorder === 'true');
+        const _isPo  = (stock <= 0) && _pIsPre;
+        const _btnHtml = window.renderActionButtons({ id: String(doc.id).trim(), name: p.name, price: pr, originalPrice: old, image: p.image, stock: stock, isPreorder: _pIsPre, preorderAdvance: Number(p.preorderAdvance) || 510 });
         document.getElementById('add-to-cart-wrapper').innerHTML =
             (_isPo && _poEta
                 ? `<div class="mb-3 rounded-xl p-3" style="background:#F5ECE9;border:1px solid #E5D3CD"><p class="text-[10px] font-bold uppercase tracking-widest mb-0.5" style="color:#B36A5E">Available for Pre-order</p><p class="text-xs" style="color:#322C2B">${_poEta}</p></div>`
