@@ -1578,8 +1578,12 @@ if (tabId === 'contact-settings') {
             </select>
         </div>
     </div>
-    <div class="grid grid-cols-3 gap-2 bg-white rounded-lg p-3 border border-blue-100">
+    <div class="grid grid-cols-4 gap-2 bg-white rounded-lg p-3 border border-blue-100">
         <div class="text-center">
+            <p class="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Weight</p>
+            <p id="verify-total-weight" class="text-sm font-bold text-[#322C2B]">—</p>
+        </div>
+        <div class="text-center border-l border-gray-100">
             <p class="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Courier Cost</p>
             <p id="verify-courier-cost" class="text-sm font-bold text-[#322C2B]">—</p>
         </div>
@@ -5141,6 +5145,47 @@ window.updateOrderStatus = async function(newStatus) {
         if (!confirm("Are you sure you want to cancel this order? This will move it to History.")) return;
     }
 
+    // ── Pre-confirm guards: logistics mandatory, weight sanity ──
+    if (newStatus === 'Confirmed') {
+        const MAX_WEIGHT_KG  = 20;   // hard block — almost certainly a typo
+        const WARN_WEIGHT_KG = 5;    // confirm — unusual but possible
+
+        const _partnerEl = document.getElementById('verify-logistics-partner');
+        const _zoneEl    = document.getElementById('verify-logistics-zone');
+        const _partner   = _partnerEl ? _partnerEl.value : '';
+        const _zone      = _zoneEl ? _zoneEl.value : '';
+
+        if (!_partner) {
+            alert('Select a logistics partner before confirming this order.');
+            if (_partnerEl) { _partnerEl.focus(); _partnerEl.classList.add('border-red-500'); }
+            return;
+        }
+        if (!_zone) {
+            alert('Select a delivery zone before confirming this order.');
+            if (_zoneEl) { _zoneEl.focus(); _zoneEl.classList.add('border-red-500'); }
+            return;
+        }
+
+        const _ld = window._verifyLogisticsData;
+        if (!_ld || _ld.partnerName !== _partner || _ld.deliveryZone !== _zone) {
+            alert('Courier cost has not been calculated for ' + _partner + ' → ' + _zone + '.\n\nRe-select the partner or zone so the breakdown refreshes, then confirm.');
+            return;
+        }
+
+        const _w = Number(_ld.totalWeight) || 0;
+        if (_w <= 0) {
+            alert('Package weight is 0 kg — the courier cost would be wrong.\n\nFix the product weight in Inventory, then reopen this order.');
+            return;
+        }
+        if (_w > MAX_WEIGHT_KG) {
+            alert('BLOCKED: package weight is ' + _w.toFixed(2) + ' kg.\n\nThat is almost certainly a data-entry error (a bag is usually under 1 kg).\n\nFix the product weight in Inventory, reopen this order, then confirm.');
+            return;
+        }
+        if (_w > WARN_WEIGHT_KG) {
+            if (!confirm('Package weight is ' + _w.toFixed(2) + ' kg, which is unusually heavy.\n\nCourier cost will be \u09F3' + fmt(_ld.courierCost) + '.\n\nConfirm anyway?')) return;
+        }
+    }
+
     try {
         const discountType  = document.getElementById('verify-discount-type').value;
         const discountVal   = Number(document.getElementById('verify-discount-value').value) || 0;
@@ -7420,6 +7465,9 @@ window.recalcLogisticsCost = async function() {
 
     if (!partner || !zone) {
         costEl.innerText = '—'; codEl.innerText = '—'; marginEl.innerText = '—';
+        const _wReset = document.getElementById('verify-total-weight');
+        if (_wReset) { _wReset.innerText = '—'; _wReset.className = 'text-sm font-bold text-[#322C2B]'; }
+        window._verifyLogisticsData = null;
         msgEl.classList.remove('hidden');
         msgEl.innerText = 'Select both partner and zone to see cost breakdown.';
         return;
@@ -7474,6 +7522,14 @@ const weightPromises = (order.items || []).map(async item => {
 const weights = await Promise.all(weightPromises);
 totalWeight = weights.reduce((sum, w) => sum + w, 0);
 if (totalWeight <= 0) totalWeight = 0.5;
+
+const _wEl = document.getElementById('verify-total-weight');
+if (_wEl) {
+    _wEl.innerText = totalWeight.toFixed(2) + ' kg';
+    if (totalWeight > 20)      _wEl.className = 'text-sm font-bold text-red-600 animate-pulse';
+    else if (totalWeight > 5)  _wEl.className = 'text-sm font-bold text-orange-500';
+    else                       _wEl.className = 'text-sm font-bold text-[#322C2B]';
+}
 
     // Tier-based courier cost
     let courierCost = 0;
