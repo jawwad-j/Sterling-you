@@ -303,8 +303,11 @@
             await auth.signInWithEmailAndPassword(existingUserEmail, pass);
             finishSuccess();
         }catch(e){
+            console.error('Password login failed:', e.code, e.message);
             let msg='Incorrect password. Please try again.';
             if(e.code==='auth/too-many-requests') msg='Too many attempts. Use OTP login.';
+            else if(e.code==='auth/user-not-found' || e.code==='auth/invalid-login-credentials' || e.code==='auth/invalid-credential')
+                msg='No password is set on this number yet — please use "Login with OTP" below.';
             showErr('ca-existing-pass-err',msg);
             setBtn('ca-btn-login-pass',false,'Login');
         }
@@ -380,7 +383,17 @@
         setBtn('ca-btn-create', true, '');
         try{
             const emailCred=firebase.auth.EmailAuthProvider.credential(currentPhone+'@sterling.com', pass);
-            await authedUser.linkWithCredential(emailCred).catch(()=>{});
+            try {
+                await authedUser.linkWithCredential(emailCred);
+            } catch(linkErr) {
+                if (linkErr.code === 'auth/provider-already-linked' || linkErr.code === 'auth/email-already-in-use') {
+                    try { await authedUser.updatePassword(pass); }
+                    catch(pwErr) { console.error('Password set failed:', pwErr.code, pwErr.message); }
+                } else {
+                    console.error('Credential link failed:', linkErr.code, linkErr.message);
+                    throw new Error('Could not set your password (' + linkErr.code + '). Please try again or use OTP login.');
+                }
+            }
             const uid=auth.currentUser?auth.currentUser.uid:authedUser.uid;
             await db.collection('users').doc(uid).set({
                 fullName:name, phone:currentPhone, email:currentPhone+'@sterling.com',
