@@ -411,11 +411,83 @@ if (urlParams.get('action') === 'add') {
     }
 });
 
-auth.onAuthStateChanged((user) => {
+// ── VIEW-ONLY MODE (admin viewing a customer's account) ──────────────────────
+function enableViewOnlyMode() {
+    // 1. Block every Firestore write made through `db` — reads still work
+    const _origCollection = db.collection.bind(db);
+    const _blocked = function() {
+        alert('View-only mode — you cannot change a customer\'s details from here.');
+        return Promise.reject(new Error('view-only'));
+    };
+    db.collection = function(name) {
+        const col = _origCollection(name);
+        const _origDoc = col.doc.bind(col);
+        col.doc = function(id) {
+            const d = _origDoc(id);
+            d.set = _blocked; d.update = _blocked; d.delete = _blocked;
+            return d;
+        };
+        col.add = _blocked;
+        return col;
+    };
+
+    // 2. Never sign the ADMIN out from this tab
+    auth.signOut = function() {
+        alert('View-only mode — sign-out is disabled in this tab.');
+        return new Promise(function(){});
+    };
+    window.logout = function() {
+        if (confirm('Close this view-only tab?')) window.close();
+    };
+
+    // 3. Banner
+    const style = document.createElement('style');
+    style.textContent =
+        '#viewonly-banner{position:fixed;top:0;left:0;right:0;background:#1D4ED8;color:#fff;' +
+        'padding:8px 20px;display:flex;align-items:center;justify-content:space-between;' +
+        'z-index:99999;font-family:sans-serif;border-bottom:3px solid #93C5FD;' +
+        'box-shadow:0 4px 20px rgba(0,0,0,.25)}' +
+        '#viewonly-banner .vb-label{font-size:9px;font-weight:800;letter-spacing:2px;' +
+        'text-transform:uppercase;color:#BFDBFE;display:block;margin-bottom:2px}' +
+        '#viewonly-banner .vb-name{font-weight:700;font-size:13px}' +
+        '#viewonly-banner .vb-close{background:#fff;color:#1D4ED8;border:none;cursor:pointer;' +
+        'padding:8px 16px;border-radius:8px;font-size:10px;font-weight:800;' +
+        'text-transform:uppercase;letter-spacing:1px}' +
+        'body{padding-top:52px}';
+    document.head.appendChild(style);
+
+    const banner = document.createElement('div');
+    banner.id = 'viewonly-banner';
+    banner.innerHTML =
+        '<div><span class="vb-label">&#128065; Admin View \u2014 Read Only</span>' +
+        '<span class="vb-name" id="vb-customer">Loading customer\u2026</span></div>' +
+        '<button class="vb-close" onclick="window.close()">\u2715 Close Tab</button>';
+    if (document.body) document.body.appendChild(banner);
+    else document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(banner); });
+}
+
+auth.onAuthStateChanged(async (user) => {
     if (user) {
         document.getElementById('dashboard-section').classList.remove('hidden');
         document.getElementById('main-header').classList.remove('hidden');
         document.getElementById('main-footer').classList.remove('hidden');
+
+        const viewAsUid = new URLSearchParams(window.location.search).get('viewAs');
+        if (viewAsUid) {
+            let isAdmin = false;
+            try {
+                const adminDoc = await db.collection('admin_users').doc(user.uid).get();
+                isAdmin = adminDoc.exists;
+            } catch (e) {}
+            if (isAdmin) {
+                window._viewOnly = true;
+                enableViewOnlyMode();
+                loadDashboard(viewAsUid);
+                return;
+            }
+            // Not an admin — ignore the parameter, load their own account
+        }
+
         const surrogateData = sessionStorage.getItem('surrogate_session');
         const targetUid = surrogateData ? JSON.parse(surrogateData).uid : user.uid;
         loadDashboard(targetUid);
@@ -483,6 +555,8 @@ async function loadDashboard(uid, retries = 3) {
         currentUserData = doc.data();
         currentUserData.uid = uid;
         document.getElementById('display-name').innerText = currentUserData.fullName || "User";
+        const _vb = document.getElementById('vb-customer');
+        if (_vb) _vb.innerText = (currentUserData.fullName || 'Customer') + ' \u00b7 ' + (currentUserData.phone || '');
         document.getElementById('profile-name').innerText = currentUserData.fullName || "Not Set";
         document.getElementById('profile-phone').innerText = currentUserData.phone || 'Not Set';
         document.getElementById('profile-email').innerText = currentUserData.contactEmail || currentUserData.email || 'Not Set';
