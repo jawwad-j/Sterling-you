@@ -108,8 +108,8 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
             <div class="md:col-span-1">
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
                     <nav class="flex flex-col text-[11px] font-bold uppercase tracking-widest">
-                        <button onclick="switchTab('profile')" id="btn-profile" class="active-tab text-left px-6 py-4 border-b border-gray-50 transition">Account Information</button>
-                        <button onclick="switchTab('orders')" id="btn-orders" class="inactive-tab text-left px-6 py-4 border-b border-gray-50 transition">My Orders</button>
+                        <button onclick="switchTab('orders')" id="btn-orders" class="active-tab text-left px-6 py-4 border-b border-gray-50 transition">My Orders <span id="orders-live-dot" class="hidden"></span></button>
+                        <button onclick="switchTab('profile')" id="btn-profile" class="inactive-tab text-left px-6 py-4 border-b border-gray-50 transition">Account Information</button>
                         <button onclick="switchTab('addresses')" id="btn-addresses" class="inactive-tab text-left px-6 py-4 border-b border-gray-50 transition">Manage Addresses</button>
                         <button onclick="switchTab('payments')" id="btn-payments" class="inactive-tab text-left px-6 py-4 border-b border-gray-50 transition">Payment Methods</button>
                         <button onclick="switchTab('contact')" id="btn-contact" class="inactive-tab text-left px-6 py-4 transition">Contact Us</button>
@@ -119,7 +119,7 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
 
             <div class="md:col-span-3">
                 
-                <div id="tab-profile" class="space-y-6">
+                <div id="tab-profile" class="hidden space-y-6">
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <h3 class="text-sm font-bold uppercase tracking-widest text-[#322C2B] mb-4 border-b pb-2">Personal Details</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -164,11 +164,11 @@ src="https://www.facebook.com/tr?id=1307429974563033&ev=PageView&noscript=1"
                     </div>
                 </div>
 
-                <div id="tab-orders" class="hidden space-y-6">
+                <div id="tab-orders" class="space-y-6">
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <table class="w-full text-left">
                             <thead class="bg-gray-50 text-[10px] font-bold uppercase text-gray-500 border-b">
-                                <tr><th class="p-4">ID</th><th>Date</th><th>Total</th><th>Status</th><th>Action</th></tr>
+                                <tr><th class="p-4">Reference</th><th>Date</th><th>Amount</th><th>Status</th><th></th></tr>
                             </thead>
                             <tbody id="order-history-list" class="text-xs"></tbody>
                         </table>
@@ -1075,35 +1075,246 @@ await db.collection("contact_messages").add({
             e.target.reset(); btn.disabled = false; btn.innerText = "Send Message";
         };
 
-        // --- LOAD USER ORDERS AND VIEW MODAL ---
+        // --- LOAD USER ORDERS + PRE-ORDERS ---
+        window._poSettings = { bkashNumber: '', globalEta: '' };
+
+        function _statusLabel(row) {
+            const s = row.status || 'Pending';
+            if (row._type === 'preorder') {
+                if (s === 'Pending')   return { text: 'Order Pending',   cls: 'bg-amber-100 text-amber-700' };
+                if (s === 'Confirmed') return { text: 'Order Confirmed', cls: 'bg-green-100 text-green-700' };
+                if (s === 'Converted') return { text: 'Arrived \u2014 Processing for Delivery', cls: 'bg-sky-100 text-sky-700' };
+                if (s === 'Cancelled') return { text: 'Cancelled', cls: 'bg-gray-100 text-gray-500' };
+                if (s === 'Refunded')  return { text: 'Refunded',  cls: 'bg-pink-100 text-pink-600' };
+                return { text: s, cls: 'bg-gray-100 text-gray-600' };
+            }
+            const map = {
+                'Pending':             { text: 'Awaiting Confirmation', cls: 'bg-amber-100 text-amber-700' },
+                'Confirmed':           { text: 'Confirmed',             cls: 'bg-green-100 text-green-700' },
+                'Packed':              { text: 'Packed',                cls: 'bg-purple-100 text-purple-700' },
+                'Handed over':         { text: 'Out for Delivery',      cls: 'bg-orange-100 text-orange-700' },
+                'On Hold':             { text: 'On Hold',               cls: 'bg-yellow-100 text-yellow-700' },
+                'Return Initiated':    { text: 'Return in Progress',    cls: 'bg-red-100 text-red-600' },
+                'Delivered':           { text: 'Delivered',             cls: 'bg-green-100 text-green-700' },
+                'Partially Delivered': { text: 'Partially Delivered',   cls: 'bg-sky-100 text-sky-700' },
+                'Returned':            { text: 'Returned',              cls: 'bg-red-100 text-red-600' },
+                'Cancelled':           { text: 'Cancelled',             cls: 'bg-gray-100 text-gray-500' }
+            };
+            return map[s] || { text: s, cls: 'bg-gray-100 text-gray-600' };
+        }
+
+        function _isOngoing(row) {
+            if (row._type === 'preorder') return ['Pending','Confirmed'].indexOf(row.status || 'Pending') > -1;
+            return ['Delivered','Partially Delivered','Returned','Cancelled'].indexOf(row.status) === -1;
+        }
+
+        function _paidSoFar(row) {
+            if (Array.isArray(row.payments) && row.payments.length) {
+                return row.payments.filter(function(p){ return p.status !== 'rejected'; })
+                                   .reduce(function(s,p){ return s + (Number(p.amount) || 0); }, 0);
+            }
+            return Number(row.advanceAmount || row.advancePaid || 0);
+        }
+
+        function _itemsSubtotal(row) {
+            if (row._type === 'preorder') {
+                const items = (Array.isArray(row.items) && row.items.length)
+                    ? row.items
+                    : [{ productPrice: row.productPrice, quantity: row.quantity }];
+                return items.reduce(function(s,i){ return s + (Number(i.productPrice || i.price) || 0) * (Number(i.quantity) || 1); }, 0);
+            }
+            return (row.items || []).reduce(function(s,i){ return s + (Number(i.price) || 0) * (Number(i.quantity) || 1); }, 0);
+        }
+
+        function _setLiveDot(on) {
+            if (!document.getElementById('sy-pulse-style')) {
+                const st = document.createElement('style');
+                st.id = 'sy-pulse-style';
+                st.textContent = '@keyframes syPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(1.35)}}' +
+                    '.sy-dot{display:inline-block;width:8px;height:8px;border-radius:9999px;background:#EF4444;' +
+                    'margin-left:6px;vertical-align:middle;animation:syPulse 1.1s ease-in-out infinite;' +
+                    'box-shadow:0 0 0 3px rgba(239,68,68,.18)}';
+                document.head.appendChild(st);
+            }
+            const dot = document.getElementById('orders-live-dot');
+            if (!dot) return;
+            dot.className = on ? 'sy-dot' : 'hidden';
+            dot.title = on ? 'You have an order in progress' : '';
+        }
+
         async function loadUserOrders(uid) {
             const list = document.getElementById('order-history-list');
-            const snap = await db.collection("orders").where("userId", "==", uid).get();
-            
-            if(snap.empty) { 
-                document.getElementById('no-orders-msg').classList.remove('hidden'); 
-                list.innerHTML = '';
-                return; 
-            }
-            
-            document.getElementById('no-orders-msg').classList.add('hidden');
-            
-            globalOrders = snap.docs.map(d => d.data());
-            globalOrders.sort((a,b) => new Date(b.orderDate) - new Date(a.orderDate));
+            const rows = [];
 
-            list.innerHTML = globalOrders.map(o => `
-                <tr class="border-b last:border-0 hover:bg-gray-50">
-                    <td class="p-4 font-mono font-bold text-[#B36A5E]">${o.orderId}</td>
-                    <td class="text-gray-500">${new Date(o.orderDate).toLocaleDateString()}</td>
-                    <td class="font-bold">৳${(o.totalAmount || 0).toLocaleString()}</td>
-                    <td><span class="px-2 py-1 rounded-full text-[9px] font-black uppercase bg-gray-100 text-gray-600">${o.status}</span></td>
-                    <td>
-                        <button onclick="viewOrder('${o.orderId}')" class="text-[10px] font-bold uppercase text-[#B36A5E] hover:underline transition bg-gray-100 px-3 py-1 rounded">View Order</button>
-                    </td>
-                </tr>`).join('');
+            try {
+                const s = await db.collection('settings').doc('preorder').get();
+                if (s.exists) window._poSettings = {
+                    bkashNumber: s.data().bkashNumber || '',
+                    globalEta:   s.data().globalEta   || ''
+                };
+            } catch(e) {}
+
+            try {
+                const snap = await db.collection("orders").where("userId", "==", uid).get();
+                snap.forEach(function(d){ const o = d.data(); o._id = d.id; o._type = 'order'; rows.push(o); });
+            } catch(e) { console.error('Order load error:', e); }
+
+            const seen = {};
+            const addPre = function(d) {
+                if (seen[d.id]) return;
+                seen[d.id] = true;
+                const p = d.data(); p._id = d.id; p._type = 'preorder';
+                // Hide a converted pre-order if its real order is already listed
+                if (p.status === 'Converted' && p.convertedOrderCode &&
+                    rows.some(function(r){ return r._type === 'order' && r.orderId === p.convertedOrderCode; })) return;
+                rows.push(p);
+            };
+            try {
+                const ps = await db.collection("preorders").where("userId", "==", uid).get();
+                ps.forEach(addPre);
+            } catch(e) { console.error('Pre-order load error:', e); }
+
+            const myPhone = (currentUserData && currentUserData.phone) || '';
+            if (myPhone) {
+                try {
+                    const ps2 = await db.collection("preorders").where("customerPhone", "==", myPhone).get();
+                    ps2.forEach(addPre);
+                } catch(e) {}
+            }
+
+            if (!rows.length) {
+                document.getElementById('no-orders-msg').classList.remove('hidden');
+                list.innerHTML = '';
+                _setLiveDot(false);
+                return;
+            }
+            document.getElementById('no-orders-msg').classList.add('hidden');
+
+            rows.sort(function(a,b){ return new Date(b.orderDate || b.createdAt || 0) - new Date(a.orderDate || a.createdAt || 0); });
+            globalOrders = rows;
+
+            let anyOngoing = false;
+            list.innerHTML = rows.map(function(o) {
+                const st    = _statusLabel(o);
+                const total = o._type === 'preorder' ? _itemsSubtotal(o) : (Number(o.totalAmount) || 0);
+                const paid  = _paidSoFar(o);
+                if (_isOngoing(o)) anyOngoing = true;
+                const ref   = o._type === 'preorder' ? (o.poNumber || 'Pre-order') : o.orderId;
+                const dt    = o.orderDate || o.createdAt;
+                return '<tr class="border-b last:border-0 hover:bg-gray-50">' +
+                    '<td class="p-4 font-mono font-bold text-[#B36A5E]">' + ref +
+                        (o._type === 'preorder' ? '<span class="ml-2 text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded" style="background:#F5ECE9;color:#B36A5E">Pre-order</span>' : '') +
+                    '</td>' +
+                    '<td class="text-gray-500">' + (dt ? new Date(dt).toLocaleDateString() : '\u2014') + '</td>' +
+                    '<td class="font-bold">\u09F3' + total.toLocaleString() +
+                        (paid > 0 ? '<span class="block text-[9px] font-bold text-green-600">\u09F3' + paid.toLocaleString() + ' paid</span>' : '') +
+                    '</td>' +
+                    '<td><span class="px-2 py-1 rounded-full text-[9px] font-black uppercase ' + st.cls + '">' + st.text + '</span></td>' +
+                    '<td><button onclick="viewOrder(\'' + o._id + '\')" class="text-[10px] font-bold uppercase text-[#B36A5E] hover:underline transition bg-gray-100 px-3 py-1 rounded">View</button></td>' +
+                '</tr>';
+            }).join('');
+
+            _setLiveDot(anyOngoing);
         }
         
-        window.viewOrder = (orderId) => {
+        window.viewOrder = (docId) => {
+            const order = globalOrders.find(function(o){ return o._id === docId; });
+            if (!order) return;
+
+            const isPre   = order._type === 'preorder';
+            const st      = _statusLabel(order);
+            const sub     = _itemsSubtotal(order);
+            const paid    = _paidSoFar(order);
+            const ship    = isPre ? 0 : (Number(order.customerShippingFee) || 0);
+            const bag     = Number(order.shoppingBagTotal) || 0;
+            const grand   = isPre ? (sub + bag) : (Number(order.totalAmount) || sub);
+            const balance = Math.max(0, grand - paid);
+            const ref     = isPre ? (order.poNumber || 'Pre-order') : order.orderId;
+            const dt      = order.orderDate || order.createdAt;
+
+            const srcItems = isPre
+                ? ((Array.isArray(order.items) && order.items.length) ? order.items
+                   : [{ productName: order.productName, productImage: order.productImage, productPrice: order.productPrice, quantity: order.quantity }])
+                : (order.items || []);
+
+            const itemsHtml = srcItems.map(function(i) {
+                const nm = i.name || i.productName || 'Item';
+                const im = i.image || i.productImage || '';
+                const pr = Number(i.price || i.productPrice) || 0;
+                const qt = Number(i.quantity) || 1;
+                return '<div class="flex justify-between items-center py-3 border-b border-gray-100 last:border-0 text-sm">' +
+                    '<div class="flex items-center gap-4"><img src="' + im + '" class="w-14 h-14 object-cover rounded-lg border bg-gray-50">' +
+                    '<div><p class="font-bold text-[#322C2B]">' + nm + '</p>' +
+                    '<p class="text-[10px] text-gray-500 font-bold uppercase">Qty: ' + qt + '</p></div></div>' +
+                    '<p class="font-bold text-[#B36A5E]">\u09F3' + (pr * qt).toLocaleString() + '</p></div>';
+            }).join('');
+
+            let money = '<div class="flex justify-between text-xs py-1.5"><span class="text-gray-500">Items Subtotal</span><span class="font-bold">\u09F3' + sub.toLocaleString() + '</span></div>';
+            if (bag > 0) money += '<div class="flex justify-between text-xs py-1.5"><span class="text-gray-500">Shopping Bag</span><span class="font-bold">\u09F3' + bag.toLocaleString() + '</span></div>';
+            if (!isPre)  money += '<div class="flex justify-between text-xs py-1.5"><span class="text-gray-500">Delivery Charge</span><span class="font-bold">' + (ship > 0 ? '\u09F3' + ship.toLocaleString() : 'To be confirmed') + '</span></div>';
+            money += '<div class="flex justify-between text-sm py-2 border-t border-gray-200 mt-1"><span class="font-bold uppercase text-xs tracking-widest">' + (isPre ? 'Estimated Total' : 'Order Total') + '</span><span class="font-bold text-lg text-[#322C2B]">\u09F3' + grand.toLocaleString() + '</span></div>';
+            if (paid > 0) money += '<div class="flex justify-between text-xs py-1.5"><span class="text-green-600 font-bold">Paid so far</span><span class="font-bold text-green-600">-\u09F3' + paid.toLocaleString() + '</span></div>';
+            money += '<div class="flex justify-between text-sm py-2 border-t border-gray-200"><span class="font-bold uppercase text-xs tracking-widest">' + (isPre ? 'Balance' : 'Payable on Delivery') + '</span><span class="font-bold text-lg" style="color:#B36A5E">\u09F3' + balance.toLocaleString() + '</span></div>';
+
+            let payHtml = '';
+            if (Array.isArray(order.payments) && order.payments.length) {
+                payHtml = '<div class="mb-6"><p class="text-[10px] font-bold uppercase text-gray-400 mb-2 tracking-widest">Payment History</p>' +
+                    '<div class="border border-gray-100 rounded-xl p-4 space-y-2">' +
+                    order.payments.map(function(p) {
+                        const badge = p.status === 'pending'
+                            ? '<span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Verifying</span>'
+                            : (p.status === 'rejected'
+                                ? '<span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-red-100 text-red-600">Not Found</span>'
+                                : '<span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-green-100 text-green-700">Received</span>');
+                        return '<div class="flex justify-between items-center text-xs"><div>' +
+                            '<span class="font-bold">\u09F3' + (Number(p.amount)||0).toLocaleString() + '</span> ' + badge +
+                            '<span class="block text-[10px] text-gray-400">' + (p.date ? new Date(p.date).toLocaleDateString() : '') +
+                            (p.txnId ? ' \u00b7 ' + p.txnId : '') + '</span></div></div>';
+                    }).join('') + '</div></div>';
+            }
+
+            let payNow = '';
+            const bk = (window._poSettings && window._poSettings.bkashNumber) || '';
+            if (balance > 0 && _isOngoing(order)) {
+                payNow = '<div class="mb-6 rounded-xl p-4" style="background:#F5ECE9;border:1px solid #E5D3CD">' +
+                    '<p class="text-[10px] font-bold uppercase tracking-widest mb-1" style="color:#B36A5E">Pay Now \u2014 Optional</p>' +
+                    '<p class="text-xs text-gray-600 leading-relaxed mb-3">You can pay any amount towards this order at any time \u2014 part or in full.' +
+                    (isPre ? ' Paying early secures your bag in the current shipment.' : '') + '</p>' +
+                    (bk ? '<div class="bg-white rounded-lg p-3 text-center mb-2" style="border:1px solid #E5D3CD">' +
+                        '<p class="text-[9px] font-bold uppercase tracking-widest text-gray-400">Send bKash to</p>' +
+                        '<p class="text-lg font-bold text-[#322C2B] tracking-wide">' + bk + '</p>' +
+                        '<p class="text-[10px] text-gray-400 mt-1">Remaining balance: <span class="font-bold" style="color:#B36A5E">\u09F3' + balance.toLocaleString() + '</span></p></div>'
+                       : '<p class="text-xs text-gray-500">Please contact us for payment details.</p>') +
+                    '<p class="text-[10px] text-gray-500 italic text-center">After sending, we will confirm your payment and it will appear here.</p>' +
+                    '</div>';
+            }
+
+            document.getElementById('order-modal-content').innerHTML =
+                '<div class="flex justify-between items-start mb-6 bg-gray-50 p-4 rounded-xl">' +
+                    '<div><p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">' + (isPre ? 'Pre-order No' : 'Order ID') + '</p>' +
+                    '<p class="font-mono font-bold text-lg text-[#322C2B]">' + ref + '</p></div>' +
+                    '<div class="text-right"><p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Date Placed</p>' +
+                    '<p class="font-bold text-sm text-[#322C2B]">' + (dt ? new Date(dt).toLocaleDateString() : '\u2014') + '</p></div>' +
+                '</div>' +
+                (isPre && order.status !== 'Converted' && window._poSettings.globalEta
+                    ? '<div class="mb-6 rounded-xl p-3 text-center" style="background:#F5ECE9;border:1px solid #E5D3CD"><p class="text-xs" style="color:#322C2B">Next shipment arrives by <b>' + window._poSettings.globalEta + '</b></p></div>' : '') +
+                '<div class="mb-6"><p class="text-[10px] font-bold uppercase text-gray-400 mb-2 tracking-widest">Items</p>' +
+                '<div class="border border-gray-100 rounded-xl p-4">' + itemsHtml +
+                '<div class="pt-3 mt-2 border-t border-gray-200">' + money + '</div></div></div>' +
+                payHtml + payNow +
+                '<div class="grid grid-cols-2 gap-6 text-sm bg-gray-50 p-4 rounded-xl">' +
+                    '<div><p class="text-[10px] font-bold uppercase text-gray-400 mb-2 tracking-widest">Current Status</p>' +
+                    '<span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ' + st.cls + '">' + st.text + '</span></div>' +
+                    '<div><p class="text-[10px] font-bold uppercase text-gray-400 mb-2 tracking-widest">Delivery Address</p>' +
+                    '<p class="text-xs font-medium text-gray-600 leading-relaxed">' +
+                    (isPre ? (order.customerAddress || 'N/A')
+                           : (order.shippingAddress ? (order.shippingAddress.fullDisplay || order.shippingAddress.detail) : 'N/A')) +
+                    '</p></div>' +
+                '</div>';
+            document.getElementById('viewOrderModal').classList.remove('hidden');
+        };
+
+        window._viewOrderOld = function(orderId) {
             const order = globalOrders.find(o => o.orderId === orderId);
             if(!order) return;
             

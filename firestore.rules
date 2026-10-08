@@ -55,7 +55,13 @@ service cloud.firestore {
     }
     match /preorders/{docId} {
       allow create: if true;
-      allow read, update, delete: if isAdmin();
+      allow read: if request.auth != null && (
+                    resource.data.userId == request.auth.uid ||
+                    (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.phone == resource.data.customerPhone) ||
+                    isAdmin()
+                  );
+      allow update, delete: if isAdmin();
     }
     match /contact_messages/{msgId} {
       allow create: if request.auth != null;
