@@ -4782,15 +4782,27 @@ window.openMergeOrders = function() {
     const master = ordersCache[masterId];
     if (!master) { alert('Open an order first.'); return; }
 
-    const masterPhone = (master.verifiedPhone || master.userPhone || '').replace(/\D/g, '');
-    if (!masterPhone) { alert('This order has no phone number to match against.'); return; }
+    // Web orders store userId; converted pre-orders store userPhone. Resolve both.
+    const _phoneOf = function(o) {
+        let p = (o.verifiedPhone || o.userPhone || '') + '';
+        if (!p && window.crmDataCache && o.userId) {
+            const u = window.crmDataCache.find(function(x){ return x.id === o.userId; });
+            if (u && u.phone) p = u.phone;
+        }
+        return p.replace(/\D/g, '').slice(-11);   // normalises +880… and 01…
+    };
 
-    // Find the SAME customer's OTHER Pending (Stage 1) orders
-    const candidates = (ordersArrayCache || []).filter(o => {
+    const masterPhone = _phoneOf(master);
+    const masterUid   = master.userId || '';
+    if (!masterPhone && !masterUid) { alert('This order has no customer to match against.'); return; }
+
+    // Find the SAME customer's OTHER Pending (Stage 1) orders — match on account OR phone
+    const candidates = (ordersArrayCache || []).filter(function(o) {
         if (o.id === masterId) return false;
         if ((o.status || 'Pending') !== 'Pending') return false;   // Stage 1 only
-        const p = (o.verifiedPhone || o.userPhone || '').replace(/\D/g, '');
-        return p && p === masterPhone;
+        if (masterUid && o.userId && o.userId === masterUid) return true;
+        const p = _phoneOf(o);
+        return !!(p && masterPhone && p === masterPhone);
     });
 
     if (candidates.length === 0) {
@@ -4851,6 +4863,8 @@ window.confirmMergeOrders = async function() {
         let totalAmount   = Number(master.totalAmount) || 0;
         let totalWeight   = Number(master.packageWeightKg) || (master.items || []).reduce((s, i) => s + (Number(i.weightKg) || 0) * (Number(i.quantity) || 1), 0);
         let totalAdvance  = Number(master.advancePaid) || 0;
+        let totalBagQty   = Number(master.shoppingBagQty) || 0;
+        let totalBagTotal = Number(master.shoppingBagTotal) || 0;
         const mergedOrderIds = [];
 
         for (const docId of picks) {
@@ -4858,7 +4872,10 @@ window.confirmMergeOrders = async function() {
             if (!o) continue;
             // Combine items
             (o.items || []).forEach(it => mergedItems.push(it));
-            totalAmount  += Number(o.totalAmount) || 0;
+            // Drop the merged order's own shipping fee — one parcel, one delivery charge
+            totalAmount  += (Number(o.totalAmount) || 0) - (Number(o.customerShippingFee) || 0);
+            totalBagQty   += Number(o.shoppingBagQty) || 0;
+            totalBagTotal += Number(o.shoppingBagTotal) || 0;
             totalWeight  += Number(o.packageWeightKg) || (o.items || []).reduce((s, i) => s + (Number(i.weightKg) || 0) * (Number(i.quantity) || 1), 0);
             totalAdvance += Number(o.advancePaid) || 0;
             mergedOrderIds.push(o.orderId);
@@ -4877,8 +4894,11 @@ window.confirmMergeOrders = async function() {
             items:           mergedItems,
             totalAmount:     totalAmount,
             packageWeightKg: totalWeight,
-            advancePaid:     totalAdvance,
-            mergedFrom:      mergedOrderIds,
+            advancePaid:      totalAdvance,
+            shoppingBagQty:   totalBagQty,
+            shoppingBagTotal: totalBagTotal,
+            shoppingBagCost:  Math.round(totalBagQty * (window.SHOPPING_BAG ? window.SHOPPING_BAG.cost : 217) * 100) / 100,
+            mergedFrom:       mergedOrderIds,
             lastUpdate:      new Date().toISOString()
         });
 

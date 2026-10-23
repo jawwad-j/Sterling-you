@@ -787,6 +787,7 @@ class="inline-block bg-[#322C2B] text-white px-6 py-3 rounded-xl text-[10px] fon
                     orderId: "ORD-" + Math.floor(100000 + Math.random() * 900000),
                     userId: currentCheckoutUser.uid,
                     userName: currentCheckoutUser.fullName,
+                    userPhone: currentCheckoutUser.phone || '',
                     placedByAdmin: isSurrogateActive ? auth.currentUser.uid : false,
                     status: "Pending",
                     totalAmount: total,
