@@ -3363,20 +3363,38 @@ window.resetAdminPassword = async function(targetStaffUid) {
             if(historyList) historyList.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-gray-400"><div class="loader mx-auto"><\/div><\/td><\/tr>'; 
             
             try {
-                const snap = await db.collection("orders").orderBy("orderDate", "desc").limit(100).get();
-                
+                // Full fetch. No .limit() — the dashboard reads this cache, so a cap
+                // made "Lifetime" mean "last 100 orders". No orderBy() either:
+                // orderBy("orderDate") silently drops any doc missing that field.
+                const snap = await db.collection("orders").get();
+
                 let tempCache = {};
                 let tempArray = [];
-                
+
                 snap.forEach(function(doc) {
                     const o = doc.data();
                     o.id = doc.id;
-                    tempCache[doc.id] = o; 
+                    tempCache[doc.id] = o;
                     tempArray.push(o);
                 });
-                
+
+                function _ordTime(o) {
+                    if (typeof window.getOrderTime === 'function') {
+                        const t = window.getOrderTime(o);
+                        if (t) return t;
+                    }
+                    const d = o.orderDate || o.createdAt || o.lastUpdate;
+                    if (!d) return 0;
+                    try { return (d.toDate ? d.toDate().getTime() : new Date(d).getTime()) || 0; }
+                    catch(e) { return 0; }
+                }
+                tempArray.sort(function(a, b) { return _ordTime(b) - _ordTime(a); });
+
                 ordersCache = tempCache;
                 window.ordersArrayCache = tempArray;
+                console.log('[orders] loaded ' + tempArray.length + ' orders | ' +
+                    tempArray.filter(function(o) { return !o.orderDate; }).length + ' missing orderDate | ' +
+                    tempArray.filter(function(o) { return window.DELIVERED_STATUSES.includes(o.status); }).length + ' delivered');
                 
                 window.renderOrdersTable();
                 window.calculateDamagedLoss(); 
@@ -3666,7 +3684,15 @@ hHTML += '<tr class="border-b hover:bg-gray-50 opacity-90 transition cursor-poin
 
             pendingArr.forEach(o => generateRowHTML(o, 'Pending'));
             processingArr.forEach(o => generateRowHTML(o, 'Processing'));
-            historyArr.forEach(o => generateRowHTML(o, 'History'));
+            const _histFiltered = !!(searchVal || fromVal || toVal);
+            const _HIST_CAP = 150;
+            (_histFiltered ? historyArr : historyArr.slice(0, _HIST_CAP))
+                .forEach(o => generateRowHTML(o, 'History'));
+            if (!_histFiltered && historyArr.length > _HIST_CAP) {
+                hHTML += '<tr><td colspan="9" class="p-3 text-center text-[10px] text-gray-400">' +
+                    'Showing the newest ' + _HIST_CAP + ' of ' + historyArr.length +
+                    ' history orders \u2014 search or use the date filter to reach older ones.<\/td><\/tr>';
+            }
 
             if (document.getElementById('count-pending')) document.getElementById('count-pending').innerText = pendingArr.length;
             if (document.getElementById('count-processing')) document.getElementById('count-processing').innerText = processingArr.length;
