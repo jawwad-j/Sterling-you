@@ -727,13 +727,31 @@ if (tabId === 'contact-settings') {
                     </div>
                 </div>
                 <div>
-                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">🟠 Stage 2: Logistics <span id="count-processing" class="bg-orange-500 text-white text-[10px] px-2 py-1 rounded-full">0</span></h3>
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <h3 class="font-bold text-lg flex items-center gap-2">🟠 Stage 2: Logistics <span id="count-processing" class="bg-orange-500 text-white text-[10px] px-2 py-1 rounded-full">0</span></h3>
+    <div class="flex flex-wrap items-center gap-2">
+        <div id="s2-bulk-actions" class="flex flex-wrap items-center gap-2 transition" style="opacity:0.5">
+            <span class="text-[10px] font-bold uppercase text-gray-500"><span id="s2-selected-count">0</span> selected</span>
+            <select id="s2-bulk-status" class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white outline-none focus:border-[#B36A5E]">
+                <option value="">Change status to…</option>
+                <option value="Packed">Packed</option>
+                <option value="Handed over">Handed over</option>
+                <option value="Delivered">Delivered</option>
+                <option value="On Hold">On Hold</option>
+            </select>
+            <button id="s2-bulk-apply" onclick="s2BulkStatus()" class="bg-[#1F2937] text-white px-3 py-1.5 rounded-lg font-bold uppercase text-[9px] hover:bg-black transition shadow-sm">Apply</button>
+        </div>
+        <button onclick="s2SelectByStatus('Packed')" class="bg-purple-50 text-purple-600 border border-purple-200 px-3 py-1.5 rounded-lg font-bold uppercase text-[9px] hover:bg-purple-100 transition">Select all Packed</button>
+        <button onclick="s2DownloadPathaoCsv()" class="bg-[#E8342E] text-white px-3 py-1.5 rounded-lg font-bold uppercase text-[9px] hover:opacity-90 transition shadow-sm">⬇ Pathao CSV</button>
+    </div>
+</div>
                     <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-orange-50 relative">
                         <div class="max-h-[960px] overflow-auto w-full">
                             <table class="w-full text-left text-xs">
                                 <thead class="bg-orange-50 text-[10px] font-bold uppercase text-orange-400 sticky top-0 z-10 shadow-sm">
                                     <tr>
-                                        <th class="p-4 cursor-pointer hover:text-orange-700 transition" onclick="sortOrders('Processing', 'orderId')">Order ID ↕</th>
+                                        <th class="pl-4 w-8"><input type="checkbox" id="s2-check-all" onchange="_s2ToggleAll(this.checked)" class="accent-[#B36A5E] w-4 h-4 cursor-pointer"></th>
+<th class="p-4 cursor-pointer hover:text-orange-700 transition" onclick="sortOrders('Processing', 'orderId')">Order ID ↕</th>
                                         <th class="cursor-pointer hover:text-orange-700 transition" onclick="sortOrders('Processing', 'orderDate')">Order Date ↕</th>
                                         <th class="cursor-pointer hover:text-orange-700 transition" onclick="sortOrders('Processing', 'lastUpdate')">Last Update ↕</th>
                                         <th>Customer</th>
@@ -3628,6 +3646,7 @@ if (status === 'Confirmed') {
                     }
 
 prHTML += '<tr class="border-b hover:bg-gray-50 transition cursor-pointer" onclick="orderRowClick(event, \'' + oid + '\')">' +
+'<td class="pl-4"><input type="checkbox" class="s2-check accent-[#B36A5E] w-4 h-4 cursor-pointer" data-oid="' + oid + '" data-status="' + status + '" onchange="_s2Toggle(\'' + oid + '\', this.checked)"' + (window._s2Selected && window._s2Selected.has(oid) ? ' checked' : '') + '><\/td>' +
                         '<td class="p-4 font-mono font-bold text-gray-600">' + o.orderId + '<\/td>' +
                         '<td class="text-xs font-medium">' + dateStr + '<\/td>' +
                         '<td><span class="text-[10px] text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded">' + lastUpdateStr + '<\/span><\/td>' +
@@ -3698,9 +3717,188 @@ hHTML += '<tr class="border-b hover:bg-gray-50 opacity-90 transition cursor-poin
             if (document.getElementById('count-processing')) document.getElementById('count-processing').innerText = processingArr.length;
             
             if(pendingList) pendingList.innerHTML = pHTML || '<tr><td colspan="7" class="p-4 text-center text-xs text-gray-400">No matching orders found.<\/td><\/tr>';
-if(processingList) processingList.innerHTML = prHTML || '<tr><td colspan="9" class="p-4 text-center text-xs text-gray-400">Pipeline empty.<\/td><\/tr>';
+if(processingList) processingList.innerHTML = prHTML || '<tr><td colspan="10" class="p-4 text-center text-xs text-gray-400">Pipeline empty.<\/td><\/tr>';
+if (typeof window._s2SyncChecks === 'function') window._s2SyncChecks();
             if(historyList) historyList.innerHTML = hHTML || '<tr><td colspan="9" class="p-4 text-center text-xs text-gray-400">No history matches your search.<\/td><\/tr>';
         };
+
+// ── STAGE 2: MULTI-SELECT, BULK STATUS, PATHAO BULK CSV ──
+window._s2Selected = window._s2Selected || new Set();
+window._S2_BULK_OK = ['Confirmed', 'Packed', 'Handed over'];
+
+window._s2Toggle = function(oid, checked) {
+    if (checked) window._s2Selected.add(oid); else window._s2Selected.delete(oid);
+    window._s2SyncChecks();
+};
+
+window._s2ToggleAll = function(checked) {
+    document.querySelectorAll('#pipeline-processing .s2-check').forEach(function(cb) {
+        cb.checked = checked;
+        if (checked) window._s2Selected.add(cb.dataset.oid); else window._s2Selected.delete(cb.dataset.oid);
+    });
+    window._s2SyncChecks();
+};
+
+window.s2SelectByStatus = function(status) {
+    window._s2Selected.clear();
+    document.querySelectorAll('#pipeline-processing .s2-check').forEach(function(cb) {
+        if (cb.dataset.status === status) window._s2Selected.add(cb.dataset.oid);
+    });
+    window._s2SyncChecks();
+};
+
+window._s2SyncChecks = function() {
+    const boxes = Array.from(document.querySelectorAll('#pipeline-processing .s2-check'));
+    const visibleIds = new Set(boxes.map(function(cb) { return cb.dataset.oid; }));
+    // Selection only ever covers rows you can see — search/filter changes drop hidden ones
+    Array.from(window._s2Selected).forEach(function(id) { if (!visibleIds.has(id)) window._s2Selected.delete(id); });
+    let n = 0;
+    boxes.forEach(function(cb) { cb.checked = window._s2Selected.has(cb.dataset.oid); if (cb.checked) n++; });
+    const all = document.getElementById('s2-check-all');
+    if (all) { all.checked = boxes.length > 0 && n === boxes.length; all.indeterminate = n > 0 && n < boxes.length; }
+    const cnt = document.getElementById('s2-selected-count');
+    if (cnt) cnt.innerText = window._s2Selected.size;
+    const bar = document.getElementById('s2-bulk-actions');
+    if (bar) bar.style.opacity = window._s2Selected.size ? '1' : '0.5';
+};
+
+window._s2BatchStatus = async function(ids, status) {
+    const now = new Date().toISOString();
+    for (let i = 0; i < ids.length; i += 400) {
+        const b = db.batch();
+        ids.slice(i, i + 400).forEach(function(id) {
+            b.update(db.collection('orders').doc(id), { status: status, lastUpdate: now });
+        });
+        await b.commit();
+    }
+};
+
+window.s2BulkStatus = async function() {
+    const sel = document.getElementById('s2-bulk-status');
+    const status = sel ? sel.value : '';
+    const picked = Array.from(window._s2Selected);
+    if (!picked.length) return alert('Tick at least one order first.');
+    if (!status) return alert('Choose the status to apply.');
+
+    // On Hold and Return Initiated have their own flows (resume / return) — never bulk-move them
+    const ids = picked.filter(function(id) { return ordersCache[id] && window._S2_BULK_OK.indexOf(ordersCache[id].status) > -1; });
+    const skipped = picked.filter(function(id) { return ids.indexOf(id) === -1; });
+    if (!ids.length) return alert('None of the selected orders can be bulk-updated.\n\nOn Hold and Return Initiated orders must be handled one at a time.');
+
+    const label = function(id) { return (ordersCache[id] && ordersCache[id].orderId) || id; };
+    const list = ids.map(label);
+    let msg = 'Change ' + ids.length + ' order(s) to "' + status + '"?\n\n' + list.slice(0, 20).join(', ') + (list.length > 20 ? ' \u2026' : '');
+    if (skipped.length) msg += '\n\nSkipped (On Hold / Return Initiated): ' + skipped.map(label).join(', ');
+    if (!confirm(msg)) return;
+
+    const btn = document.getElementById('s2-bulk-apply');
+    if (btn) { btn.disabled = true; btn.innerText = 'Updating\u2026'; }
+    try {
+        await window._s2BatchStatus(ids, status);
+        await window.logAdminAction('Bulk updated ' + ids.length + ' order(s) to ' + status + ': ' + list.join(', '));
+        window._s2Selected.clear();
+        if (sel) sel.value = '';
+        loadOrders();
+        alert(ids.length + ' order(s) updated to ' + status + '.');
+    } catch (e) {
+        console.error('Bulk status failed:', e);
+        alert('Bulk update failed: ' + e.message + '\n\nSome orders may have updated — refresh and check.');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerText = 'Apply'; }
+    }
+};
+
+window._pathaoPhone = function(p) {
+    let d = String(p || '').replace(/\D/g, '');
+    if (d.length === 13 && d.indexOf('88') === 0) d = d.slice(2);
+    if (d.length === 10 && d.charAt(0) === '1') d = '0' + d;
+    return d;
+};
+
+window._csvCell = function(v) {
+    const s = String(v === undefined || v === null ? '' : v).replace(/\r?\n/g, ' ').trim();
+    return /[",]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+};
+
+window.s2DownloadPathaoCsv = async function() {
+    let pool;
+    if (window._s2Selected.size) {
+        pool = Array.from(window._s2Selected).map(function(id) { return ordersCache[id]; }).filter(Boolean);
+    } else {
+        pool = (window.ordersArrayCache || []).filter(function(o) { return o.status === 'Packed'; });
+    }
+
+    const notPacked = pool.filter(function(o) { return o.status !== 'Packed'; });
+    const otherCourier = pool.filter(function(o) {
+        return o.status === 'Packed' && o.logisticsPartner && !/pathao/i.test(o.logisticsPartner);
+    });
+    const list = pool.filter(function(o) {
+        return o.status === 'Packed' && (!o.logisticsPartner || /pathao/i.test(o.logisticsPartner));
+    });
+
+    if (!list.length) {
+        return alert('No Packed Pathao orders to export.' +
+            (otherCourier.length ? '\n\n' + otherCourier.length + ' Packed order(s) are assigned to another courier.' : ''));
+    }
+
+    const header = ['ItemType','StoreName','MerchantOrderId','RecipientName(*)','RecipientPhone(*)','RecipientAddress(*)',
+                    'RecipientCity(*)','RecipientZone(*)','RecipientArea','AmountToCollect(*)','ItemQuantity','ItemWeight',
+                    'ItemDesc','SpecialInstruction'];
+    const warnings = [];
+
+    const rows = list.map(function(o) {
+        const sa = o.shippingAddress || o.address || {};
+        const saObj = (typeof sa === 'object') ? sa : {};
+        const name  = o.verifiedName || o.userName || saObj.name || '';
+        const phone = window._pathaoPhone(o.verifiedPhone || o.userPhone || o.phone || saObj.phone);
+        const addr  = window.getAddressDisplay(sa);
+        const city  = saObj.city || saObj.district || 'Dhaka';
+        const zone  = saObj.thana || saObj.zone || saObj.area || '';
+        const qty   = (o.items || []).reduce(function(a, i) { return a + (Number(i.quantity) || 1); }, 0) || 1;
+        let weight  = Number(o.packageWeightKg) || 0.5;
+        weight      = Math.max(0.5, Math.round(weight * 100) / 100);
+        const collect = Math.max(0, Math.round((Number(o.totalAmount) || 0) - (Number(o.advancePaid) || 0)));
+        let desc = (o.items || []).map(function(i) { return (Number(i.quantity) || 1) + 'x ' + (i.name || 'Bag'); }).join('; ');
+        if ((Number(o.shoppingBagQty) || 0) > 0) desc += '; ' + o.shoppingBagQty + 'x Shopping Bag';
+
+        const oid = o.orderId || o.id;
+        if (phone.length !== 11) warnings.push(oid + ': phone "' + phone + '" is not 11 digits');
+        if (!zone)               warnings.push(oid + ': no zone/thana \u2014 pick it in Pathao after upload');
+        if (!addr || addr === 'N/A') warnings.push(oid + ': address missing');
+
+        return ['parcel', '', oid, name, phone, addr, city, zone, '', collect, qty, weight, desc, o.deliveryInstructions || '']
+            .map(window._csvCell).join(',');
+    });
+
+    const csv = header.join(',') + '\n' + rows.join('\n') + '\n';
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pathao_bulk_' + new Date().toISOString().slice(0, 10) + '_' + list.length + 'orders.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function() { URL.revokeObjectURL(url); }, 2000);
+
+    try { await window.logAdminAction('Exported Pathao CSV: ' + list.length + ' order(s) \u2014 ' + list.map(function(o) { return o.orderId || o.id; }).join(', ')); } catch(e) {}
+
+    let msg = 'Downloaded ' + list.length + ' order(s) for Pathao.';
+    if (notPacked.length)    msg += '\n\nSkipped ' + notPacked.length + ' selected order(s) that are not Packed.';
+    if (otherCourier.length) msg += '\nSkipped ' + otherCourier.length + ' assigned to another courier.';
+    if (warnings.length)     msg += '\n\nCheck these in Pathao before submitting:\n\u2022 ' + warnings.slice(0, 12).join('\n\u2022 ') + (warnings.length > 12 ? '\n\u2022 \u2026' : '');
+    msg += '\n\nOnce Pathao has accepted the upload, mark these ' + list.length + ' order(s) as Handed over now?';
+
+    if (confirm(msg)) {
+        try {
+            const ids = list.map(function(o) { return o.id; });
+            await window._s2BatchStatus(ids, 'Handed over');
+            await window.logAdminAction('Bulk handed over ' + ids.length + ' order(s) after Pathao export');
+            window._s2Selected.clear();
+            loadOrders();
+        } catch (e) {
+            alert('Could not mark as Handed over: ' + e.message);
+        }
+    }
+};
 
 window.quickUpdate = async function(id, status) {
     if (!confirm('Update status to "' + status + '"?')) return;
