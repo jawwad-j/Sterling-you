@@ -325,7 +325,7 @@ if (tabId === 'contact-settings') {
 </div>
 
 <!-- Mobile Bottom Nav (Quick Access) -->
-<div id="mobile-bottom-nav" class="hidden fixed bottom-0 left-0 right-0 z-50 bg-[#1F2937] border-t border-gray-700 flex items-center justify-around py-2 px-2">
+<div id="mobile-bottom-nav" class="hidden fixed bottom-0 left-0 right-0 z-50 bg-[#1F2937] border-t border-gray-700 flex items-center justify-between py-2 px-1 [&>button]:!px-1.5">
     <button onclick="mobileSwitchTab('dashboard')" class="mobile-bottom-btn flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition text-gray-400 hover:text-white">
         <span class="text-lg leading-none">📊</span>
         <span class="text-[8px] font-bold uppercase tracking-widest">Dash</span>
@@ -333,6 +333,10 @@ if (tabId === 'contact-settings') {
     <button onclick="mobileSwitchTab('orders')" class="mobile-bottom-btn flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition text-gray-400 hover:text-white">
         <span class="text-lg leading-none">📦</span>
         <span class="text-[8px] font-bold uppercase tracking-widest">Orders</span>
+    </button>
+    <button onclick="mobileSwitchTab('preorders')" class="mobile-bottom-btn flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition text-gray-400 hover:text-white">
+        <span class="text-lg leading-none">⏳</span>
+        <span class="text-[8px] font-bold uppercase tracking-widest">Pre-ord</span>
     </button>
     <button onclick="mobileSwitchTab('crm')" class="mobile-bottom-btn flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition text-gray-400 hover:text-white">
         <span class="text-lg leading-none">👥</span>
@@ -631,6 +635,21 @@ if (tabId === 'contact-settings') {
     </div>
 
     <div class="bg-white p-6 rounded-2xl shadow-sm mb-6">
+        <h3 class="font-bold text-gray-400 text-xs uppercase mb-1">Business Health</h3>
+        <p class="text-[10px] text-gray-400 mb-4">Calculated on the selected period</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="bg-gray-50 rounded-xl p-3"><p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">Return Rate</p><p id="bm-return-rate" class="text-lg font-bold mt-1">—</p><p id="bm-return-rate-sub" class="text-[9px] text-gray-400"></p></div>
+            <div class="bg-gray-50 rounded-xl p-3"><p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">Net / Bag</p><p id="bm-net-per-bag" class="text-lg font-bold mt-1">—</p><p id="bm-net-per-bag-sub" class="text-[9px] text-gray-400"></p></div>
+            <div class="bg-gray-50 rounded-xl p-3"><p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">Repeat Buyers</p><p id="bm-repeat" class="text-lg font-bold mt-1">—</p><p id="bm-repeat-sub" class="text-[9px] text-gray-400"></p></div>
+            <div class="bg-gray-50 rounded-xl p-3"><p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">Avg Delivery</p><p id="bm-delivery-days" class="text-lg font-bold mt-1">—</p><p id="bm-delivery-days-sub" class="text-[9px] text-gray-400"></p></div>
+            <div class="bg-gray-50 rounded-xl p-3"><p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">Discounts Given</p><p id="bm-discount" class="text-lg font-bold mt-1">—</p><p id="bm-discount-sub" class="text-[9px] text-gray-400"></p></div>
+            <div class="bg-gray-50 rounded-xl p-3"><p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">Bag Attach Rate</p><p id="bm-bag-attach" class="text-lg font-bold mt-1">—</p><p id="bm-bag-attach-sub" class="text-[9px] text-gray-400"></p></div>
+            <div class="bg-gray-50 rounded-xl p-3"><p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">Units / Order</p><p id="bm-units-order" class="text-lg font-bold mt-1">—</p><p id="bm-units-order-sub" class="text-[9px] text-gray-400"></p></div>
+            <div class="bg-gray-50 rounded-xl p-3"><p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">Cash in Transit</p><p id="bm-transit-cash" class="text-lg font-bold mt-1">—</p><p id="bm-transit-cash-sub" class="text-[9px] text-gray-400"></p></div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm mb-6">
         <h3 class="font-bold text-gray-400 text-xs uppercase mb-1">Orders Received Per Day</h3>
         <p class="text-[10px] text-gray-400 mb-4">Direct orders and pre-orders, counted on the day they came in</p>
         <div class="h-64"><canvas id="chart-orders-daily"></canvas></div>
@@ -638,8 +657,9 @@ if (tabId === 'contact-settings') {
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div class="bg-white p-6 rounded-2xl shadow-sm">
-            <h3 class="font-bold text-gray-400 text-xs uppercase mb-4">Top 5 Products by Units Sold</h3>
-            <div class="h-56"><canvas id="chart-top-products"></canvas></div>
+            <h3 class="font-bold text-gray-400 text-xs uppercase mb-1">Top 10 Products by Units Sold</h3>
+            <p class="text-[10px] text-gray-400 mb-3">Delivered orders only, within the selected period</p>
+            <div id="top-products-list" class="max-h-[22rem] overflow-y-auto pr-1 space-y-2"></div>
         </div>
         <div class="bg-white p-6 rounded-2xl shadow-sm">
             <h3 class="font-bold text-gray-400 text-xs uppercase mb-4">Logistics Partner Performance</h3>
@@ -5623,15 +5643,21 @@ window.initCharts = async function() {
     // ── KPI CALCULATIONS ──
     const revenue = delivered.reduce((s, o) => s + (Number(o.totalAmount) || 0), 0);
 
-    let cogs = 0;
+    let cogs = 0, _bagCostTotal = 0, _cogsEstimated = 0;
+    const _BAGCOST = (window.SHOPPING_BAG && Number(window.SHOPPING_BAG.cost)) || 217;
     delivered.forEach(o => {
         (o.items || []).forEach(item => {
-            const purchasePrice = Number(item.purchasePrice) || Number(item.price) * 0.6 || 0;
+            const hasReal       = Number(item.purchasePrice) > 0;
+            const purchasePrice = hasReal ? Number(item.purchasePrice) : (Number(item.price) * 0.6 || 0);
             const supplierShip  = Number(item.supplierShippingCost) || 0;
             const qty           = Number(item.quantity) || 1;
+            if (!hasReal) _cogsEstimated += qty;
             cogs += (purchasePrice + supplierShip) * qty;
         });
+        _bagCostTotal += (Number(o.shoppingBagQty) || 0) * _BAGCOST;
     });
+    cogs += _bagCostTotal;
+    window._dashCogsEstimatedUnits = _cogsEstimated;
 
     const grossProfit = revenue - cogs;
     const grossMargin = revenue > 0 ? Math.round((grossProfit / revenue) * 100) : 0;
@@ -5689,7 +5715,7 @@ window.initCharts = async function() {
     document.getElementById('kpi-revenue').innerText       = '৳' + fmt(revenue);
     document.getElementById('kpi-revenue-count').innerText = currCount + ' orders';
     const _bagsSold = delivered.reduce(function(s, o) {
-        return s + (o.items || []).reduce(function(a, i) { return a + (Number(i.quantity) || 0); }, 0);
+        return s + (o.items || []).reduce(function(a, i) { return a + (Number(i.quantity) || 1); }, 0);
     }, 0);
     const _bagsEl = document.getElementById('kpi-bags-count');
     if (_bagsEl) _bagsEl.innerText = _bagsSold + ' bag' + (_bagsSold === 1 ? '' : 's') + ' sold';
@@ -5712,6 +5738,60 @@ window.initCharts = async function() {
     document.getElementById('qs-aov').innerText            = '৳' + fmt(aov);
     document.getElementById('qs-new-customers').innerText  = newCustomers;
     document.getElementById('qs-pending').innerText        = pending.length;
+
+    // ── BUSINESS HEALTH METRICS ──
+    (function() {
+        function setM(id, val, sub) {
+            const a = document.getElementById(id); if (a) a.innerText = val;
+            const b = document.getElementById(id + '-sub'); if (b) b.innerText = sub || '';
+        }
+        const _settled = currCount + returned.length;
+        setM('bm-return-rate',
+            _settled ? Math.round((returned.length / _settled) * 100) + '%' : '—',
+            _settled ? returned.length + ' of ' + _settled + ' settled' : 'no settled orders');
+
+        setM('bm-net-per-bag',
+            _bagsSold ? '\u09F3' + fmt(Math.round(netProfit / _bagsSold)) : '—',
+            _bagsSold ? 'across ' + _bagsSold + ' bags' : '');
+
+        const _phoneCount = {};
+        delivered.forEach(function(o) {
+            const p = String(o.verifiedPhone || o.userPhone || '').replace(/\D/g, '');
+            if (p) _phoneCount[p] = (_phoneCount[p] || 0) + 1;
+        });
+        const _buyers = Object.keys(_phoneCount);
+        const _repeat = _buyers.filter(function(p) { return _phoneCount[p] > 1; }).length;
+        setM('bm-repeat',
+            _buyers.length ? Math.round((_repeat / _buyers.length) * 100) + '%' : '—',
+            _buyers.length ? _repeat + ' of ' + _buyers.length + ' customers' : '');
+
+        let _dSum = 0, _dN = 0;
+        delivered.forEach(function(o) {
+            const start = window.getOrderTime(o);
+            const end = o.lastUpdate ? new Date(o.lastUpdate).getTime() : 0;
+            if (start && end && end > start) { _dSum += (end - start) / 86400000; _dN++; }
+        });
+        setM('bm-delivery-days',
+            _dN ? (_dSum / _dN).toFixed(1) + ' d' : '—',
+            _dN ? 'from ' + _dN + ' orders' : 'no timestamps');
+
+        const _discTotal = delivered.reduce(function(s, o) { return s + (Number(o.discountAmount) || 0); }, 0);
+        const _discOrders = delivered.filter(function(o) { return (Number(o.discountAmount) || 0) > 0; }).length;
+        setM('bm-discount', '\u09F3' + fmt(_discTotal),
+            revenue ? ((_discTotal / revenue) * 100).toFixed(1) + '% of revenue \u00B7 ' + _discOrders + ' orders' : _discOrders + ' orders');
+
+        const _withBag = delivered.filter(function(o) { return (Number(o.shoppingBagQty) || 0) > 0; }).length;
+        setM('bm-bag-attach',
+            currCount ? Math.round((_withBag / currCount) * 100) + '%' : '—',
+            currCount ? _withBag + ' of ' + currCount + ' orders' : '');
+
+        setM('bm-units-order',
+            currCount ? (_bagsSold / currCount).toFixed(2) : '—',
+            'bags per delivered order');
+
+        setM('bm-transit-cash', '\u09F3' + fmt(transitTotal),
+            inTransit.length + ' handed over');
+    })();
 
     // ── VISITOR STATS ──
     window.loadVisitorStats(from, to);
@@ -5987,37 +6067,46 @@ if (ctx1) {
         });
     }
 
-    // ── CHART 3: Top 5 Products ──
-    const productMap = {};
-    delivered.forEach(o => {
-        (o.items || []).forEach(item => {
-            const name = item.name || 'Unknown';
-            productMap[name] = (productMap[name] || 0) + (Number(item.quantity) || 1);
+    // ── TOP 10 PRODUCTS (list with pictures) ──
+    if (dashCharts.topProducts) { try { dashCharts.topProducts.destroy(); } catch(e) {} dashCharts.topProducts = null; }
+    const _prodMap = {};
+    delivered.forEach(function(o) {
+        (o.items || []).forEach(function(item) {
+            const key = String(item.id || item.productId || item.name || 'Unknown');
+            if (!_prodMap[key]) _prodMap[key] = { name: item.name || 'Unknown', image: item.image || '', units: 0, revenue: 0 };
+            if (!_prodMap[key].image && item.image) _prodMap[key].image = item.image;
+            const q = Number(item.quantity) || 1;
+            _prodMap[key].units   += q;
+            _prodMap[key].revenue += (Number(item.price) || 0) * q;
         });
     });
-    const sortedProducts = Object.entries(productMap).sort((a,b) => b[1]-a[1]).slice(0,5);
-    const productLabels  = sortedProducts.map(p => p[0].length > 20 ? p[0].substring(0,18)+'...' : p[0]);
-    const productData    = sortedProducts.map(p => p[1]);
-
-    if (dashCharts.topProducts) dashCharts.topProducts.destroy();
-    const ctx3 = document.getElementById('chart-top-products');
-    if (ctx3) {
-        dashCharts.topProducts = new Chart(ctx3, {
-            type: 'bar',
-            data: {
-                labels: productLabels,
-                datasets: [{ label: 'Units Sold', data: productData, backgroundColor: '#B36A5E', borderRadius: 6 }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { beginAtZero: true, ticks: { font: { size: 9 }, stepSize: 1 } },
-                    y: { ticks: { font: { size: 9 } } }
-                }
-            }
-        });
+    const _topProds = Object.keys(_prodMap).map(function(k) { return _prodMap[k]; })
+        .sort(function(a, b) { return b.units - a.units; }).slice(0, 10);
+    const _tpEl = document.getElementById('top-products-list');
+    if (_tpEl) {
+        if (!_topProds.length) {
+            _tpEl.innerHTML = '<p class="text-xs text-gray-400 py-6 text-center">No delivered orders in this period.</p>';
+        } else {
+            const _maxUnits = _topProds[0].units || 1;
+            _tpEl.innerHTML = _topProds.map(function(p, i) {
+                const pct = Math.max(4, Math.round((p.units / _maxUnits) * 100));
+                const img = p.image
+                    ? '<img src="' + p.image + '" alt="" class="w-10 h-10 rounded-lg object-cover bg-gray-100 flex-shrink-0">'
+                    : '<div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 text-sm flex-shrink-0">👜</div>';
+                return '<div class="flex items-center gap-3">' +
+                    '<span class="text-[10px] font-bold text-gray-300 w-4 text-right flex-shrink-0">' + (i + 1) + '</span>' +
+                    img +
+                    '<div class="min-w-0 flex-1">' +
+                        '<p class="text-xs font-semibold text-gray-700 truncate" title="' + String(p.name).replace(/"/g, '&quot;') + '">' + p.name + '</p>' +
+                        '<div class="h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden"><div class="h-full bg-[#B36A5E] rounded-full" style="width:' + pct + '%"></div></div>' +
+                    '</div>' +
+                    '<div class="text-right flex-shrink-0">' +
+                        '<p class="text-xs font-bold text-gray-800">' + p.units + '</p>' +
+                        '<p class="text-[9px] text-gray-400">\u09F3' + fmt(Math.round(p.revenue)) + '</p>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
     }
 
     // ── CHART 4: Logistics Partner Performance ──
