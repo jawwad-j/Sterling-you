@@ -102,6 +102,9 @@ match /site_analytics/{docId} {
 match /site_visitors/{docId} {
   allow read, write: if true;
 }
+    match /expenses/{docId} {
+      allow read, write: if isAdmin();
+    }
     match /newsletter_subscribers/{subscriber} {
       allow create: if true;
       allow read, update, delete: if isAdmin();

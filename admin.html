@@ -252,6 +252,7 @@
             if (tabId === 'team' && typeof window.loadTeamMembers === 'function') window.loadTeamMembers();
             
             if (tabId === 'banners' && typeof window.loadBanners === 'function') window.loadBanners();
+if (tabId === 'accounts' && typeof window.loadAccounts === 'function') window.loadAccounts();
             if (tabId === 'support' && typeof window.loadSupportLinksAdmin === 'function') { window.loadSupportLinksAdmin(); window.loadInvoiceSettings(); }
 if (tabId === 'contact-settings') { 
                 if(typeof window.loadContactInfoAdmin === 'function') window.loadContactInfoAdmin(); 
@@ -309,7 +310,8 @@ if (tabId === 'contact-settings') {
             <button onclick="mobileSwitchTab('preorders')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">⏳ Pre-orders</button>
             <button onclick="mobileSwitchTab('crm')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">👥 Customer CRM</button>
             <button onclick="mobileSwitchTab('inventory')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">🛠 Inventory</button>
-            <button onclick="mobileSwitchTab('logistics-settings')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">🚚 Logistics</button>
+            <button onclick="mobileSwitchTab('accounts')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">💰 Accounts</button>
+<button onclick="mobileSwitchTab('logistics-settings')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">🚚 Logistics</button>
             <button onclick="mobileSwitchTab('queries')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">💬 Queries</button>
             <button onclick="mobileSwitchTab('banners')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">🖼 Banners</button>
             <button onclick="mobileSwitchTab('support')" class="mobile-drawer-item w-full text-left px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700 text-sm font-medium flex items-center gap-3 transition">📜 Policy</button>
@@ -412,6 +414,7 @@ if (tabId === 'contact-settings') {
                 <button id="nav-preorders" onclick="switchTab('preorders')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">⏳ Pre-orders</button>
                 <button id="nav-crm" onclick="switchTab('crm')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">👥 Customer CRM</button>
                 <button id="nav-inventory" onclick="switchTab('inventory')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🛠 Inventory</button>
+                <button id="nav-accounts" onclick="switchTab('accounts')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">💰 Accounts</button>
                 <button id="nav-logistics" onclick="switchTab('logistics-settings')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🚚 Logistics</button>
                 <button id="nav-support" onclick="switchTab('support')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">📜 Policy Manager</button>
                 <button id="nav-banners" onclick="switchTab('banners')" class="sidebar-item w-full text-left p-3 flex items-center gap-3 hover:bg-gray-700 rounded-xl transition">🖼 Category Banners</button>
@@ -1052,7 +1055,95 @@ if (tabId === 'contact-settings') {
                 </div>
             </section>
 
-            <section id="logistics-settings" class="tab-content">
+            <section id="accounts" class="tab-content">
+    <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+        <h2 class="text-xl font-bold text-[#322C2B]">💰 Accounts &amp; Profit</h2>
+        <div class="flex flex-wrap items-center gap-2">
+            <select id="acc-year" onchange="accRenderAll()" class="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white outline-none focus:border-[#B36A5E]"></select>
+            <button id="acc-tab-pl" onclick="accSwitchView('pl')" class="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition bg-[#322C2B] text-white">P&amp;L Report</button>
+            <button id="acc-tab-expenses" onclick="accSwitchView('expenses')" class="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition bg-white text-gray-500 hover:bg-gray-100">Expenses</button>
+        </div>
+    </div>
+
+    <div id="acc-est-warn" style="display:none" class="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs font-medium rounded-xl px-4 py-3"></div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
+        <div class="bg-white p-4 rounded-2xl shadow-sm"><p class="text-[9px] font-bold uppercase text-gray-400 tracking-wider">Revenue</p><p id="acc-k-rev" class="text-2xl font-bold mt-1">—</p><p id="acc-k-rev-sub" class="text-[10px] text-gray-400"></p></div>
+        <div class="bg-white p-4 rounded-2xl shadow-sm"><p class="text-[9px] font-bold uppercase text-gray-400 tracking-wider">Gross Profit</p><p id="acc-k-gross" class="text-2xl font-bold mt-1">—</p><p id="acc-k-gross-sub" class="text-[10px] text-gray-400"></p></div>
+        <div class="bg-white p-4 rounded-2xl shadow-sm"><p class="text-[9px] font-bold uppercase text-gray-400 tracking-wider">Net Profit</p><p id="acc-k-net" class="text-2xl font-bold mt-1">—</p><p id="acc-k-net-sub" class="text-[10px] text-gray-400"></p></div>
+        <div class="bg-white p-4 rounded-2xl shadow-sm"><p class="text-[9px] font-bold uppercase text-gray-400 tracking-wider">Meta Ads</p><p id="acc-k-ads" class="text-2xl font-bold mt-1">—</p><p id="acc-k-ads-sub" class="text-[10px] text-gray-400"></p></div>
+        <div class="bg-white p-4 rounded-2xl shadow-sm"><p class="text-[9px] font-bold uppercase text-gray-400 tracking-wider">Running Expenses</p><p id="acc-k-opex" class="text-2xl font-bold mt-1">—</p><p id="acc-k-opex-sub" class="text-[10px] text-gray-400"></p></div>
+        <div class="bg-white p-4 rounded-2xl shadow-sm"><p class="text-[9px] font-bold uppercase text-gray-400 tracking-wider">Stock Bought</p><p id="acc-k-inv" class="text-2xl font-bold mt-1">—</p><p id="acc-k-inv-sub" class="text-[10px] text-gray-400"></p></div>
+    </div>
+
+    <!-- P&L VIEW -->
+    <div id="acc-view-pl">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm lg:col-span-2">
+                <h3 class="font-bold text-gray-400 text-xs uppercase mb-4">Revenue, Costs &amp; Net Profit by Month</h3>
+                <div class="h-64"><canvas id="acc-chart-trend"></canvas></div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                <h3 class="font-bold text-gray-400 text-xs uppercase mb-4">Where the Money Goes</h3>
+                <div class="h-64"><canvas id="acc-chart-mix"></canvas></div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="font-bold text-xs uppercase text-gray-500">Month-wise Profit &amp; Loss</h3>
+                <button onclick="accExportPL()" class="bg-[#322C2B] text-white px-4 py-2 rounded-lg font-bold uppercase text-[9px] hover:bg-black transition">⬇ Export CSV</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead id="acc-pl-head" class="bg-gray-50 text-[10px] font-bold uppercase text-gray-400"></thead>
+                    <tbody id="acc-pl-body"></tbody>
+                </table>
+            </div>
+            <p class="p-4 text-[10px] text-gray-400">Months follow the order date, same as the Dashboard. Courier, COD and return costs come from your orders automatically. Stock purchases are shown as a memo line and are not deducted again (their cost is already counted per bag sold).</p>
+        </div>
+    </div>
+
+    <!-- EXPENSES VIEW -->
+    <div id="acc-view-expenses" style="display:none">
+        <div id="acc-form-card" class="bg-white p-6 rounded-2xl shadow-sm mb-6">
+            <h3 class="font-bold text-gray-400 text-xs uppercase mb-4">Add Expense</h3>
+            <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+                <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Date</label><input type="date" id="acc-date" class="w-full border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></div>
+                <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Category</label><select id="acc-cat" class="w-full border border-gray-200 rounded-lg p-2 text-xs bg-white outline-none focus:border-[#B36A5E]"></select></div>
+                <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Type</label><select id="acc-sub" class="w-full border border-gray-200 rounded-lg p-2 text-xs bg-white outline-none focus:border-[#B36A5E]"></select></div>
+                <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Currency</label><select id="acc-currency" onchange="accToggleCurrency()" class="w-full border border-gray-200 rounded-lg p-2 text-xs bg-white outline-none focus:border-[#B36A5E]"><option value="BDT">BDT (৳)</option><option value="USD">USD ($)</option></select></div>
+                <div><label id="acc-amount-label" class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Amount (৳ BDT)</label><input type="number" id="acc-amount" min="0" step="0.01" oninput="accShowConverted()" class="w-full border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></div>
+                <div id="acc-rate-wrap" style="display:none"><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">৳ per $1 <span id="acc-converted" class="text-[#B36A5E] normal-case"></span></label><input type="number" id="acc-rate" min="0" step="0.01" oninput="accShowConverted()" class="w-full border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-6 gap-3 items-end mt-3">
+                <div class="lg:col-span-4"><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Vendor / note (optional)</label><input type="text" id="acc-note" placeholder="e.g. Meta invoice Oct, Daraz bubble wrap 2 rolls" class="w-full border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></div>
+                <div class="lg:col-span-2 flex gap-2">
+                    <button id="acc-save-btn" onclick="accSaveExpense()" class="flex-1 bg-[#322C2B] text-white px-4 py-2.5 rounded-lg font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition">Add Expense</button>
+                    <button id="acc-cancel-btn" onclick="accResetForm()" style="display:none" class="bg-gray-200 text-gray-600 px-4 py-2.5 rounded-lg font-bold uppercase text-[10px] hover:bg-gray-300 transition">Cancel</button>
+                </div>
+            </div>
+            <p id="acc-cat-note" class="text-[10px] text-gray-400 mt-3"></p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div class="flex flex-wrap justify-between items-center gap-3 p-4 border-b">
+                <h3 class="font-bold text-xs uppercase text-gray-500">All Expenses <span id="acc-exp-total" class="ml-2 text-[#B36A5E] normal-case"></span></h3>
+                <div class="flex gap-2">
+                    <select id="acc-f-month" onchange="accRenderExpenseList()" class="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white outline-none"></select>
+                    <select id="acc-f-cat" onchange="accRenderExpenseList()" class="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white outline-none"></select>
+                </div>
+            </div>
+            <div class="overflow-x-auto max-h-[640px] overflow-y-auto">
+                <table class="w-full text-xs text-left">
+                    <thead class="bg-gray-50 text-[10px] font-bold uppercase text-gray-400 sticky top-0"><tr><th class="p-3">Date</th><th class="p-3">Category</th><th class="p-3">Note</th><th class="p-3 text-right">Amount</th><th class="p-3"></th></tr></thead>
+                    <tbody id="acc-exp-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="logistics-settings" class="tab-content">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold text-[#322C2B]">Logistics & Shipping Rules</h2>
                 </div>
@@ -8364,7 +8455,473 @@ window.adminResetPassword = async function(targetStaffUid) {
                 alert("Direct update failed: " + e.message);
             }
         };
-        console.log("✅ Admin Panel Loaded Successfully (Auth Secured)");
+        // ══════════════════════════════════════════════════════════════
+// ACCOUNTS: expenses, month-wise P&L, reports
+// ══════════════════════════════════════════════════════════════
+window.ACC_CATS = [
+    { key: 'product',   label: 'Product Purchase',     group: 'inventory', subs: ['Bag', 'Scarf', 'Aldo Shopping Bag', 'Aldo Box', 'Other'] },
+    { key: 'inbound',   label: 'Inbound Shipping',     group: 'inventory', subs: ['Freight from China', 'Customs / Duty', 'Local pickup', 'Other'] },
+    { key: 'packaging', label: 'Packaging',            group: 'opex',      subs: ['Bubble wrap', 'Scotch tape', 'Courier poly', 'Box', 'Stationery', 'Other'] },
+    { key: 'ads',       label: 'Facebook / Meta Ads',  group: 'opex',      subs: ['Sales', 'Messages', 'Awareness', 'Boost', 'Other'] },
+    { key: 'delivery',  label: 'Delivery (extra / adjustment)', group: 'opex', subs: ['Pathao extra charge', 'Return fee not on order', 'Packing / pickup fee', 'Other'] },
+    { key: 'other',     label: 'Other Expenses',       group: 'opex',      subs: ['Rent', 'Salary', 'Software / Hosting', 'Photography', 'Marketing (non-ad)', 'Other'] }
+];
+window._accCat = function(key) { return window.ACC_CATS.filter(function(c) { return c.key === key; })[0] || window.ACC_CATS[window.ACC_CATS.length - 1]; };
+window._accExpenses = [];
+window._accEditId = null;
+window._accCharts = {};
+window._accMonthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+window._accEsc = function(s) {
+    return String(s === undefined || s === null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+};
+window._accMonthKey = function(t) {
+    if (!t) return '';
+    const d = new Date(t);
+    if (isNaN(d.getTime())) return '';
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+};
+window._accMonthLabel = function(k) {
+    const p = String(k).split('-');
+    return window._accMonthNames[Number(p[1]) - 1] + ' ' + String(p[0]).slice(2);
+};
+window._accMoney = function(n) {
+    n = Math.round(Number(n) || 0);
+    const s = Math.abs(n).toLocaleString('en-BD');
+    return (n < 0 ? '-' : '') + '৳' + s;
+};
+
+// Pure calculation: orders + expenses  ->  { monthKey: {...line items...} }
+window._accCompute = function(orders, expenses, opts) {
+    opts = opts || {};
+    const bagCost = Number(opts.bagCost) || 217;
+    const delivered = opts.deliveredStatuses || ['Delivered', 'Partially Delivered'];
+    const getTime = opts.getOrderTime || function(o) {
+        if (!o.orderDate) return 0;
+        return o.orderDate.toDate ? o.orderDate.toDate().getTime() : new Date(o.orderDate).getTime();
+    };
+    const M = {};
+    function m(k) {
+        if (!M[k]) M[k] = {
+            revenue: 0, orders: 0, bags: 0, cogs: 0, cogsEstUnits: 0, courier: 0, cod: 0, returnCost: 0,
+            forfeited: 0, overpaid: 0, returned: 0,
+            packaging: 0, ads: 0, delivery: 0, other: 0, product: 0, inbound: 0
+        };
+        return M[k];
+    }
+    (orders || []).forEach(function(o) {
+        const k = window._accMonthKey(getTime(o));
+        if (!k) return;
+        const r = m(k);
+        const st = o.status;
+        if (delivered.indexOf(st) > -1) {
+            r.revenue += Number(o.totalAmount) || 0;
+            r.orders += 1;
+            (o.items || []).forEach(function(it) {
+                const q = Number(it.quantity) || 1;
+                const real = Number(it.purchasePrice) > 0;
+                const buy = real ? Number(it.purchasePrice) : (Number(it.price) * 0.6 || 0);
+                if (!real) r.cogsEstUnits += q;
+                r.bags += q;
+                r.cogs += (buy + (Number(it.supplierShippingCost) || 0)) * q;
+            });
+            r.cogs += (Number(o.shoppingBagQty) || 0) * bagCost;
+            r.courier += Number(o.courierCost) || 0;
+            r.cod += Number(o.codCharge) || 0;
+            r.overpaid += Number(o.overpaidAmount) || 0;
+        }
+        if (st === 'Returned') {
+            r.returned += 1;
+            r.returnCost += (Number(o.returnShippingFee) || 0) + (Number(o.returnCodCharge) || 0);
+        }
+        if (o.advanceForfeited) r.forfeited += Number(o.forfeitedAmount) || Number(o.advancePaid) || 0;
+    });
+    (expenses || []).forEach(function(e) {
+        const k = String(e.date || '').slice(0, 7);
+        if (!/^\d{4}-\d{2}$/.test(k)) return;
+        const r = m(k);
+        const key = window._accCat(e.category).key;
+        r[key] += Number(e.amount) || 0;
+    });
+    Object.keys(M).forEach(function(k) {
+        const r = M[k];
+        r.gross       = r.revenue - r.cogs;
+        r.afterDeliv  = r.gross - r.courier - r.cod - r.returnCost + r.forfeited + r.overpaid;
+        r.opex        = r.packaging + r.ads + r.delivery + r.other;
+        r.net         = r.afterDeliv - r.opex;
+    });
+    return M;
+};
+
+window._accSum = function(M, keys) {
+    const T = {};
+    keys.forEach(function(k) {
+        const r = M[k]; if (!r) return;
+        Object.keys(r).forEach(function(f) { T[f] = (T[f] || 0) + r[f]; });
+    });
+    return T;
+};
+
+// ── LOAD ──
+window.loadAccounts = async function() {
+    const body = document.getElementById('acc-pl-body');
+    if (body) body.innerHTML = '<tr><td class="p-6 text-center text-gray-400">Loading…<\/td><\/tr>';
+    try {
+        if (!window.ordersArrayCache || !window.ordersArrayCache.length) await window.loadOrders();
+        const snap = await db.collection('expenses').get();
+        window._accExpenses = snap.docs.map(function(d) { const x = d.data(); x.id = d.id; return x; });
+        window._accExpenses.sort(function(a, b) { return String(b.date).localeCompare(String(a.date)); });
+        window.accInitForm();
+        window.accRenderAll();
+    } catch (e) {
+        console.error('Accounts load failed:', e);
+        if (body) body.innerHTML = '<tr><td class="p-6 text-center text-red-500">Could not load accounts: ' + window._accEsc(e.message) + '<\/td><\/tr>';
+    }
+};
+
+window.accInitForm = function() {
+    const catSel = document.getElementById('acc-cat');
+    if (catSel && !catSel.options.length) {
+        catSel.innerHTML = window.ACC_CATS.map(function(c) { return '<option value="' + c.key + '">' + c.label + '<\/option>'; }).join('');
+        catSel.onchange = window.accFillSubs;
+    }
+    window.accFillSubs();
+    const d = document.getElementById('acc-date');
+    if (d && !d.value) d.value = new Date().toISOString().slice(0, 10);
+    try {
+        const r = localStorage.getItem('acc_usd_rate');
+        const re = document.getElementById('acc-rate');
+        if (r && re && !re.value) re.value = r;
+    } catch (e) {}
+    // Year picker
+    const years = {};
+    years[new Date().getFullYear()] = 1;
+    (window.ordersArrayCache || []).forEach(function(o) { const k = window._accMonthKey(window.getOrderTime(o)); if (k) years[k.slice(0, 4)] = 1; });
+    window._accExpenses.forEach(function(e) { const y = String(e.date || '').slice(0, 4); if (/^\d{4}$/.test(y)) years[y] = 1; });
+    const ySel = document.getElementById('acc-year');
+    if (ySel) {
+        const cur = ySel.value || String(new Date().getFullYear());
+        ySel.innerHTML = Object.keys(years).sort().reverse().map(function(y) { return '<option value="' + y + '">' + y + '<\/option>'; }).join('') + '<option value="all">All time<\/option>';
+        ySel.value = (ySel.querySelector('option[value="' + cur + '"]')) ? cur : String(new Date().getFullYear());
+    }
+};
+
+window.accFillSubs = function() {
+    const catSel = document.getElementById('acc-cat'), subSel = document.getElementById('acc-sub');
+    if (!catSel || !subSel) return;
+    const cat = window._accCat(catSel.value);
+    const keep = subSel.value;
+    subSel.innerHTML = cat.subs.map(function(s) { return '<option>' + s + '<\/option>'; }).join('');
+    if (cat.subs.indexOf(keep) > -1) subSel.value = keep;
+    const note = document.getElementById('acc-cat-note');
+    if (note) {
+        note.innerText = cat.group === 'inventory'
+            ? 'Stock purchase: tracked as cash out, NOT deducted in P&L again (the cost is already taken per bag sold).'
+            : (cat.key === 'delivery' ? 'Courier charges on orders are pulled in automatically. Only add charges that are NOT on an order.' : '');
+    }
+};
+
+window.accToggleCurrency = function() {
+    const usd = document.getElementById('acc-currency').value === 'USD';
+    document.getElementById('acc-rate-wrap').style.display = usd ? '' : 'none';
+    document.getElementById('acc-amount-label').innerText = usd ? 'Amount (USD)' : 'Amount (৳ BDT)';
+    window.accShowConverted();
+};
+window.accShowConverted = function() {
+    const usd = document.getElementById('acc-currency').value === 'USD';
+    const el = document.getElementById('acc-converted');
+    if (!el) return;
+    const a = Number(document.getElementById('acc-amount').value) || 0, r = Number(document.getElementById('acc-rate').value) || 0;
+    el.innerText = usd && a && r ? '= ' + window._accMoney(a * r) : '';
+};
+
+// ── SAVE / EDIT / DELETE ──
+window.accSaveExpense = async function() {
+    const date = document.getElementById('acc-date').value;
+    const category = document.getElementById('acc-cat').value;
+    const sub = document.getElementById('acc-sub').value;
+    const isUsd = document.getElementById('acc-currency').value === 'USD';
+    const raw = Number(document.getElementById('acc-amount').value) || 0;
+    const rate = Number(document.getElementById('acc-rate').value) || 0;
+    const note = document.getElementById('acc-note').value.trim();
+    if (!date) return alert('Pick a date.');
+    if (raw <= 0) return alert('Enter an amount greater than 0.');
+    if (isUsd && rate <= 0) return alert('Enter the BDT per USD rate for this payment.');
+    const amount = Math.round((isUsd ? raw * rate : raw) * 100) / 100;
+    const doc = {
+        date: date, month: date.slice(0, 7), category: category, subcategory: sub, amount: amount, note: note,
+        currency: isUsd ? 'USD' : 'BDT', usdAmount: isUsd ? raw : null, usdRate: isUsd ? rate : null,
+        updatedAt: new Date().toISOString()
+    };
+    const btn = document.getElementById('acc-save-btn');
+    btn.disabled = true;
+    try {
+        if (isUsd) { try { localStorage.setItem('acc_usd_rate', String(rate)); } catch (e) {} }
+        if (window._accEditId) {
+            await db.collection('expenses').doc(window._accEditId).update(doc);
+            await window.logAdminAction('Edited expense: ' + window._accCat(category).label + ' ' + amount);
+        } else {
+            doc.createdAt = new Date().toISOString();
+            doc.createdBy = (auth.currentUser && auth.currentUser.email) || '';
+            await db.collection('expenses').add(doc);
+            await window.logAdminAction('Added expense: ' + window._accCat(category).label + ' ' + amount);
+        }
+        window.accResetForm(true);
+        await window.loadAccounts();
+    } catch (e) {
+        alert('Could not save: ' + e.message);
+    } finally {
+        btn.disabled = false;
+    }
+};
+
+window.accResetForm = function(keepDateAndCat) {
+    window._accEditId = null;
+    document.getElementById('acc-amount').value = '';
+    document.getElementById('acc-note').value = '';
+    if (!keepDateAndCat) document.getElementById('acc-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('acc-save-btn').innerText = 'Add Expense';
+    document.getElementById('acc-cancel-btn').style.display = 'none';
+    window.accShowConverted();
+};
+
+window.accEditExpense = function(id) {
+    const e = window._accExpenses.filter(function(x) { return x.id === id; })[0];
+    if (!e) return;
+    window._accEditId = id;
+    document.getElementById('acc-date').value = e.date;
+    document.getElementById('acc-cat').value = window._accCat(e.category).key;
+    window.accFillSubs();
+    document.getElementById('acc-sub').value = e.subcategory || '';
+    const usd = e.currency === 'USD';
+    document.getElementById('acc-currency').value = usd ? 'USD' : 'BDT';
+    window.accToggleCurrency();
+    document.getElementById('acc-amount').value = usd ? e.usdAmount : e.amount;
+    if (usd) document.getElementById('acc-rate').value = e.usdRate;
+    document.getElementById('acc-note').value = e.note || '';
+    document.getElementById('acc-save-btn').innerText = 'Save Changes';
+    document.getElementById('acc-cancel-btn').style.display = '';
+    window.accShowConverted();
+    document.getElementById('acc-form-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
+window.accDeleteExpense = async function(id) {
+    const e = window._accExpenses.filter(function(x) { return x.id === id; })[0];
+    if (!e || !confirm('Delete this expense?\n\n' + e.date + ' · ' + window._accCat(e.category).label + ' · ' + window._accMoney(e.amount))) return;
+    try {
+        await db.collection('expenses').doc(id).delete();
+        await window.logAdminAction('Deleted expense: ' + window._accCat(e.category).label + ' ' + e.amount);
+        await window.loadAccounts();
+    } catch (err) { alert('Could not delete: ' + err.message); }
+};
+
+// ── RENDER ──
+window._accRangeKeys = function(M) {
+    const y = document.getElementById('acc-year') ? document.getElementById('acc-year').value : String(new Date().getFullYear());
+    if (y === 'all') return Object.keys(M).sort();
+    const keys = [];
+    for (let i = 1; i <= 12; i++) {
+        const k = y + '-' + String(i).padStart(2, '0');
+        if (M[k] || k === window._accMonthKey(Date.now())) keys.push(k);
+    }
+    return keys;
+};
+
+window.accRenderAll = function() {
+    window._accM = window._accCompute(window.ordersArrayCache || [], window._accExpenses, {
+        bagCost: window.SHOPPING_BAG && window.SHOPPING_BAG.cost,
+        deliveredStatuses: window.DELIVERED_STATUSES,
+        getOrderTime: window.getOrderTime
+    });
+    const keys = window._accRangeKeys(window._accM);
+    window._accKeys = keys;
+    window.accRenderKpis(keys);
+    window.accRenderPL(keys);
+    window.accRenderCharts(keys);
+    window.accRenderExpenseList();
+};
+
+window.accRenderKpis = function(keys) {
+    const T = window._accSum(window._accM, keys);
+    const set = function(id, v, sub) {
+        const a = document.getElementById(id); if (a) a.innerText = v;
+        const b = document.getElementById(id + '-sub'); if (b) b.innerText = sub || '';
+    };
+    set('acc-k-rev', window._accMoney(T.revenue || 0), (T.orders || 0) + ' delivered orders');
+    set('acc-k-gross', window._accMoney(T.gross || 0), T.revenue ? Math.round((T.gross / T.revenue) * 100) + '% margin' : '');
+    const net = document.getElementById('acc-k-net');
+    set('acc-k-net', window._accMoney(T.net || 0), T.revenue ? Math.round((T.net / T.revenue) * 100) + '% net margin' : '');
+    if (net) net.className = 'text-2xl font-bold mt-1 ' + ((T.net || 0) >= 0 ? 'text-green-600' : 'text-red-600');
+    set('acc-k-ads', window._accMoney(T.ads || 0), T.ads && T.revenue ? 'ROAS ' + (T.revenue / T.ads).toFixed(1) + 'x' : 'no ad spend logged');
+    set('acc-k-opex', window._accMoney(T.opex || 0), 'packaging + ads + other');
+    set('acc-k-inv', window._accMoney((T.product || 0) + (T.inbound || 0)), 'stock bought (cash out)');
+    const warn = document.getElementById('acc-est-warn');
+    if (warn) {
+        warn.style.display = T.cogsEstUnits ? '' : 'none';
+        warn.innerText = T.cogsEstUnits ? '⚠ ' + T.cogsEstUnits + ' sold unit(s) have no purchase price saved, so their cost is estimated at 60% of selling price. Fix purchase prices in Inventory for exact profit.' : '';
+    }
+};
+
+window.accRenderPL = function(keys) {
+    const M = window._accM, head = document.getElementById('acc-pl-head'), body = document.getElementById('acc-pl-body');
+    if (!head || !body) return;
+    const T = window._accSum(M, keys);
+    const cols = keys.concat(['__total']);
+    const get = function(k) { return k === '__total' ? T : (M[k] || {}); };
+    head.innerHTML = '<tr><th class="p-3 text-left sticky left-0 bg-gray-50 z-10 min-w-[190px]">Line item<\/th>' +
+        cols.map(function(k) { return '<th class="p-3 text-right whitespace-nowrap ' + (k === '__total' ? 'bg-orange-50 text-[#B36A5E]' : '') + '">' + (k === '__total' ? 'TOTAL' : window._accMonthLabel(k)) + '<\/th>'; }).join('') + '<\/tr>';
+
+    // type: 'in' income, 'out' cost (shown negative), 'sub' subtotal, 'pct', 'num', 'memo'
+    const rows = [
+        { label: 'Revenue (delivered orders)', f: 'revenue', t: 'in' },
+        { label: 'Cost of goods sold', f: 'cogs', t: 'out', hint: 'bag cost + supplier shipping + shopping bags, per unit sold' },
+        { label: 'Gross profit', f: 'gross', t: 'sub' },
+        { label: 'Gross margin %', fn: function(r) { return r.revenue ? Math.round(r.gross / r.revenue * 100) + '%' : '—'; }, t: 'pct' },
+        { label: 'Courier charges', f: 'courier', t: 'out', hint: 'from orders' },
+        { label: 'COD charges', f: 'cod', t: 'out', hint: 'from orders' },
+        { label: 'Return costs', f: 'returnCost', t: 'out' },
+        { label: 'Forfeited advances', f: 'forfeited', t: 'in' },
+        { label: 'Overpaid / other income', f: 'overpaid', t: 'in' },
+        { label: 'Profit after delivery', f: 'afterDeliv', t: 'sub' },
+        { label: 'Packaging', f: 'packaging', t: 'out' },
+        { label: 'Facebook / Meta ads', f: 'ads', t: 'out' },
+        { label: 'Delivery (extra)', f: 'delivery', t: 'out' },
+        { label: 'Other expenses', f: 'other', t: 'out' },
+        { label: 'NET PROFIT', f: 'net', t: 'net' },
+        { label: 'Net margin %', fn: function(r) { return r.revenue ? Math.round(r.net / r.revenue * 100) + '%' : '—'; }, t: 'pct' },
+        { label: 'Orders delivered', f: 'orders', t: 'num' },
+        { label: 'Bags sold', f: 'bags', t: 'num' },
+        { label: 'Avg order value', fn: function(r) { return r.orders ? window._accMoney(r.revenue / r.orders) : '—'; }, t: 'pct' },
+        { label: 'Net profit per bag', fn: function(r) { return r.bags ? window._accMoney(r.net / r.bags) : '—'; }, t: 'pct' },
+        { label: 'Ad cost per order (CAC)', fn: function(r) { return r.orders && r.ads ? window._accMoney(r.ads / r.orders) : '—'; }, t: 'pct' },
+        { label: 'ROAS (revenue ÷ ads)', fn: function(r) { return r.ads ? (r.revenue / r.ads).toFixed(1) + 'x' : '—'; }, t: 'pct' },
+        { label: 'Return rate', fn: function(r) { const s = (r.orders || 0) + (r.returned || 0); return s ? Math.round((r.returned || 0) / s * 100) + '%' : '—'; }, t: 'pct' },
+        { label: 'Stock bought (memo, cash out)', fn: function(r) { return window._accMoney((r.product || 0) + (r.inbound || 0)); }, t: 'memo', hint: 'not in P&L' }
+    ];
+    window._accPLRows = rows;
+    body.innerHTML = rows.map(function(row) {
+        const isSub = row.t === 'sub', isNet = row.t === 'net', isMemo = row.t === 'memo', isPct = row.t === 'pct';
+        const trCls = isNet ? 'bg-gray-900 text-white font-bold' : (isSub ? 'bg-gray-50 font-bold' : (isPct || isMemo ? 'text-gray-400 italic' : ''));
+        const stick = isNet ? 'bg-gray-900' : (isSub ? 'bg-gray-50' : 'bg-white');
+        let tds = cols.map(function(k) {
+            const r = get(k);
+            let txt, cls = '';
+            if (row.fn) { txt = row.fn(r); }
+            else {
+                const v = Number(r[row.f]) || 0;
+                if (row.t === 'num') txt = v.toLocaleString('en-BD');
+                else if (row.t === 'out') txt = v ? '(' + window._accMoney(v) + ')' : '—';
+                else if (row.t === 'in') txt = v ? window._accMoney(v) : '—';
+                else txt = window._accMoney(v);
+                if ((isSub || isNet) && v < 0) cls = isNet ? 'text-red-300' : 'text-red-600';
+            }
+            return '<td class="p-3 text-right whitespace-nowrap ' + cls + (k === '__total' && !isNet ? ' bg-orange-50/60 font-bold' : '') + '">' + txt + '<\/td>';
+        }).join('');
+        return '<tr class="border-b border-gray-100 ' + trCls + '"><td class="p-3 sticky left-0 z-10 ' + stick + '">' + row.label +
+            (row.hint ? ' <span class="text-[9px] font-normal text-gray-400 normal-case not-italic">' + row.hint + '<\/span>' : '') + '<\/td>' + tds + '<\/tr>';
+    }).join('');
+};
+
+window.accRenderCharts = function(keys) {
+    if (typeof Chart === 'undefined') return;
+    const M = window._accM;
+    const labels = keys.map(window._accMonthLabel);
+    if (window._accCharts.trend) window._accCharts.trend.destroy();
+    const c1 = document.getElementById('acc-chart-trend');
+    if (c1) window._accCharts.trend = new Chart(c1, {
+        data: {
+            labels: labels,
+            datasets: [
+                { type: 'bar', label: 'Revenue', data: keys.map(function(k) { return Math.round((M[k] || {}).revenue || 0); }), backgroundColor: '#E5C9C3', borderRadius: 4 },
+                { type: 'bar', label: 'Total costs', data: keys.map(function(k) { const r = M[k] || {}; return Math.round((r.revenue || 0) - (r.net || 0)); }), backgroundColor: '#9CA3AF', borderRadius: 4 },
+                { type: 'line', label: 'Net profit', data: keys.map(function(k) { return Math.round((M[k] || {}).net || 0); }), borderColor: '#10B981', backgroundColor: '#10B981', tension: 0.3, pointRadius: 4 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } }, scales: { y: { ticks: { font: { size: 9 } } }, x: { ticks: { font: { size: 9 } } } } }
+    });
+
+    const T = window._accSum(M, keys);
+    const slices = [
+        ['Cost of goods', T.cogs], ['Courier + COD', (T.courier || 0) + (T.cod || 0)], ['Return costs', T.returnCost],
+        ['Packaging', T.packaging], ['Meta ads', T.ads], ['Delivery (extra)', T.delivery], ['Other', T.other]
+    ].filter(function(s) { return (s[1] || 0) > 0; });
+    if (window._accCharts.mix) window._accCharts.mix.destroy();
+    const c2 = document.getElementById('acc-chart-mix');
+    if (c2) window._accCharts.mix = new Chart(c2, {
+        type: 'doughnut',
+        data: { labels: slices.map(function(s) { return s[0]; }), datasets: [{ data: slices.map(function(s) { return Math.round(s[1]); }), backgroundColor: ['#322C2B', '#B36A5E', '#EF4444', '#F59E0B', '#3B82F6', '#8B5CF6', '#9CA3AF'], borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } } }
+    });
+};
+
+window.accRenderExpenseList = function() {
+    const body = document.getElementById('acc-exp-body');
+    if (!body) return;
+    const catF = document.getElementById('acc-f-cat') ? document.getElementById('acc-f-cat').value : '';
+    const monF = document.getElementById('acc-f-month') ? document.getElementById('acc-f-month').value : '';
+    const mSel = document.getElementById('acc-f-month');
+    if (mSel) {
+        const months = {};
+        window._accExpenses.forEach(function(e) { if (e.date) months[String(e.date).slice(0, 7)] = 1; });
+        mSel.innerHTML = '<option value="">All months<\/option>' + Object.keys(months).sort().reverse().map(function(k) { return '<option value="' + k + '">' + window._accMonthLabel(k) + '<\/option>'; }).join('');
+        mSel.value = months[monF] ? monF : '';
+    }
+    const cSel = document.getElementById('acc-f-cat');
+    if (cSel && !cSel.dataset.filled) {
+        cSel.innerHTML = '<option value="">All categories<\/option>' + window.ACC_CATS.map(function(c) { return '<option value="' + c.key + '">' + c.label + '<\/option>'; }).join('');
+        cSel.dataset.filled = '1';
+    }
+    const list = window._accExpenses.filter(function(e) {
+        return (!catF || window._accCat(e.category).key === catF) && (!monF || String(e.date).slice(0, 7) === monF);
+    });
+    let total = 0;
+    body.innerHTML = list.length ? list.map(function(e) {
+        total += Number(e.amount) || 0;
+        const cat = window._accCat(e.category);
+        const usdTag = e.currency === 'USD' ? ' <span class="text-[9px] text-gray-400">($' + e.usdAmount + ' @ ' + e.usdRate + ')<\/span>' : '';
+        return '<tr class="border-b hover:bg-gray-50"><td class="p-3 whitespace-nowrap">' + window._accEsc(e.date) + '<\/td>' +
+            '<td class="p-3"><span class="font-bold">' + cat.label + '<\/span><br><span class="text-[10px] text-gray-400">' + window._accEsc(e.subcategory) + '<\/span><\/td>' +
+            '<td class="p-3 text-gray-500">' + window._accEsc(e.note) + '<\/td>' +
+            '<td class="p-3 text-right font-bold whitespace-nowrap">' + window._accMoney(e.amount) + usdTag + '<\/td>' +
+            '<td class="p-3 text-right whitespace-nowrap"><button onclick="accEditExpense(\'' + e.id + '\')" class="text-blue-500 font-bold text-[10px] uppercase underline mr-3">Edit<\/button>' +
+            '<button onclick="accDeleteExpense(\'' + e.id + '\')" class="text-red-400 font-bold text-[10px] uppercase underline">Delete<\/button><\/td><\/tr>';
+    }).join('') : '<tr><td colspan="5" class="p-6 text-center text-gray-400">No expenses logged yet.<\/td><\/tr>';
+    const t = document.getElementById('acc-exp-total');
+    if (t) t.innerText = list.length + ' entries · ' + window._accMoney(total);
+};
+
+window.accExportPL = function() {
+    const rows = window._accPLRows, keys = window._accKeys || [];
+    if (!rows || !keys.length) return alert('Nothing to export yet.');
+    const M = window._accM, T = window._accSum(M, keys);
+    const cols = keys.concat(['__total']);
+    const q = function(s) { s = String(s); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const lines = [['Line item'].concat(cols.map(function(k) { return k === '__total' ? 'TOTAL' : k; })).map(q).join(',')];
+    rows.forEach(function(row) {
+        lines.push([row.label].concat(cols.map(function(k) {
+            const r = k === '__total' ? T : (M[k] || {});
+            if (row.fn) return row.fn(r).toString().replace(/৳/g, '');
+            const v = Math.round(Number(r[row.f]) || 0);
+            return row.t === 'out' ? -v : v;
+        })).map(q).join(','));
+    });
+    const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'sterling_PL_' + (document.getElementById('acc-year').value) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+};
+
+window.accSwitchView = function(v) {
+    ['pl', 'expenses'].forEach(function(x) {
+        document.getElementById('acc-view-' + x).style.display = (x === v) ? '' : 'none';
+        const b = document.getElementById('acc-tab-' + x);
+        b.className = 'px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition ' + (x === v ? 'bg-[#322C2B] text-white' : 'bg-white text-gray-500 hover:bg-gray-100');
+    });
+};
+
+
+console.log("✅ Admin Panel Loaded Successfully (Auth Secured)");
 
         // ─── MOBILE NAV ───────────────────────────────────────────────────────────────
 window.toggleMobileSidebar = function() {
