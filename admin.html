@@ -1062,6 +1062,7 @@ if (tabId === 'contact-settings') {
             <select id="acc-year" onchange="accRenderAll()" class="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white outline-none focus:border-[#B36A5E]"></select>
             <button id="acc-tab-pl" onclick="accSwitchView('pl')" class="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition bg-[#322C2B] text-white">P&amp;L Report</button>
             <button id="acc-tab-expenses" onclick="accSwitchView('expenses')" class="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition bg-white text-gray-500 hover:bg-gray-100">Expenses</button>
+            <button id="acc-tab-shipments" onclick="accSwitchView('shipments')" class="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition bg-white text-gray-500 hover:bg-gray-100">Shipments</button>
         </div>
     </div>
 
@@ -1109,20 +1110,22 @@ if (tabId === 'contact-settings') {
             <h3 class="font-bold text-gray-400 text-xs uppercase mb-4">Add Expense</h3>
             <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 items-end">
                 <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Date</label><input type="date" id="acc-date" class="w-full border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></div>
-                <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Category</label><select id="acc-cat" class="w-full border border-gray-200 rounded-lg p-2 text-xs bg-white outline-none focus:border-[#B36A5E]"></select></div>
-                <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Type</label><select id="acc-sub" class="w-full border border-gray-200 rounded-lg p-2 text-xs bg-white outline-none focus:border-[#B36A5E]"></select></div>
+                <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Category <button type="button" onclick="accAddCategory()" class="text-[#B36A5E] normal-case font-bold ml-1">+ new</button></label><select id="acc-cat" class="w-full border border-gray-200 rounded-lg p-2 text-xs bg-white outline-none focus:border-[#B36A5E]"></select></div>
+                <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Type <button type="button" onclick="accAddType()" class="text-[#B36A5E] normal-case font-bold ml-1">+ new</button></label><select id="acc-sub" class="w-full border border-gray-200 rounded-lg p-2 text-xs bg-white outline-none focus:border-[#B36A5E]"></select></div>
                 <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Currency</label><select id="acc-currency" onchange="accToggleCurrency()" class="w-full border border-gray-200 rounded-lg p-2 text-xs bg-white outline-none focus:border-[#B36A5E]"><option value="BDT">BDT (৳)</option><option value="USD">USD ($)</option></select></div>
                 <div><label id="acc-amount-label" class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Amount (৳ BDT)</label><input type="number" id="acc-amount" min="0" step="0.01" oninput="accShowConverted()" class="w-full border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></div>
                 <div id="acc-rate-wrap" style="display:none"><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">৳ per $1 <span id="acc-converted" class="text-[#B36A5E] normal-case"></span></label><input type="number" id="acc-rate" min="0" step="0.01" oninput="accShowConverted()" class="w-full border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-6 gap-3 items-end mt-3">
-                <div class="lg:col-span-4"><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Vendor / note (optional)</label><input type="text" id="acc-note" placeholder="e.g. Meta invoice Oct, Daraz bubble wrap 2 rolls" class="w-full border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></div>
+                <div class="lg:col-span-2"><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Supplier <button type="button" onclick="accAddSupplier()" class="text-[#B36A5E] normal-case font-bold ml-1">+ new</button></label><select id="acc-supplier" class="w-full border border-gray-200 rounded-lg p-2 text-xs bg-white outline-none focus:border-[#B36A5E]"></select></div>
+                <div class="lg:col-span-2"><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Note (optional)</label><input type="text" id="acc-note" placeholder="e.g. Meta invoice Oct, 2 rolls bubble wrap" class="w-full border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></div>
                 <div class="lg:col-span-2 flex gap-2">
                     <button id="acc-save-btn" onclick="accSaveExpense()" class="flex-1 bg-[#322C2B] text-white px-4 py-2.5 rounded-lg font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition">Add Expense</button>
                     <button id="acc-cancel-btn" onclick="accResetForm()" style="display:none" class="bg-gray-200 text-gray-600 px-4 py-2.5 rounded-lg font-bold uppercase text-[10px] hover:bg-gray-300 transition">Cancel</button>
                 </div>
             </div>
             <p id="acc-cat-note" class="text-[10px] text-gray-400 mt-3"></p>
+            <p class="text-[10px] text-gray-400 mt-1">Forgot to log something? Pick any past date above. It lands in that month's P&amp;L.</p>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -1139,6 +1142,51 @@ if (tabId === 'contact-settings') {
                     <tbody id="acc-exp-body"></tbody>
                 </table>
             </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm mt-6">
+            <h3 class="font-bold text-gray-400 text-xs uppercase mb-3">Your Suppliers, Categories &amp; Types</h3>
+            <div id="acc-settings"></div>
+            <div class="flex flex-wrap gap-3 mt-4">
+                <button onclick="accAddSupplier()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-bold uppercase text-[9px] hover:bg-gray-200 transition">+ Supplier</button>
+                <button onclick="accAddCategory()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-bold uppercase text-[9px] hover:bg-gray-200 transition">+ Category</button>
+                <button onclick="accAddType()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-bold uppercase text-[9px] hover:bg-gray-200 transition">+ Type (under chosen category)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHIPMENTS VIEW -->
+    <div id="acc-view-shipments" style="display:none">
+        <div class="bg-white p-6 rounded-2xl shadow-sm mb-6">
+            <h3 class="font-bold text-gray-400 text-xs uppercase mb-1">Record a Shipment</h3>
+            <p class="text-[11px] text-gray-400 mb-4">Enter what you paid and what arrived. Freight is split across the bags by weight, duty by value. Each product gets its own stock lot with the real landed cost, so profit uses the true cost of every batch.</p>
+            <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 items-end mb-4">
+                <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Date received</label><input type="date" id="acc-ship-date" class="w-full border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></div>
+                <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Supplier <button type="button" onclick="accAddSupplier()" class="text-[#B36A5E] normal-case font-bold ml-1">+ new</button></label><select id="acc-ship-supplier" onchange="accShipSupplierChange()" class="w-full border border-gray-200 rounded-lg p-2 text-xs bg-white outline-none focus:border-[#B36A5E]"></select></div>
+                <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Paid in</label><select id="acc-ship-currency" onchange="accShipCurrencyChange()" class="w-full border border-gray-200 rounded-lg p-2 text-xs bg-white outline-none focus:border-[#B36A5E]"><option value="BDT">BDT (৳)</option><option value="CNY">CNY (¥)</option><option value="USD">USD ($)</option></select></div>
+                <div id="acc-ship-rate-wrap" style="display:none"><label id="acc-ship-rate-label" class="block text-[10px] font-bold uppercase text-gray-400 mb-1">৳ per 1 CNY</label><input type="number" id="acc-ship-rate" min="0" step="0.0001" oninput="accShipCalc()" class="w-full border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></div>
+                <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Freight total (৳)</label><input type="number" id="acc-ship-freight" min="0" step="0.01" oninput="accShipCalc()" class="w-full border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></div>
+                <div><label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Duty / other (৳)</label><input type="number" id="acc-ship-duty" min="0" step="0.01" oninput="accShipCalc()" class="w-full border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E]"></div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead class="text-[10px] font-bold uppercase text-gray-400"><tr>
+                        <th class="p-2 text-left">Product</th><th class="p-2 text-left">Qty</th><th class="p-2 text-left">Of which pre-order</th><th id="acc-ship-price-head" class="p-2 text-left">Unit price (BDT)</th>
+                        <th class="p-2 text-right">Weight</th><th class="p-2 text-right">Freight / bag</th><th class="p-2 text-right">Duty / bag</th><th class="p-2 text-right">Landed / bag</th><th></th>
+                    </tr></thead>
+                    <tbody id="acc-ship-rows"></tbody>
+                </table>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-3 mt-3">
+                <button onclick="accShipAddRow()" class="text-[#B36A5E] font-bold text-[10px] uppercase underline">+ Add another product</button>
+                <input type="text" id="acc-ship-note" placeholder="Invoice no. / note (optional)" class="border border-gray-200 rounded-lg p-2 text-xs outline-none focus:border-[#B36A5E] w-full lg:w-72">
+            </div>
+            <p id="acc-ship-summary" class="mt-4 text-xs font-bold text-gray-600 bg-gray-50 rounded-xl px-4 py-3"></p>
+            <button id="acc-ship-save" onclick="accSaveShipment()" class="mt-4 bg-[#322C2B] text-white px-6 py-3 rounded-xl font-bold uppercase text-[10px] hover:bg-[#B36A5E] transition">Save Shipment &amp; Add Stock</button>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <h3 class="font-bold text-xs uppercase text-gray-500 p-4 border-b">Past Shipments</h3>
+            <div id="acc-ship-list"></div>
         </div>
     </div>
 </section>
@@ -8659,10 +8707,10 @@ window.adminResetPassword = async function(targetStaffUid) {
                 alert("Direct update failed: " + e.message);
             }
         };
-        // ══════════════════════════════════════════════════════════════
-// ACCOUNTS: expenses, month-wise P&L, reports
 // ══════════════════════════════════════════════════════════════
-window.ACC_CATS = [
+// ACCOUNTS: expenses, suppliers, shipments, month-wise P&L, reports
+// ══════════════════════════════════════════════════════════════
+window.ACC_BASE_CATS = [
     { key: 'product',   label: 'Product Purchase',     group: 'inventory', subs: ['Bag', 'Scarf', 'Aldo Shopping Bag', 'Aldo Box', 'Other'] },
     { key: 'inbound',   label: 'Inbound Shipping',     group: 'inventory', subs: ['Freight from China', 'Customs / Duty', 'Local pickup', 'Other'] },
     { key: 'packaging', label: 'Packaging',            group: 'opex',      subs: ['Bubble wrap', 'Scotch tape', 'Courier poly', 'Box', 'Stationery', 'Other'] },
@@ -8670,8 +8718,28 @@ window.ACC_CATS = [
     { key: 'delivery',  label: 'Delivery (extra / adjustment)', group: 'opex', subs: ['Pathao extra charge', 'Return fee not on order', 'Packing / pickup fee', 'Other'] },
     { key: 'other',     label: 'Other Expenses',       group: 'opex',      subs: ['Rent', 'Salary', 'Software / Hosting', 'Photography', 'Marketing (non-ad)', 'Other'] }
 ];
-window._accCat = function(key) { return window.ACC_CATS.filter(function(c) { return c.key === key; })[0] || window.ACC_CATS[window.ACC_CATS.length - 1]; };
+window._accBaseKeys = ['product', 'inbound', 'packaging', 'ads', 'delivery', 'other'];
+window._accCfg = { suppliers: [], customCats: [], customSubs: {} };
+window.ACC_CATS = window.ACC_BASE_CATS.slice();
+window._accRebuildCats = function() {
+    const cfg = window._accCfg;
+    const base = window.ACC_BASE_CATS.map(function(c) {
+        const extra = (cfg.customSubs && cfg.customSubs[c.key]) || [];
+        const subs = c.subs.filter(function(s) { return s !== 'Other'; }).concat(extra).concat(['Other']);
+        return { key: c.key, label: c.label, group: c.group, subs: subs };
+    });
+    const custom = (cfg.customCats || []).map(function(c) {
+        const extra = (cfg.customSubs && cfg.customSubs[c.key]) || [];
+        return { key: c.key, label: c.label, group: c.group || 'opex', subs: ['General'].concat(extra), custom: true };
+    });
+    window.ACC_CATS = base.concat(custom);
+};
+window._accCat = function(key) {
+    return window.ACC_CATS.filter(function(c) { return c.key === key; })[0] || window.ACC_CATS.filter(function(c) { return c.key === 'other'; })[0];
+};
 window._accExpenses = [];
+window._accShipments = [];
+window._accProducts = [];
 window._accEditId = null;
 window._accCharts = {};
 window._accMonthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -8691,11 +8759,13 @@ window._accMonthLabel = function(k) {
 };
 window._accMoney = function(n) {
     n = Math.round(Number(n) || 0);
-    const s = Math.abs(n).toLocaleString('en-BD');
-    return (n < 0 ? '-' : '') + '৳' + s;
+    return (n < 0 ? '-' : '') + '৳' + Math.abs(n).toLocaleString('en-BD');
+};
+window._accSlug = function(s) {
+    return 'c_' + String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30);
 };
 
-// Pure calculation: orders + expenses  ->  { monthKey: {...line items...} }
+// ── PURE: month-wise P&L ──
 window._accCompute = function(orders, expenses, opts) {
     opts = opts || {};
     const bagCost = Number(opts.bagCost) || 217;
@@ -8709,7 +8779,7 @@ window._accCompute = function(orders, expenses, opts) {
         if (!M[k]) M[k] = {
             revenue: 0, orders: 0, bags: 0, cogs: 0, cogsEstUnits: 0, courier: 0, cod: 0, returnCost: 0,
             forfeited: 0, overpaid: 0, returned: 0,
-            packaging: 0, ads: 0, delivery: 0, other: 0, product: 0, inbound: 0
+            packaging: 0, ads: 0, delivery: 0, other: 0, product: 0, inbound: 0, customOpex: 0, customInv: 0, custom: {}
         };
         return M[k];
     }
@@ -8744,26 +8814,162 @@ window._accCompute = function(orders, expenses, opts) {
         const k = String(e.date || '').slice(0, 7);
         if (!/^\d{4}-\d{2}$/.test(k)) return;
         const r = m(k);
-        const key = window._accCat(e.category).key;
-        r[key] += Number(e.amount) || 0;
+        const cat = window._accCat(e.category), amt = Number(e.amount) || 0;
+        if (window._accBaseKeys.indexOf(cat.key) > -1) r[cat.key] += amt;
+        else {
+            r.custom[cat.key] = (r.custom[cat.key] || 0) + amt;
+            if (cat.group === 'inventory') r.customInv += amt; else r.customOpex += amt;
+        }
     });
     Object.keys(M).forEach(function(k) {
         const r = M[k];
-        r.gross       = r.revenue - r.cogs;
-        r.afterDeliv  = r.gross - r.courier - r.cod - r.returnCost + r.forfeited + r.overpaid;
-        r.opex        = r.packaging + r.ads + r.delivery + r.other;
-        r.net         = r.afterDeliv - r.opex;
+        r.gross      = r.revenue - r.cogs;
+        r.afterDeliv = r.gross - r.courier - r.cod - r.returnCost + r.forfeited + r.overpaid;
+        r.opex       = r.packaging + r.ads + r.delivery + r.other + r.customOpex;
+        r.net        = r.afterDeliv - r.opex;
     });
     return M;
 };
-
 window._accSum = function(M, keys) {
-    const T = {};
+    const T = { custom: {} };
     keys.forEach(function(k) {
         const r = M[k]; if (!r) return;
-        Object.keys(r).forEach(function(f) { T[f] = (T[f] || 0) + r[f]; });
+        Object.keys(r).forEach(function(f) {
+            if (f === 'custom') { Object.keys(r.custom).forEach(function(c) { T.custom[c] = (T.custom[c] || 0) + r.custom[c]; }); }
+            else T[f] = (T[f] || 0) + r[f];
+        });
     });
     return T;
+};
+
+// ── PURE: weight-based freight + value-based duty allocation ──
+// rows: [{ name, qty, priceBDT, weightKg }]
+window._accAllocate = function(rows, freight, duty) {
+    freight = Number(freight) || 0; duty = Number(duty) || 0;
+    const totalW = rows.reduce(function(s, r) { return s + (Number(r.weightKg) || 0) * (Number(r.qty) || 0); }, 0);
+    const totalV = rows.reduce(function(s, r) { return s + (Number(r.priceBDT) || 0) * (Number(r.qty) || 0); }, 0);
+    const missing = rows.filter(function(r) { return !(Number(r.weightKg) > 0); }).map(function(r) { return r.name; });
+    const out = rows.map(function(r) {
+        const w = Number(r.weightKg) || 0, p = Number(r.priceBDT) || 0;
+        const fr = totalW > 0 ? freight * w / totalW : 0;
+        const du = totalV > 0 ? duty * p / totalV : 0;
+        return { name: r.name, qty: Number(r.qty) || 0, priceBDT: p, weightKg: w,
+                 freightPerBag: Math.round(fr * 100) / 100, dutyPerBag: Math.round(du * 100) / 100,
+                 shipPerBag: Math.round((fr + du) * 100) / 100, landed: Math.round((p + fr + du) * 100) / 100 };
+    });
+    return { rows: out, totalWeight: totalW, totalValue: totalV, missingWeight: freight > 0 ? missing : [] };
+};
+
+// ── PURE: FIFO cost backfill for delivered orders that have no purchase price ──
+window._accFifoPlan = function(orders, products, delivered, getTime) {
+    delivered = delivered || ['Delivered', 'Partially Delivered'];
+    getTime = getTime || function(o) { return o.orderDate ? (o.orderDate.toDate ? o.orderDate.toDate().getTime() : new Date(o.orderDate).getTime()) : 0; };
+    const prodMap = {}, lots = {};
+    (products || []).forEach(function(p) {
+        const id = String(p.id);
+        prodMap[id] = p;
+        lots[id] = (p.stockLots || []).slice().sort(function(a, b) { return String(a.dateAdded).localeCompare(String(b.dateAdded)); })
+            .map(function(l) { return { rem: Number(l.qty) || 0, p: Number(l.purchasePrice) || 0, s: Number(l.supplierShippingCost) || 0 }; });
+    });
+    const ptr = {};
+    const list = (orders || []).filter(function(o) { return delivered.indexOf(o.status) > -1; })
+        .sort(function(a, b) { return getTime(a) - getTime(b); });
+    const updates = [], stats = { orders: 0, units: 0, unresolvedUnits: 0, unresolved: {}, beyondLots: 0 };
+    list.forEach(function(o) {
+        let changed = false;
+        const items = (o.items || []).map(function(it) {
+            const pid = String(it.id || it.productId || '');
+            const q = Number(it.quantity) || 1;
+            const L = lots[pid] || [];
+            const alreadyCosted = Number(it.purchasePrice) > 0;
+            let need = q, sumP = 0, sumS = 0, got = 0;
+            ptr[pid] = ptr[pid] || 0;
+            while (need > 0 && ptr[pid] < L.length) {
+                const lot = L[ptr[pid]];
+                if (lot.rem <= 0) { ptr[pid]++; continue; }
+                const take = Math.min(need, lot.rem);
+                sumP += take * lot.p; sumS += take * lot.s; got += take; lot.rem -= take; need -= take;
+                if (lot.rem <= 0) ptr[pid]++;
+            }
+            if (alreadyCosted) return it;   // keeps its own cost, but its units were used up from the lots above
+            if (need > 0) {
+                const last = L.length ? L[L.length - 1] : null;
+                const pr = prodMap[pid] || {};
+                const fp = last ? last.p : (Number(pr.purchasePrice) || 0);
+                const fs = last ? last.s : (Number(pr.supplierShippingCost) || 0);
+                if (fp > 0) { sumP += need * fp; sumS += need * fs; got += need; stats.beyondLots += need; need = 0; }
+            }
+            if (need > 0) {
+                stats.unresolvedUnits += need;
+                stats.unresolved[it.name || pid] = (stats.unresolved[it.name || pid] || 0) + need;
+            }
+            if (got <= 0) return it;
+            changed = true; stats.units += got;
+            const copy = Object.assign({}, it);
+            copy.purchasePrice = Math.round(sumP / got * 100) / 100;
+            copy.supplierShippingCost = Math.round(sumS / got * 100) / 100;
+            copy.costSource = 'fifo-backfill';
+            return copy;
+        });
+        if (changed) { stats.orders++; updates.push({ id: o.id, orderId: o.orderId, items: items }); }
+    });
+    return { updates: updates, stats: stats };
+};
+
+// ── PURE: real cost of the next `qty` units of a product, given units already used up ──
+window._accCostFromLots = function(lotList, usedBefore, qty, fallbackP, fallbackS) {
+    const lots = (lotList || []).slice().sort(function(a, b) { return String(a.dateAdded).localeCompare(String(b.dateAdded)); })
+        .map(function(l) { return { rem: Number(l.qty) || 0, p: Number(l.purchasePrice) || 0, s: Number(l.supplierShippingCost) || 0 }; });
+    let skip = Math.max(0, Number(usedBefore) || 0), need = Number(qty) || 1, sumP = 0, sumS = 0, got = 0, beyond = 0;
+    for (let i = 0; i < lots.length && need > 0; i++) {
+        let avail = lots[i].rem;
+        if (skip > 0) { const k = Math.min(skip, avail); avail -= k; skip -= k; }
+        if (avail <= 0) continue;
+        const take = Math.min(need, avail);
+        sumP += take * lots[i].p; sumS += take * lots[i].s; got += take; need -= take;
+    }
+    if (need > 0) {
+        const last = lots.length ? lots[lots.length - 1] : null;
+        const fp = last ? last.p : (Number(fallbackP) || 0), fs = last ? last.s : (Number(fallbackS) || 0);
+        if (fp > 0) { sumP += need * fp; sumS += need * fs; got += need; beyond = need; need = 0; }
+    }
+    if (got <= 0 || need > 0) return null;
+    return { p: Math.round(sumP / got * 100) / 100, s: Math.round(sumS / got * 100) / 100, beyond: beyond };
+};
+
+// Called when an order is verified (Stage 1 -> Stage 2). Returns the items with real costs filled in, or null if nothing to do.
+// "Used before" = lot units already gone = total lot qty - current stock - this order's own units (stock was already reduced at checkout).
+window._accStampOrderCosts = async function(order) {
+    const items = order.items || [];
+    if (!items.some(function(i) { return !(Number(i.purchasePrice) > 0); })) return null;
+    const qtyByPid = {};
+    items.forEach(function(i) { const pid = String(i.id || i.productId || ''); if (pid) qtyByPid[pid] = (qtyByPid[pid] || 0) + (Number(i.quantity) || 1); });
+    const prods = {};
+    await Promise.all(Object.keys(qtyByPid).map(async function(pid) {
+        const snap = await db.collection('products').doc(pid).get();
+        if (snap.exists) prods[pid] = snap.data();
+    }));
+    const used = {};
+    let changed = false;
+    const out = items.map(function(it) {
+        if (Number(it.purchasePrice) > 0) return it;
+        const pid = String(it.id || it.productId || ''), p = prods[pid];
+        if (!p) return it;
+        const q = Number(it.quantity) || 1;
+        const lots = p.stockLots || [];
+        if (used[pid] === undefined) {
+            const total = lots.reduce(function(s, l) { return s + (Number(l.qty) || 0); }, 0);
+            used[pid] = Math.max(0, total - (Number(p.stock) || 0) - qtyByPid[pid]);
+        }
+        const c = window._accCostFromLots(lots, used[pid], q, p.purchasePrice, p.supplierShippingCost);
+        used[pid] += q;
+        if (!c) return it;
+        changed = true;
+        const copy = Object.assign({}, it);
+        copy.purchasePrice = c.p; copy.supplierShippingCost = c.s; copy.costSource = 'lot-at-verify';
+        return copy;
+    });
+    return changed ? out : null;
 };
 
 // ── LOAD ──
@@ -8772,9 +8978,20 @@ window.loadAccounts = async function() {
     if (body) body.innerHTML = '<tr><td class="p-6 text-center text-gray-400">Loading…<\/td><\/tr>';
     try {
         if (!window.ordersArrayCache || !window.ordersArrayCache.length) await window.loadOrders();
-        const snap = await db.collection('expenses').get();
-        window._accExpenses = snap.docs.map(function(d) { const x = d.data(); x.id = d.id; return x; });
+        const res = await Promise.all([
+            db.collection('expenses').get(),
+            db.collection('shipments').get(),
+            db.collection('products').get(),
+            db.collection('accounts_config').doc('main').get()
+        ]);
+        window._accExpenses = res[0].docs.map(function(d) { const x = d.data(); x.id = d.id; return x; });
         window._accExpenses.sort(function(a, b) { return String(b.date).localeCompare(String(a.date)); });
+        window._accShipments = res[1].docs.map(function(d) { const x = d.data(); x.id = d.id; return x; });
+        window._accShipments.sort(function(a, b) { return String(b.date).localeCompare(String(a.date)); });
+        window._accProducts = res[2].docs.map(function(d) { const x = d.data(); x.id = d.id; return x; });
+        const cfg = res[3].exists ? res[3].data() : {};
+        window._accCfg = { suppliers: cfg.suppliers || [], customCats: cfg.customCats || [], customSubs: cfg.customSubs || {} };
+        window._accRebuildCats();
         window.accInitForm();
         window.accRenderAll();
     } catch (e) {
@@ -8783,20 +9000,37 @@ window.loadAccounts = async function() {
     }
 };
 
+window.accSaveConfig = async function() {
+    await db.collection('accounts_config').doc('main').set(window._accCfg);
+    window._accRebuildCats();
+    window.accInitForm();
+    window.accRenderAll();
+};
+
 window.accInitForm = function() {
     const catSel = document.getElementById('acc-cat');
-    if (catSel && !catSel.options.length) {
-        catSel.innerHTML = window.ACC_CATS.map(function(c) { return '<option value="' + c.key + '">' + c.label + '<\/option>'; }).join('');
+    if (catSel) {
+        const keep = catSel.value;
+        catSel.innerHTML = window.ACC_CATS.map(function(c) { return '<option value="' + c.key + '">' + window._accEsc(c.label) + '<\/option>'; }).join('');
+        if (keep && window._accCat(keep).key === keep) catSel.value = keep;
         catSel.onchange = window.accFillSubs;
     }
     window.accFillSubs();
     const d = document.getElementById('acc-date');
     if (d && !d.value) d.value = new Date().toISOString().slice(0, 10);
     try {
-        const r = localStorage.getItem('acc_usd_rate');
-        const re = document.getElementById('acc-rate');
+        const r = localStorage.getItem('acc_usd_rate'), re = document.getElementById('acc-rate');
         if (r && re && !re.value) re.value = r;
     } catch (e) {}
+    const supOpts = '<option value="">— none —<\/option>' + window._accCfg.suppliers.map(function(s) {
+        return '<option value="' + window._accEsc(s.name) + '">' + window._accEsc(s.name) + '<\/option>';
+    }).join('');
+    ['acc-supplier', 'acc-ship-supplier'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) { const keep = el.value; el.innerHTML = supOpts; el.value = keep; }
+    });
+    const sd = document.getElementById('acc-ship-date');
+    if (sd && !sd.value) sd.value = new Date().toISOString().slice(0, 10);
     // Year picker
     const years = {};
     years[new Date().getFullYear()] = 1;
@@ -8808,6 +9042,7 @@ window.accInitForm = function() {
         ySel.innerHTML = Object.keys(years).sort().reverse().map(function(y) { return '<option value="' + y + '">' + y + '<\/option>'; }).join('') + '<option value="all">All time<\/option>';
         ySel.value = (ySel.querySelector('option[value="' + cur + '"]')) ? cur : String(new Date().getFullYear());
     }
+    window.accRenderSettings();
 };
 
 window.accFillSubs = function() {
@@ -8815,14 +9050,82 @@ window.accFillSubs = function() {
     if (!catSel || !subSel) return;
     const cat = window._accCat(catSel.value);
     const keep = subSel.value;
-    subSel.innerHTML = cat.subs.map(function(s) { return '<option>' + s + '<\/option>'; }).join('');
+    subSel.innerHTML = cat.subs.map(function(s) { return '<option>' + window._accEsc(s) + '<\/option>'; }).join('');
     if (cat.subs.indexOf(keep) > -1) subSel.value = keep;
     const note = document.getElementById('acc-cat-note');
     if (note) {
         note.innerText = cat.group === 'inventory'
-            ? 'Stock purchase: tracked as cash out, NOT deducted in P&L again (the cost is already taken per bag sold).'
+            ? 'Stock purchase: tracked as cash out, NOT deducted in P&L again (the cost is counted per bag sold). Use the Shipments tab to record stock arriving.'
             : (cat.key === 'delivery' ? 'Courier charges on orders are pulled in automatically. Only add charges that are NOT on an order.' : '');
     }
+};
+
+// ── SUPPLIERS / CATEGORIES / TYPES ──
+window.accAddSupplier = async function() {
+    const name = (prompt('Supplier name (e.g. Guangzhou Bags Co.):') || '').trim();
+    if (!name) return;
+    if (window._accCfg.suppliers.some(function(s) { return s.name.toLowerCase() === name.toLowerCase(); })) return alert('That supplier already exists.');
+    const cur = (prompt('Usual payment currency for this supplier: BDT, CNY or USD', 'CNY') || 'BDT').trim().toUpperCase();
+    window._accCfg.suppliers.push({ name: name, currency: ['BDT', 'CNY', 'USD'].indexOf(cur) > -1 ? cur : 'BDT' });
+    try { await window.accSaveConfig(); } catch (e) { alert('Could not save: ' + e.message); }
+};
+window.accAddCategory = async function() {
+    const label = (prompt('New expense category name (e.g. Photography, Staff, Rent):') || '').trim();
+    if (!label) return;
+    const key = window._accSlug(label);
+    if (window.ACC_CATS.some(function(c) { return c.key === key || c.label.toLowerCase() === label.toLowerCase(); })) return alert('A category with that name already exists.');
+    const isStock = confirm('Is "' + label + '" a STOCK purchase (goods you resell)?\n\nOK = stock purchase (not deducted in P&L)\nCancel = running expense (deducted in P&L)');
+    window._accCfg.customCats.push({ key: key, label: label, group: isStock ? 'inventory' : 'opex' });
+    try { await window.accSaveConfig(); document.getElementById('acc-cat').value = key; window.accFillSubs(); } catch (e) { alert('Could not save: ' + e.message); }
+};
+window.accAddType = async function() {
+    const catKey = document.getElementById('acc-cat').value;
+    const cat = window._accCat(catKey);
+    const name = (prompt('New type under "' + cat.label + '":') || '').trim();
+    if (!name) return;
+    if (cat.subs.some(function(s) { return s.toLowerCase() === name.toLowerCase(); })) return alert('That type already exists.');
+    const cs = window._accCfg.customSubs;
+    cs[catKey] = (cs[catKey] || []).concat([name]);
+    try { await window.accSaveConfig(); document.getElementById('acc-cat').value = catKey; window.accFillSubs(); document.getElementById('acc-sub').value = name; } catch (e) { alert('Could not save: ' + e.message); }
+};
+window.accRemoveSupplier = async function(i) {
+    const s = window._accCfg.suppliers[i]; if (!s) return;
+    if (!confirm('Remove supplier "' + s.name + '" from the list?\n\nPast expenses and shipments keep their supplier name.')) return;
+    window._accCfg.suppliers.splice(i, 1);
+    try { await window.accSaveConfig(); } catch (e) { alert('Could not save: ' + e.message); }
+};
+window.accRemoveCategory = async function(key) {
+    const used = window._accExpenses.some(function(e) { return e.category === key; });
+    if (used) return alert('This category has expenses logged against it, so it cannot be removed. Edit or delete those expenses first.');
+    if (!confirm('Remove this category?')) return;
+    window._accCfg.customCats = window._accCfg.customCats.filter(function(c) { return c.key !== key; });
+    delete window._accCfg.customSubs[key];
+    try { await window.accSaveConfig(); } catch (e) { alert('Could not save: ' + e.message); }
+};
+window.accRemoveType = async function(key, name) {
+    const used = window._accExpenses.some(function(e) { return e.category === key && e.subcategory === name; });
+    if (used) return alert('Expenses use this type, so it cannot be removed.');
+    window._accCfg.customSubs[key] = (window._accCfg.customSubs[key] || []).filter(function(s) { return s !== name; });
+    try { await window.accSaveConfig(); } catch (e) { alert('Could not save: ' + e.message); }
+};
+window.accRenderSettings = function() {
+    const el = document.getElementById('acc-settings');
+    if (!el) return;
+    const chip = function(txt, onclick) {
+        return '<span class="inline-flex items-center gap-1 bg-gray-100 text-gray-600 text-[11px] font-medium px-2 py-1 rounded-lg mr-1 mb-1">' + txt +
+            '<button onclick="' + onclick + '" class="text-gray-400 hover:text-red-500 font-bold ml-1">✕<\/button><\/span>';
+    };
+    const sups = window._accCfg.suppliers.map(function(s, i) { return chip(window._accEsc(s.name) + ' <span class="text-gray-400">' + s.currency + '<\/span>', 'accRemoveSupplier(' + i + ')'); }).join('') || '<span class="text-[11px] text-gray-400">No suppliers yet.<\/span>';
+    const cats = window._accCfg.customCats.map(function(c) { return chip(window._accEsc(c.label) + ' <span class="text-gray-400">' + (c.group === 'inventory' ? 'stock' : 'expense') + '<\/span>', "accRemoveCategory('" + c.key + "')"); }).join('') || '<span class="text-[11px] text-gray-400">None added.<\/span>';
+    let types = '';
+    Object.keys(window._accCfg.customSubs).forEach(function(k) {
+        const cat = window._accCat(k);
+        (window._accCfg.customSubs[k] || []).forEach(function(n) { types += chip(window._accEsc(cat.label) + ' › ' + window._accEsc(n), "accRemoveType('" + k + "','" + String(n).replace(/'/g, "\\'") + "')"); });
+    });
+    el.innerHTML =
+        '<div class="mb-3"><p class="text-[10px] font-bold uppercase text-gray-400 mb-1">Suppliers<\/p>' + sups + '<\/div>' +
+        '<div class="mb-3"><p class="text-[10px] font-bold uppercase text-gray-400 mb-1">Your categories<\/p>' + cats + '<\/div>' +
+        '<div><p class="text-[10px] font-bold uppercase text-gray-400 mb-1">Your types<\/p>' + (types || '<span class="text-[11px] text-gray-400">None added.<\/span>') + '<\/div>';
 };
 
 window.accToggleCurrency = function() {
@@ -8839,7 +9142,7 @@ window.accShowConverted = function() {
     el.innerText = usd && a && r ? '= ' + window._accMoney(a * r) : '';
 };
 
-// ── SAVE / EDIT / DELETE ──
+// ── SAVE / EDIT / DELETE EXPENSE (any past date allowed) ──
 window.accSaveExpense = async function() {
     const date = document.getElementById('acc-date').value;
     const category = document.getElementById('acc-cat').value;
@@ -8848,12 +9151,13 @@ window.accSaveExpense = async function() {
     const raw = Number(document.getElementById('acc-amount').value) || 0;
     const rate = Number(document.getElementById('acc-rate').value) || 0;
     const note = document.getElementById('acc-note').value.trim();
+    const supplier = document.getElementById('acc-supplier') ? document.getElementById('acc-supplier').value : '';
     if (!date) return alert('Pick a date.');
     if (raw <= 0) return alert('Enter an amount greater than 0.');
     if (isUsd && rate <= 0) return alert('Enter the BDT per USD rate for this payment.');
     const amount = Math.round((isUsd ? raw * rate : raw) * 100) / 100;
     const doc = {
-        date: date, month: date.slice(0, 7), category: category, subcategory: sub, amount: amount, note: note,
+        date: date, month: date.slice(0, 7), category: category, subcategory: sub, amount: amount, note: note, supplier: supplier,
         currency: isUsd ? 'USD' : 'BDT', usdAmount: isUsd ? raw : null, usdRate: isUsd ? rate : null,
         updatedAt: new Date().toISOString()
     };
@@ -8868,7 +9172,7 @@ window.accSaveExpense = async function() {
             doc.createdAt = new Date().toISOString();
             doc.createdBy = (auth.currentUser && auth.currentUser.email) || '';
             await db.collection('expenses').add(doc);
-            await window.logAdminAction('Added expense: ' + window._accCat(category).label + ' ' + amount);
+            await window.logAdminAction('Added expense: ' + window._accCat(category).label + ' ' + amount + ' dated ' + date);
         }
         window.accResetForm(true);
         await window.loadAccounts();
@@ -8878,7 +9182,6 @@ window.accSaveExpense = async function() {
         btn.disabled = false;
     }
 };
-
 window.accResetForm = function(keepDateAndCat) {
     window._accEditId = null;
     document.getElementById('acc-amount').value = '';
@@ -8888,15 +9191,16 @@ window.accResetForm = function(keepDateAndCat) {
     document.getElementById('acc-cancel-btn').style.display = 'none';
     window.accShowConverted();
 };
-
 window.accEditExpense = function(id) {
     const e = window._accExpenses.filter(function(x) { return x.id === id; })[0];
     if (!e) return;
+    window.accSwitchView('expenses');
     window._accEditId = id;
     document.getElementById('acc-date').value = e.date;
     document.getElementById('acc-cat').value = window._accCat(e.category).key;
     window.accFillSubs();
     document.getElementById('acc-sub').value = e.subcategory || '';
+    if (document.getElementById('acc-supplier')) document.getElementById('acc-supplier').value = e.supplier || '';
     const usd = e.currency === 'USD';
     document.getElementById('acc-currency').value = usd ? 'USD' : 'BDT';
     window.accToggleCurrency();
@@ -8908,15 +9212,193 @@ window.accEditExpense = function(id) {
     window.accShowConverted();
     document.getElementById('acc-form-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
-
 window.accDeleteExpense = async function(id) {
     const e = window._accExpenses.filter(function(x) { return x.id === id; })[0];
-    if (!e || !confirm('Delete this expense?\n\n' + e.date + ' · ' + window._accCat(e.category).label + ' · ' + window._accMoney(e.amount))) return;
+    if (!e || !confirm('Delete this expense?\n\n' + e.date + ' · ' + window._accCat(e.category).label + ' · ' + window._accMoney(e.amount) + (e.shipmentId ? '\n\nNote: this was created by a shipment. The stock and lot cost stay as they are.' : ''))) return;
     try {
         await db.collection('expenses').doc(id).delete();
         await window.logAdminAction('Deleted expense: ' + window._accCat(e.category).label + ' ' + e.amount);
         await window.loadAccounts();
     } catch (err) { alert('Could not delete: ' + err.message); }
+};
+
+// ── SHIPMENTS (weight-based freight) ──
+window.accShipCurrencyChange = function() {
+    const c = document.getElementById('acc-ship-currency').value;
+    document.getElementById('acc-ship-rate-wrap').style.display = c === 'BDT' ? 'none' : '';
+    document.getElementById('acc-ship-rate-label').innerText = '৳ per 1 ' + c;
+    document.getElementById('acc-ship-price-head').innerText = 'Unit price (' + c + ')';
+    window.accShipCalc();
+};
+window.accShipSupplierChange = function() {
+    const name = document.getElementById('acc-ship-supplier').value;
+    const s = window._accCfg.suppliers.filter(function(x) { return x.name === name; })[0];
+    if (s && s.currency) { document.getElementById('acc-ship-currency').value = s.currency; window.accShipCurrencyChange(); }
+};
+window.accShipAddRow = function() {
+    const tb = document.getElementById('acc-ship-rows');
+    if (!tb) return;
+    const opts = '<option value="">Choose product…<\/option>' + window._accProducts
+        .slice().sort(function(a, b) { return String(a.name).localeCompare(String(b.name)); })
+        .map(function(p) { return '<option value="' + window._accEsc(p.id) + '">' + window._accEsc(p.name) + (Number(p.weightKg) ? ' (' + p.weightKg + ' kg)' : ' (no weight!)') + '<\/option>'; }).join('');
+    const tr = document.createElement('tr');
+    tr.className = 'acc-ship-row border-b';
+    tr.innerHTML =
+        '<td class="p-2"><select class="sr-pid w-full border border-gray-200 rounded-lg p-2 text-xs bg-white outline-none" onchange="accShipCalc()">' + opts + '<\/select><\/td>' +
+        '<td class="p-2"><input type="number" min="1" class="sr-qty w-20 border border-gray-200 rounded-lg p-2 text-xs outline-none" oninput="accShipCalc()"><\/td>' +
+        '<td class="p-2"><input type="number" min="0" placeholder="0" class="sr-po w-20 border border-gray-200 rounded-lg p-2 text-xs outline-none" oninput="accShipCalc()"><\/td>' +
+        '<td class="p-2"><input type="number" min="0" step="0.01" class="sr-price w-24 border border-gray-200 rounded-lg p-2 text-xs outline-none" oninput="accShipCalc()"><\/td>' +
+        '<td class="p-2 text-right text-gray-500 sr-w"><\/td><td class="p-2 text-right text-gray-500 sr-fr"><\/td><td class="p-2 text-right text-gray-500 sr-du"><\/td>' +
+        '<td class="p-2 text-right font-bold sr-landed"><\/td>' +
+        '<td class="p-2 text-right"><button onclick="this.closest(\'tr\').remove();accShipCalc()" class="text-gray-300 hover:text-red-500 font-bold">✕<\/button><\/td>';
+    tb.appendChild(tr);
+};
+window.accShipRead = function() {
+    const cur = document.getElementById('acc-ship-currency').value;
+    const rate = cur === 'BDT' ? 1 : (Number(document.getElementById('acc-ship-rate').value) || 0);
+    const rows = [];
+    document.querySelectorAll('#acc-ship-rows .acc-ship-row').forEach(function(tr) {
+        const pid = tr.querySelector('.sr-pid').value;
+        const p = window._accProducts.filter(function(x) { return x.id === pid; })[0];
+        rows.push({ tr: tr, pid: pid, name: p ? p.name : '', qty: Number(tr.querySelector('.sr-qty').value) || 0, po: Number(tr.querySelector('.sr-po').value) || 0,
+                    priceForeign: Number(tr.querySelector('.sr-price').value) || 0, priceBDT: (Number(tr.querySelector('.sr-price').value) || 0) * rate,
+                    weightKg: p ? (Number(p.weightKg) || 0) : 0 });
+    });
+    return { cur: cur, rate: rate, rows: rows };
+};
+window.accShipCalc = function() {
+    const d = window.accShipRead();
+    const freight = Number(document.getElementById('acc-ship-freight').value) || 0;
+    const duty = Number(document.getElementById('acc-ship-duty').value) || 0;
+    const live = d.rows.filter(function(r) { return r.pid && r.qty > 0; });
+    const al = window._accAllocate(live, freight, duty);
+    const byTr = new Map();
+    live.forEach(function(r, i) { byTr.set(r.tr, al.rows[i]); });
+    d.rows.forEach(function(r) {
+        const a = byTr.get(r.tr);
+        r.tr.querySelector('.sr-w').innerText = r.weightKg ? r.weightKg + ' kg' : (r.pid ? '⚠ none' : '');
+        r.tr.querySelector('.sr-fr').innerText = a ? window._accMoney(a.freightPerBag) : '';
+        r.tr.querySelector('.sr-du').innerText = a ? window._accMoney(a.dutyPerBag) : '';
+        r.tr.querySelector('.sr-landed').innerText = a ? window._accMoney(a.landed) : '';
+    });
+    const units = live.reduce(function(s, r) { return s + r.qty; }, 0);
+    const poUnits = live.reduce(function(s, r) { return s + Math.min(r.po, r.qty); }, 0);
+    const goods = live.reduce(function(s, r) { return s + r.qty * r.priceBDT; }, 0);
+    const total = goods + freight + duty;
+    const sum = document.getElementById('acc-ship-summary');
+    if (sum) {
+        let t = units + ' units (' + (units - poUnits) + ' to stock, ' + poUnits + ' for pre-orders) · goods ' + window._accMoney(goods) + ' + freight ' + window._accMoney(freight) + ' + duty ' + window._accMoney(duty) +
+            ' = ' + window._accMoney(total) + (units ? ' · avg landed ' + window._accMoney(total / units) + ' per bag' : '') +
+            (al.totalWeight ? ' · ' + al.totalWeight.toFixed(2) + ' kg total · ' + window._accMoney(freight / al.totalWeight) + ' per kg' : '');
+        if (d.cur !== 'BDT' && !d.rate) t += '  ⚠ enter the exchange rate';
+        if (al.missingWeight.length) t += '  ⚠ no weight saved for: ' + al.missingWeight.join(', ');
+        if (live.some(function(r) { return r.po > r.qty; })) t += '  ⚠ pre-order qty is more than the quantity on a row';
+        sum.innerText = t;
+    }
+    return { d: d, live: live, al: al, goods: goods, freight: freight, duty: duty, units: units, poUnits: poUnits };
+};
+window.accSaveShipment = async function() {
+    const date = document.getElementById('acc-ship-date').value;
+    const supplier = document.getElementById('acc-ship-supplier').value;
+    const note = document.getElementById('acc-ship-note').value.trim();
+    const c = window.accShipCalc();
+    if (!date) return alert('Pick the date the stock was received.');
+    if (!c.live.length) return alert('Add at least one product with quantity and unit price.');
+    if (c.live.some(function(r) { return r.priceForeign <= 0; })) return alert('Every product needs a unit price.');
+    if (c.d.cur !== 'BDT' && !c.d.rate) return alert('Enter the exchange rate you actually paid.');
+    if (c.live.some(function(r) { return r.po > r.qty; })) return alert('Pre-order quantity cannot be more than the quantity received on a row.');
+    if (c.al.missingWeight.length) return alert('Freight is split by weight, but these products have no weight saved:\n\n' + c.al.missingWeight.join('\n') + '\n\nSet the weight in Inventory (edit product) and try again.');
+    const lines = c.al.rows.map(function(r, i) { const po = Math.min(c.live[i].po, r.qty); return r.qty + ' x ' + r.name + (po ? ' (' + po + ' pre-order, ' + (r.qty - po) + ' to stock)' : '') + '  →  landed ' + window._accMoney(r.landed) + ' each'; }).join('\n');
+    if (!confirm('Save this shipment?\n\n' + lines + '\n\nOnly the non-pre-order bags are added to sellable stock. Each product gets a cost lot for the full quantity.')) return;
+    const btn = document.getElementById('acc-ship-save'); btn.disabled = true;
+    try {
+        const nowIso = new Date().toISOString();
+        const shipRef = db.collection('shipments').doc();
+        const b = db.batch();
+        const items = [];
+        c.live.forEach(function(r, i) {
+            const a = c.al.rows[i];
+            const po = Math.min(r.po, a.qty);
+            const lot = { qty: a.qty, preorderQty: po, purchasePrice: Math.round(a.priceBDT * 100) / 100, supplierShippingCost: a.shipPerBag, dateAdded: date + 'T12:00:00.000Z', shipmentId: shipRef.id, supplier: supplier };
+            b.update(db.collection('products').doc(r.pid), {
+                stock: firebase.firestore.FieldValue.increment(a.qty - po),
+                stockLots: firebase.firestore.FieldValue.arrayUnion(lot),
+                purchasePrice: lot.purchasePrice,
+                supplierShippingCost: lot.supplierShippingCost,
+                lastRestockAt: nowIso
+            });
+            items.push({ productId: r.pid, name: r.name, qty: a.qty, preorderQty: po, unitForeign: r.priceForeign, unitBDT: lot.purchasePrice, weightKg: a.weightKg, freightPerBag: a.freightPerBag, dutyPerBag: a.dutyPerBag, landed: a.landed });
+        });
+        b.set(shipRef, { date: date, supplier: supplier, currency: c.d.cur, rate: c.d.rate, goodsBDT: Math.round(c.goods * 100) / 100, freight: c.freight, duty: c.duty,
+            totalBDT: Math.round((c.goods + c.freight + c.duty) * 100) / 100, units: c.units, preorderUnits: c.poUnits, totalWeightKg: c.al.totalWeight, items: items, note: note, createdAt: nowIso,
+            createdBy: (auth.currentUser && auth.currentUser.email) || '' });
+        const mkExp = function(category, sub, amount, text) {
+            if (!(amount > 0)) return;
+            b.set(db.collection('expenses').doc(), { date: date, month: date.slice(0, 7), category: category, subcategory: sub, amount: Math.round(amount * 100) / 100,
+                note: text, supplier: supplier, currency: 'BDT', usdAmount: null, usdRate: null, shipmentId: shipRef.id, createdAt: nowIso, updatedAt: nowIso,
+                createdBy: (auth.currentUser && auth.currentUser.email) || '' });
+        };
+        mkExp('product', 'Other', c.goods, 'Shipment goods' + (note ? ' · ' + note : ''));
+        mkExp('inbound', 'Freight from China', c.freight, 'Shipment freight' + (note ? ' · ' + note : ''));
+        mkExp('inbound', 'Customs / Duty', c.duty, 'Shipment duty & other' + (note ? ' · ' + note : ''));
+        await b.commit();
+        await window.logAdminAction('Recorded shipment of ' + c.units + ' units from ' + (supplier || 'supplier') + ' dated ' + date + ', total ' + Math.round(c.goods + c.freight + c.duty));
+        document.getElementById('acc-ship-rows').innerHTML = '';
+        ['acc-ship-freight', 'acc-ship-duty', 'acc-ship-note'].forEach(function(id) { document.getElementById(id).value = ''; });
+        window.accShipAddRow();
+        await window.loadAccounts();
+        window.accSwitchView('shipments');
+        alert('Shipment saved. Stock and cost lots updated.');
+    } catch (e) {
+        console.error(e);
+        alert('Could not save shipment: ' + e.message + '\n\nNothing was changed.');
+    } finally { btn.disabled = false; }
+};
+window.accRenderShipments = function() {
+    const el = document.getElementById('acc-ship-list');
+    if (!el) return;
+    if (!document.querySelectorAll('#acc-ship-rows .acc-ship-row').length) window.accShipAddRow();
+    el.innerHTML = window._accShipments.length ? window._accShipments.map(function(s) {
+        const rows = (s.items || []).map(function(i) {
+            return '<tr class="border-t"><td class="p-2">' + window._accEsc(i.name) + '<\/td><td class="p-2 text-right">' + i.qty + (i.preorderQty ? ' <span class="text-gray-400">(' + i.preorderQty + ' pre-order)<\/span>' : '') + '<\/td><td class="p-2 text-right">' + window._accMoney(i.unitBDT) +
+                '<\/td><td class="p-2 text-right">' + window._accMoney((i.freightPerBag || 0) + (i.dutyPerBag || 0)) + '<\/td><td class="p-2 text-right font-bold">' + window._accMoney(i.landed) + '<\/td><\/tr>';
+        }).join('');
+        return '<details class="border-b"><summary class="p-3 cursor-pointer hover:bg-gray-50 flex flex-wrap gap-x-6 gap-y-1 text-xs">' +
+            '<span class="font-bold">' + window._accEsc(s.date) + '<\/span><span>' + window._accEsc(s.supplier || '—') + '<\/span><span>' + (s.units || 0) + ' units' + (s.preorderUnits ? ' (' + s.preorderUnits + ' pre-order)' : '') + '<\/span>' +
+            '<span>Goods ' + window._accMoney(s.goodsBDT) + '<\/span><span>Freight ' + window._accMoney(s.freight) + '<\/span><span class="font-bold">Total ' + window._accMoney(s.totalBDT) + '<\/span><\/summary>' +
+            '<div class="px-3 pb-3"><table class="w-full text-xs"><thead class="text-[10px] uppercase text-gray-400"><tr><th class="p-2 text-left">Product<\/th><th class="p-2 text-right">Qty<\/th><th class="p-2 text-right">Price ৳<\/th><th class="p-2 text-right">Shipping ৳<\/th><th class="p-2 text-right">Landed<\/th><\/tr><\/thead><tbody>' + rows + '<\/tbody><\/table>' +
+            (s.currency !== 'BDT' ? '<p class="text-[10px] text-gray-400 mt-1">Paid in ' + s.currency + ' at ৳' + s.rate + ' per ' + s.currency + '<\/p>' : '') + '<\/div><\/details>';
+    }).join('') : '<p class="p-6 text-center text-xs text-gray-400">No shipments recorded yet.<\/p>';
+};
+
+// ── FIX MISSING COSTS (FIFO) ──
+window.accFixCosts = async function() {
+    const plan = window._accFifoPlan(window.ordersArrayCache || [], window._accProducts, window.DELIVERED_STATUSES, window.getOrderTime);
+    const st = plan.stats;
+    if (!plan.updates.length) {
+        const un = Object.keys(st.unresolved);
+        return alert('Nothing can be filled in automatically.' + (un.length ? '\n\nThese products have no cost saved in any stock lot or on the product:\n' + un.join('\n') + '\n\nOpen Inventory, edit each one, set the Purchase price, then try again.' : ''));
+    }
+    const un = Object.keys(st.unresolved).map(function(k) { return k + ' (' + st.unresolved[k] + ')'; });
+    let msg = 'Fill in missing costs on ' + st.orders + ' delivered order(s) covering ' + st.units + ' unit(s)?\n\n' +
+        'Each unit gets the real cost of the stock lot it came from, oldest lot first (FIFO). Order totals, dates and statuses are NOT changed.';
+    if (st.beyondLots) msg += '\n\n' + st.beyondLots + ' unit(s) sold beyond the recorded lots will use the latest lot cost.';
+    if (un.length) msg += '\n\nStill without any cost (set Purchase price in Inventory): ' + un.join(', ');
+    if (!confirm(msg)) return;
+    try {
+        const nowIso = new Date().toISOString();
+        for (let i = 0; i < plan.updates.length; i += 400) {
+            const b = db.batch();
+            plan.updates.slice(i, i + 400).forEach(function(u) {
+                b.update(db.collection('orders').doc(u.id), { items: u.items, costsBackfilledAt: nowIso });
+            });
+            await b.commit();
+        }
+        await window.logAdminAction('Backfilled FIFO costs on ' + st.orders + ' delivered orders (' + st.units + ' units)');
+        await window.loadOrders();
+        window.accRenderAll();
+        alert('Done. ' + st.orders + ' orders updated. Dashboard and Accounts now use the real costs.');
+    } catch (e) { alert('Could not update orders: ' + e.message); }
 };
 
 // ── RENDER ──
@@ -8930,12 +9412,9 @@ window._accRangeKeys = function(M) {
     }
     return keys;
 };
-
 window.accRenderAll = function() {
     window._accM = window._accCompute(window.ordersArrayCache || [], window._accExpenses, {
-        bagCost: window.SHOPPING_BAG && window.SHOPPING_BAG.cost,
-        deliveredStatuses: window.DELIVERED_STATUSES,
-        getOrderTime: window.getOrderTime
+        bagCost: window.SHOPPING_BAG && window.SHOPPING_BAG.cost, deliveredStatuses: window.DELIVERED_STATUSES, getOrderTime: window.getOrderTime
     });
     const keys = window._accRangeKeys(window._accM);
     window._accKeys = keys;
@@ -8943,8 +9422,8 @@ window.accRenderAll = function() {
     window.accRenderPL(keys);
     window.accRenderCharts(keys);
     window.accRenderExpenseList();
+    window.accRenderShipments();
 };
-
 window.accRenderKpis = function(keys) {
     const T = window._accSum(window._accM, keys);
     const set = function(id, v, sub) {
@@ -8953,32 +9432,34 @@ window.accRenderKpis = function(keys) {
     };
     set('acc-k-rev', window._accMoney(T.revenue || 0), (T.orders || 0) + ' delivered orders');
     set('acc-k-gross', window._accMoney(T.gross || 0), T.revenue ? Math.round((T.gross / T.revenue) * 100) + '% margin' : '');
-    const net = document.getElementById('acc-k-net');
     set('acc-k-net', window._accMoney(T.net || 0), T.revenue ? Math.round((T.net / T.revenue) * 100) + '% net margin' : '');
+    const net = document.getElementById('acc-k-net');
     if (net) net.className = 'text-2xl font-bold mt-1 ' + ((T.net || 0) >= 0 ? 'text-green-600' : 'text-red-600');
     set('acc-k-ads', window._accMoney(T.ads || 0), T.ads && T.revenue ? 'ROAS ' + (T.revenue / T.ads).toFixed(1) + 'x' : 'no ad spend logged');
     set('acc-k-opex', window._accMoney(T.opex || 0), 'packaging + ads + other');
-    set('acc-k-inv', window._accMoney((T.product || 0) + (T.inbound || 0)), 'stock bought (cash out)');
+    set('acc-k-inv', window._accMoney((T.product || 0) + (T.inbound || 0) + (T.customInv || 0)), 'stock bought (cash out)');
     const warn = document.getElementById('acc-est-warn');
     if (warn) {
         warn.style.display = T.cogsEstUnits ? '' : 'none';
-        warn.innerText = T.cogsEstUnits ? '⚠ ' + T.cogsEstUnits + ' sold unit(s) have no purchase price saved, so their cost is estimated at 60% of selling price. Fix purchase prices in Inventory for exact profit.' : '';
+        warn.innerHTML = T.cogsEstUnits
+            ? '⚠ ' + T.cogsEstUnits + ' sold unit(s) have no cost saved on the order, so their cost is estimated at 60% of selling price. ' +
+              '<button onclick="accFixCosts()" class="ml-2 bg-yellow-600 text-white px-3 py-1 rounded-lg font-bold uppercase text-[9px] hover:bg-yellow-700 transition">Fix from stock lots<\/button>'
+            : '';
     }
 };
-
 window.accRenderPL = function(keys) {
     const M = window._accM, head = document.getElementById('acc-pl-head'), body = document.getElementById('acc-pl-body');
     if (!head || !body) return;
     const T = window._accSum(M, keys);
     const cols = keys.concat(['__total']);
-    const get = function(k) { return k === '__total' ? T : (M[k] || {}); };
+    const get = function(k) { return k === '__total' ? T : (M[k] || { custom: {} }); };
     head.innerHTML = '<tr><th class="p-3 text-left sticky left-0 bg-gray-50 z-10 min-w-[190px]">Line item<\/th>' +
         cols.map(function(k) { return '<th class="p-3 text-right whitespace-nowrap ' + (k === '__total' ? 'bg-orange-50 text-[#B36A5E]' : '') + '">' + (k === '__total' ? 'TOTAL' : window._accMonthLabel(k)) + '<\/th>'; }).join('') + '<\/tr>';
-
-    // type: 'in' income, 'out' cost (shown negative), 'sub' subtotal, 'pct', 'num', 'memo'
+    const customRows = window.ACC_CATS.filter(function(c) { return c.custom && c.group === 'opex'; })
+        .map(function(c) { return { label: c.label, ck: c.key, t: 'out' }; });
     const rows = [
         { label: 'Revenue (delivered orders)', f: 'revenue', t: 'in' },
-        { label: 'Cost of goods sold', f: 'cogs', t: 'out', hint: 'bag cost + supplier shipping + shopping bags, per unit sold' },
+        { label: 'Cost of goods sold', f: 'cogs', t: 'out', hint: 'real lot cost per unit sold + shopping bags' },
         { label: 'Gross profit', f: 'gross', t: 'sub' },
         { label: 'Gross margin %', fn: function(r) { return r.revenue ? Math.round(r.gross / r.revenue * 100) + '%' : '—'; }, t: 'pct' },
         { label: 'Courier charges', f: 'courier', t: 'out', hint: 'from orders' },
@@ -8990,7 +9471,8 @@ window.accRenderPL = function(keys) {
         { label: 'Packaging', f: 'packaging', t: 'out' },
         { label: 'Facebook / Meta ads', f: 'ads', t: 'out' },
         { label: 'Delivery (extra)', f: 'delivery', t: 'out' },
-        { label: 'Other expenses', f: 'other', t: 'out' },
+        { label: 'Other expenses', f: 'other', t: 'out' }
+    ].concat(customRows).concat([
         { label: 'NET PROFIT', f: 'net', t: 'net' },
         { label: 'Net margin %', fn: function(r) { return r.revenue ? Math.round(r.net / r.revenue * 100) + '%' : '—'; }, t: 'pct' },
         { label: 'Orders delivered', f: 'orders', t: 'num' },
@@ -9000,19 +9482,19 @@ window.accRenderPL = function(keys) {
         { label: 'Ad cost per order (CAC)', fn: function(r) { return r.orders && r.ads ? window._accMoney(r.ads / r.orders) : '—'; }, t: 'pct' },
         { label: 'ROAS (revenue ÷ ads)', fn: function(r) { return r.ads ? (r.revenue / r.ads).toFixed(1) + 'x' : '—'; }, t: 'pct' },
         { label: 'Return rate', fn: function(r) { const s = (r.orders || 0) + (r.returned || 0); return s ? Math.round((r.returned || 0) / s * 100) + '%' : '—'; }, t: 'pct' },
-        { label: 'Stock bought (memo, cash out)', fn: function(r) { return window._accMoney((r.product || 0) + (r.inbound || 0)); }, t: 'memo', hint: 'not in P&L' }
-    ];
+        { label: 'Stock bought (memo, cash out)', fn: function(r) { return window._accMoney((r.product || 0) + (r.inbound || 0) + (r.customInv || 0)); }, t: 'memo', hint: 'not in P&L' }
+    ]);
     window._accPLRows = rows;
     body.innerHTML = rows.map(function(row) {
         const isSub = row.t === 'sub', isNet = row.t === 'net', isMemo = row.t === 'memo', isPct = row.t === 'pct';
         const trCls = isNet ? 'bg-gray-900 text-white font-bold' : (isSub ? 'bg-gray-50 font-bold' : (isPct || isMemo ? 'text-gray-400 italic' : ''));
         const stick = isNet ? 'bg-gray-900' : (isSub ? 'bg-gray-50' : 'bg-white');
-        let tds = cols.map(function(k) {
+        const tds = cols.map(function(k) {
             const r = get(k);
             let txt, cls = '';
-            if (row.fn) { txt = row.fn(r); }
+            if (row.fn) txt = row.fn(r);
             else {
-                const v = Number(r[row.f]) || 0;
+                const v = row.ck ? (Number((r.custom || {})[row.ck]) || 0) : (Number(r[row.f]) || 0);
                 if (row.t === 'num') txt = v.toLocaleString('en-BD');
                 else if (row.t === 'out') txt = v ? '(' + window._accMoney(v) + ')' : '—';
                 else if (row.t === 'in') txt = v ? window._accMoney(v) : '—';
@@ -9021,11 +9503,10 @@ window.accRenderPL = function(keys) {
             }
             return '<td class="p-3 text-right whitespace-nowrap ' + cls + (k === '__total' && !isNet ? ' bg-orange-50/60 font-bold' : '') + '">' + txt + '<\/td>';
         }).join('');
-        return '<tr class="border-b border-gray-100 ' + trCls + '"><td class="p-3 sticky left-0 z-10 ' + stick + '">' + row.label +
+        return '<tr class="border-b border-gray-100 ' + trCls + '"><td class="p-3 sticky left-0 z-10 ' + stick + '">' + window._accEsc(row.label) +
             (row.hint ? ' <span class="text-[9px] font-normal text-gray-400 normal-case not-italic">' + row.hint + '<\/span>' : '') + '<\/td>' + tds + '<\/tr>';
     }).join('');
 };
-
 window.accRenderCharts = function(keys) {
     if (typeof Chart === 'undefined') return;
     const M = window._accM;
@@ -9033,21 +9514,17 @@ window.accRenderCharts = function(keys) {
     if (window._accCharts.trend) window._accCharts.trend.destroy();
     const c1 = document.getElementById('acc-chart-trend');
     if (c1) window._accCharts.trend = new Chart(c1, {
-        data: {
-            labels: labels,
-            datasets: [
-                { type: 'bar', label: 'Revenue', data: keys.map(function(k) { return Math.round((M[k] || {}).revenue || 0); }), backgroundColor: '#E5C9C3', borderRadius: 4 },
-                { type: 'bar', label: 'Total costs', data: keys.map(function(k) { const r = M[k] || {}; return Math.round((r.revenue || 0) - (r.net || 0)); }), backgroundColor: '#9CA3AF', borderRadius: 4 },
-                { type: 'line', label: 'Net profit', data: keys.map(function(k) { return Math.round((M[k] || {}).net || 0); }), borderColor: '#10B981', backgroundColor: '#10B981', tension: 0.3, pointRadius: 4 }
-            ]
-        },
+        data: { labels: labels, datasets: [
+            { type: 'bar', label: 'Revenue', data: keys.map(function(k) { return Math.round((M[k] || {}).revenue || 0); }), backgroundColor: '#E5C9C3', borderRadius: 4 },
+            { type: 'bar', label: 'Total costs', data: keys.map(function(k) { const r = M[k] || {}; return Math.round((r.revenue || 0) - (r.net || 0)); }), backgroundColor: '#9CA3AF', borderRadius: 4 },
+            { type: 'line', label: 'Net profit', data: keys.map(function(k) { return Math.round((M[k] || {}).net || 0); }), borderColor: '#10B981', backgroundColor: '#10B981', tension: 0.3, pointRadius: 4 }
+        ] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } }, scales: { y: { ticks: { font: { size: 9 } } }, x: { ticks: { font: { size: 9 } } } } }
     });
-
     const T = window._accSum(M, keys);
     const slices = [
         ['Cost of goods', T.cogs], ['Courier + COD', (T.courier || 0) + (T.cod || 0)], ['Return costs', T.returnCost],
-        ['Packaging', T.packaging], ['Meta ads', T.ads], ['Delivery (extra)', T.delivery], ['Other', T.other]
+        ['Packaging', T.packaging], ['Meta ads', T.ads], ['Delivery (extra)', T.delivery], ['Other', (T.other || 0) + (T.customOpex || 0)]
     ].filter(function(s) { return (s[1] || 0) > 0; });
     if (window._accCharts.mix) window._accCharts.mix.destroy();
     const c2 = document.getElementById('acc-chart-mix');
@@ -9057,7 +9534,6 @@ window.accRenderCharts = function(keys) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } } }
     });
 };
-
 window.accRenderExpenseList = function() {
     const body = document.getElementById('acc-exp-body');
     if (!body) return;
@@ -9071,9 +9547,9 @@ window.accRenderExpenseList = function() {
         mSel.value = months[monF] ? monF : '';
     }
     const cSel = document.getElementById('acc-f-cat');
-    if (cSel && !cSel.dataset.filled) {
-        cSel.innerHTML = '<option value="">All categories<\/option>' + window.ACC_CATS.map(function(c) { return '<option value="' + c.key + '">' + c.label + '<\/option>'; }).join('');
-        cSel.dataset.filled = '1';
+    if (cSel) {
+        cSel.innerHTML = '<option value="">All categories<\/option>' + window.ACC_CATS.map(function(c) { return '<option value="' + c.key + '">' + window._accEsc(c.label) + '<\/option>'; }).join('');
+        cSel.value = catF;
     }
     const list = window._accExpenses.filter(function(e) {
         return (!catF || window._accCat(e.category).key === catF) && (!monF || String(e.date).slice(0, 7) === monF);
@@ -9084,8 +9560,8 @@ window.accRenderExpenseList = function() {
         const cat = window._accCat(e.category);
         const usdTag = e.currency === 'USD' ? ' <span class="text-[9px] text-gray-400">($' + e.usdAmount + ' @ ' + e.usdRate + ')<\/span>' : '';
         return '<tr class="border-b hover:bg-gray-50"><td class="p-3 whitespace-nowrap">' + window._accEsc(e.date) + '<\/td>' +
-            '<td class="p-3"><span class="font-bold">' + cat.label + '<\/span><br><span class="text-[10px] text-gray-400">' + window._accEsc(e.subcategory) + '<\/span><\/td>' +
-            '<td class="p-3 text-gray-500">' + window._accEsc(e.note) + '<\/td>' +
+            '<td class="p-3"><span class="font-bold">' + window._accEsc(cat.label) + '<\/span><br><span class="text-[10px] text-gray-400">' + window._accEsc(e.subcategory) + '<\/span><\/td>' +
+            '<td class="p-3 text-gray-500">' + (e.supplier ? '<span class="font-bold text-gray-700">' + window._accEsc(e.supplier) + '<\/span> · ' : '') + window._accEsc(e.note) + '<\/td>' +
             '<td class="p-3 text-right font-bold whitespace-nowrap">' + window._accMoney(e.amount) + usdTag + '<\/td>' +
             '<td class="p-3 text-right whitespace-nowrap"><button onclick="accEditExpense(\'' + e.id + '\')" class="text-blue-500 font-bold text-[10px] uppercase underline mr-3">Edit<\/button>' +
             '<button onclick="accDeleteExpense(\'' + e.id + '\')" class="text-red-400 font-bold text-[10px] uppercase underline">Delete<\/button><\/td><\/tr>';
@@ -9093,7 +9569,6 @@ window.accRenderExpenseList = function() {
     const t = document.getElementById('acc-exp-total');
     if (t) t.innerText = list.length + ' entries · ' + window._accMoney(total);
 };
-
 window.accExportPL = function() {
     const rows = window._accPLRows, keys = window._accKeys || [];
     if (!rows || !keys.length) return alert('Nothing to export yet.');
@@ -9103,9 +9578,9 @@ window.accExportPL = function() {
     const lines = [['Line item'].concat(cols.map(function(k) { return k === '__total' ? 'TOTAL' : k; })).map(q).join(',')];
     rows.forEach(function(row) {
         lines.push([row.label].concat(cols.map(function(k) {
-            const r = k === '__total' ? T : (M[k] || {});
+            const r = k === '__total' ? T : (M[k] || { custom: {} });
             if (row.fn) return row.fn(r).toString().replace(/৳/g, '');
-            const v = Math.round(Number(r[row.f]) || 0);
+            const v = Math.round(row.ck ? (Number((r.custom || {})[row.ck]) || 0) : (Number(r[row.f]) || 0));
             return row.t === 'out' ? -v : v;
         })).map(q).join(','));
     });
@@ -9115,15 +9590,13 @@ window.accExportPL = function() {
     a.download = 'sterling_PL_' + (document.getElementById('acc-year').value) + '.csv';
     document.body.appendChild(a); a.click(); a.remove();
 };
-
 window.accSwitchView = function(v) {
-    ['pl', 'expenses'].forEach(function(x) {
-        document.getElementById('acc-view-' + x).style.display = (x === v) ? '' : 'none';
-        const b = document.getElementById('acc-tab-' + x);
-        b.className = 'px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition ' + (x === v ? 'bg-[#322C2B] text-white' : 'bg-white text-gray-500 hover:bg-gray-100');
+    ['pl', 'expenses', 'shipments'].forEach(function(x) {
+        const pane = document.getElementById('acc-view-' + x), b = document.getElementById('acc-tab-' + x);
+        if (pane) pane.style.display = (x === v) ? '' : 'none';
+        if (b) b.className = 'px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition ' + (x === v ? 'bg-[#322C2B] text-white' : 'bg-white text-gray-500 hover:bg-gray-100');
     });
 };
-
 
 console.log("✅ Admin Panel Loaded Successfully (Auth Secured)");
 
