@@ -5803,7 +5803,12 @@ const updatePayload = {
         updatePayload.shoppingBagTotal = bagFinal.total;
         updatePayload.shoppingBagCost  = Math.round(bagFinal.qty * window.SHOPPING_BAG.cost * 100) / 100;
 
-        // ── Adjusted total = original + shipping change + bag change ──
+        // ── Save the real bag cost on the order at verify time (needs the Accounts page code) ──
+if (newStatus === 'Confirmed' && typeof window._accStampOrderCosts === 'function') {
+    try { const _stamped = await window._accStampOrderCosts(order); if (_stamped) { updatePayload.items = _stamped; updatePayload.costsStampedAt = new Date().toISOString(); } }
+    catch (e) { console.warn('Cost stamping skipped:', e); }
+}
+// ── Adjusted total = original + shipping change + bag change ──
         const adjustedBase = originalTotal + shippingDiffFinal + bagDiffFinal;
 
         if (shippingDiffFinal !== 0) {

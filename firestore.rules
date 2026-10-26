@@ -18,6 +18,12 @@ service cloud.firestore {
     match /product_costs/{productId} {
       allow read, write: if isAdmin();
     }
+    match /product_costs/{productId} {
+      allow read, write: if isAdmin();
+    }
+    match /order_costs/{orderId} {
+      allow read, write: if isAdmin();
+    }
     match /categories/{catId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -110,6 +116,12 @@ match /site_visitors/{docId} {
   allow read, write: if true;
 }
     match /expenses/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /shipments/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /accounts_config/{docId} {
       allow read, write: if isAdmin();
     }
     match /newsletter_subscribers/{subscriber} {
