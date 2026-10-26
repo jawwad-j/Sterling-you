@@ -8,8 +8,15 @@ service cloud.firestore {
     match /products/{productId} {
       allow read: if true;
       allow update: if request.auth != null && 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']);
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']) &&
+        request.resource.data.stock >= 0;
       allow write: if isAdmin();
+    }
+    match /order_costs/{orderId} {
+      allow read, write: if isAdmin();
+    }
+    match /product_costs/{productId} {
+      allow read, write: if isAdmin();
     }
     match /categories/{catId} {
       allow read: if true;

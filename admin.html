@@ -2082,6 +2082,205 @@ if (tabId === 'contact-settings') {
         };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+// >>> PRIVATE COSTS v2 (products + orders) -------------------------------------------------
+// Costs live in admin-only collections:
+//   product_costs/{productId} : purchasePrice, supplierShippingCost, stockLots
+//   order_costs/{orderId}     : items[] (id, purchasePrice, supplierShippingCost, costSource),
+//                               shoppingBagCost, costsStampedAt, costsBackfilledAt
+// The rest of the admin code is unchanged: reads get the costs merged back in, writes are split.
+(function () {
+    const P_KEYS = ['purchasePrice', 'supplierShippingCost', 'stockLots'];
+    const O_TOP = ['shoppingBagCost', 'costsStampedAt', 'costsBackfilledAt'];
+    const O_ITEM = ['purchasePrice', 'supplierShippingCost', 'costSource'];
+    const rawCollection = db.collection.bind(db);
+    const rawBatch = db.batch.bind(db);
+
+    function splitProduct(data) {
+        const pub = {}, cost = {};
+        Object.keys(data || {}).forEach(function (k) { (P_KEYS.indexOf(k) > -1 ? cost : pub)[k] = data[k]; });
+        return { pub: pub, cost: cost, hasCost: Object.keys(cost).length > 0, hasPub: Object.keys(pub).length > 0 };
+    }
+    function mergeProduct(d, c) { return Object.assign({}, d, c || {}); }
+
+    function splitOrder(data) {
+        const pub = {}, cost = {};
+        Object.keys(data || {}).forEach(function (k) { (O_TOP.indexOf(k) > -1 ? cost : pub)[k] = data[k]; });
+        if (Array.isArray(pub.items)) {
+            let any = false;
+            const pubItems = [], costItems = [];
+            pub.items.forEach(function (it) {
+                if (!it || typeof it !== 'object') { pubItems.push(it); costItems.push({}); return; }
+                const p = Object.assign({}, it), c = { id: it.id };
+                O_ITEM.forEach(function (k) { if (k in p) { c[k] = p[k]; delete p[k]; any = true; } });
+                pubItems.push(p); costItems.push(c);
+            });
+            pub.items = pubItems;
+            if (any) cost.items = costItems;
+        }
+        return { pub: pub, cost: cost, hasCost: Object.keys(cost).length > 0, hasPub: Object.keys(pub).length > 0 };
+    }
+    function mergeOrder(d, c) {
+        if (!c) return d;
+        const out = Object.assign({}, d);
+        O_TOP.forEach(function (k) { if (c[k] !== undefined) out[k] = c[k]; });
+        if (Array.isArray(d.items) && Array.isArray(c.items)) {
+            const used = {};
+            out.items = d.items.map(function (it, i) {
+                if (!it || typeof it !== 'object') return it;
+                let e = c.items[i];
+                if (!(e && String(e.id) === String(it.id) && !used[i])) {
+                    e = null;
+                    for (let j = 0; j < c.items.length; j++) if (!used[j] && c.items[j] && String(c.items[j].id) === String(it.id)) { e = c.items[j]; used[j] = true; break; }
+                } else used[i] = true;
+                if (!e) return it;
+                const m = Object.assign({}, it);
+                O_ITEM.forEach(function (k) { if (e[k] !== undefined) m[k] = e[k]; });
+                return m;
+            });
+        }
+        return out;
+    }
+
+    const CFG = {
+        products: { costCol: 'product_costs', split: splitProduct, merge: mergeProduct },
+        orders: { costCol: 'order_costs', split: splitOrder, merge: mergeOrder }
+    };
+    const cache = {};   // name -> { at, map }
+    const TTL = 90000;
+    function invalidate(name) { delete cache[name]; }
+    async function costMap(name) {
+        const c = cache[name];
+        if (c && Date.now() - c.at < TTL) return c.map;
+        const map = {};
+        try { (await rawCollection(CFG[name].costCol).get()).forEach(function (d) { map[d.id] = d.data(); }); } catch (e) { /* not readable yet: legacy data is still on the documents */ }
+        cache[name] = { at: Date.now(), map: map };
+        return map;
+    }
+    async function costOne(name, id) {
+        try { const s = await rawCollection(CFG[name].costCol).doc(id).get(); return s.exists ? s.data() : null; } catch (e) { return null; }
+    }
+    function wrapDoc(name, d, c) {
+        const cfg = CFG[name];
+        return {
+            id: d.id, ref: d.ref, exists: d.exists, metadata: d.metadata,
+            data: function () { return d.exists ? cfg.merge(d.data(), c) : undefined; },
+            get: function (f) { const x = this.data(); return x ? x[f] : undefined; }
+        };
+    }
+    function pathIs(ref, name) { return ref && typeof ref.path === 'string' && ref.path.indexOf(name + '/') === 0; }
+    function nameOfPath(ref) { return pathIs(ref, 'products') ? 'products' : (pathIs(ref, 'orders') ? 'orders' : null); }
+    const bindIf = function (t, p) { const v = t[p]; return typeof v === 'function' ? v.bind(t) : v; };
+
+    function wrapDocRef(name, ref) {
+        const cfg = CFG[name];
+        return new Proxy(ref, {
+            get: function (t, p) {
+                if (p === 'get') return async function () { const r = await Promise.all([t.get(), costOne(name, t.id)]); return wrapDoc(name, r[0], r[1]); };
+                if (p === 'update') return async function (data) {
+                    if (typeof data !== 'object' || data === null || arguments.length > 1) return t.update.apply(t, arguments);
+                    const s = cfg.split(data);
+                    if (s.hasPub) await t.update(s.pub);
+                    if (s.hasCost) { await rawCollection(cfg.costCol).doc(t.id).set(s.cost, { merge: true }); invalidate(name); }
+                };
+                if (p === 'set') return async function (data, opts) {
+                    const s = cfg.split(data);
+                    await t.set(s.pub, opts);
+                    if (s.hasCost) { await rawCollection(cfg.costCol).doc(t.id).set(s.cost, { merge: true }); invalidate(name); }
+                };
+                if (p === 'delete') return async function () { await t.delete(); try { await rawCollection(cfg.costCol).doc(t.id).delete(); invalidate(name); } catch (e) {} };
+                return bindIf(t, p);
+            }
+        });
+    }
+    function wrapQuery(name, q) {
+        return new Proxy(q, {
+            get: function (t, p) {
+                if (p === 'get') return async function () {
+                    const r = await Promise.all([t.get(), costMap(name)]);
+                    const docs = r[0].docs.map(function (d) { return wrapDoc(name, d, r[1][d.id]); });
+                    return { docs: docs, size: docs.length, empty: docs.length === 0, metadata: r[0].metadata, forEach: function (fn) { docs.forEach(fn); } };
+                };
+                if (p === 'doc') return function () { return wrapDocRef(name, t.doc.apply(t, arguments)); };
+                if (p === 'add') return async function (data) {
+                    const cfg = CFG[name], s = cfg.split(data);
+                    const ref = await t.add(s.pub);
+                    if (s.hasCost) { await rawCollection(cfg.costCol).doc(ref.id).set(s.cost, { merge: true }); invalidate(name); }
+                    return ref;
+                };
+                if (['where', 'orderBy', 'limit', 'limitToLast', 'startAt', 'startAfter', 'endAt', 'endBefore'].indexOf(p) > -1)
+                    return function () { return wrapQuery(name, t[p].apply(t, arguments)); };
+                return bindIf(t, p);
+            }
+        });
+    }
+
+    db.collection = function (name) {
+        const col = rawCollection(name);
+        return CFG[name] ? wrapQuery(name, col) : col;
+    };
+
+    db.batch = function () {
+        const b = rawBatch();
+        const self = {
+            update: function (ref, data) {
+                const nm = nameOfPath(ref);
+                if (nm && arguments.length === 2 && typeof data === 'object') {
+                    const cfg = CFG[nm], s = cfg.split(data);
+                    if (s.hasPub) b.update(ref, s.pub);
+                    if (s.hasCost) { b.set(rawCollection(cfg.costCol).doc(ref.id), s.cost, { merge: true }); invalidate(nm); }
+                } else b.update.apply(b, arguments);
+                return self;
+            },
+            set: function (ref, data, opts) {
+                const nm = nameOfPath(ref);
+                if (nm) {
+                    const cfg = CFG[nm], s = cfg.split(data);
+                    b.set(ref, s.pub, opts);
+                    if (s.hasCost) { b.set(rawCollection(cfg.costCol).doc(ref.id), s.cost, { merge: true }); invalidate(nm); }
+                } else b.set(ref, data, opts);
+                return self;
+            },
+            delete: function (ref) { b.delete(ref); return self; },
+            commit: function () { return b.commit(); }
+        };
+        return self;
+    };
+
+    async function migrate(name, label) {
+        const cfg = CFG[name];
+        const snap = await rawCollection(name).get();
+        const have = {}; (await rawCollection(cfg.costCol).get()).forEach(function (d) { have[d.id] = d.data(); });
+        let n = 0, ops = 0, b = rawBatch();
+        const flush = async function () { if (ops) { await b.commit(); b = rawBatch(); ops = 0; } };
+        for (const d of snap.docs) {
+            const data = d.data();
+            const s = cfg.split(data);
+            if (!s.hasCost) continue;
+            const del = {};
+            let cost = s.cost;
+            if (have[d.id]) {             // already has a private copy: keep it, only fill what is missing
+                cost = {};
+                Object.keys(s.cost).forEach(function (k) { if (have[d.id][k] === undefined) cost[k] = s.cost[k]; });
+            }
+            const delKeys = name === 'products' ? P_KEYS : O_TOP;
+            delKeys.forEach(function (k) { if (data[k] !== undefined) del[k] = firebase.firestore.FieldValue.delete(); });
+            if (name === 'orders' && Array.isArray(data.items) && s.cost.items) del.items = s.pub.items;
+            if (Object.keys(cost).length) b.set(rawCollection(cfg.costCol).doc(d.id), cost, { merge: true });
+            if (Object.keys(del).length) b.update(d.ref, del);
+            ops += 2; n++;
+            if (ops >= 400) await flush();
+        }
+        await flush();
+        invalidate(name);
+        console.log('[costs] ' + label + ': moved costs of ' + n + ' document(s) into ' + cfg.costCol + ' and removed them from the public documents.');
+        return n;
+    }
+    window.migrateProductCosts = function () { return migrate('products', 'products'); };
+    window.migrateOrderCosts = function () { return migrate('orders', 'orders'); };
+    window._privateCosts = { splitOrder: splitOrder, mergeOrder: mergeOrder, splitProduct: splitProduct };
+})();
+// <<< PRIVATE COSTS v2 -----------------------------------------------------------------------
+
         const storage = firebase.storage();
         const auth = firebase.auth();
 

@@ -834,17 +834,46 @@ items: validCart.map(i => ({
 }))
                 };
                 
-                batch.set(newOrderRef, orderData);
-
-                validCart.forEach(item => {
-                    const productRef = db.collection("products").doc(String(item.id));
-                    batch.update(productRef, { stock: firebase.firestore.FieldValue.increment(-(item.quantity || 1)) });
-                });
-
+                // ── FIRST TO CHECK OUT GETS THE BAG ──
+                // Stock is checked and reduced in ONE atomic step together with the order.
+                // The cart never holds stock; if two customers check out at once, only one wins.
                 const userRef = db.collection("users").doc(currentCheckoutUser.uid);
-                batch.update(userRef, { totalSpend: firebase.firestore.FieldValue.increment(total), lastOrderDate: new Date().toISOString() });
-                
-                await batch.commit();
+                const needByPid = {};
+                validCart.forEach(i => { const k = String(i.id); needByPid[k] = (needByPid[k] || 0) + (Number(i.quantity) || 1); });
+                try {
+                    await db.runTransaction(async (t) => {
+                        const pids = Object.keys(needByPid);
+                        const refs = pids.map(pid => db.collection("products").doc(pid));
+                        const snaps = await Promise.all(refs.map(r => t.get(r)));
+                        const short = [];
+                        snaps.forEach((s, idx) => {
+                            const have = s.exists ? (Number(s.data().stock) || 0) : 0;
+                            if (have < needByPid[pids[idx]]) short.push({ pid: pids[idx], have: have });
+                        });
+                        if (short.length) { const e = new Error('SOLD_OUT'); e.short = short; throw e; }
+                        t.set(newOrderRef, orderData);
+                        snaps.forEach((s, idx) => {
+                            t.update(refs[idx], { stock: (Number(s.data().stock) || 0) - needByPid[pids[idx]] });
+                        });
+                        t.update(userRef, { totalSpend: firebase.firestore.FieldValue.increment(total), lastOrderDate: new Date().toISOString() });
+                    });
+                } catch (txErr) {
+                    if (txErr && txErr.message === 'SOLD_OUT') {
+                        const lines = [];
+                        const fixed = [];
+                        validCart.forEach(i => {
+                            const s = txErr.short.find(x => x.pid === String(i.id));
+                            if (!s) { fixed.push(i); return; }
+                            if (s.have > 0) { i.quantity = s.have; fixed.push(i); lines.push('"' + i.name + '": only ' + s.have + ' left, quantity adjusted.'); }
+                            else lines.push('"' + i.name + '" was just bought by another customer and is now sold out.');
+                        });
+                        localStorage.setItem('cart', JSON.stringify(fixed));
+                        alert("Sorry, someone checked out just before you:\n\n" + lines.join("\n") + "\n\nYour order was NOT placed. Please review your cart.");
+                        window.location.reload();
+                        return;
+                    }
+                    throw txErr;
+                }
 
                 // GA4 purchase
 try {
